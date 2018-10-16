@@ -30,7 +30,6 @@ library
       , sdl2 >=2.3.0
       , linear >=1.20.7
   exposed-modules:
-      -- NGL.LoadShaders
       Input
       Geometry
       Types

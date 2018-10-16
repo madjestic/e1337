@@ -258,8 +258,8 @@ initResources (vs) offset = do
     vertexAttribArray uvCoords   $= Enabled
 
     program <- loadShaders [
-        ShaderInfo VertexShader (FileSource "Shaders/shader.vert"),
-        ShaderInfo FragmentShader (FileSource "Shaders/shader.frag")]
+        ShaderInfo VertexShader   (FileSource "shaders/shader.vert"),
+        ShaderInfo FragmentShader (FileSource "shaders/shader.frag")]
     currentProgram $= Just program
 
     -- Set Uniforms
@@ -368,9 +368,18 @@ render (Game time) = time
 handleExit :: SF AppInput Bool
 handleExit = quitEvent >>^ isEvent
 
+-- < Global Constants > ---------------------------------------------------
+mBlur     = 0.25 :: Float
+loadDelay = 2.0  :: Double
+resX      = 800  :: CInt
+resY      = 600  :: CInt
+
 -- < Main Function > -----------------------------------------------------------
 main :: IO ()
 main = do
-     animate "Mandelbrot" 640 480
-                         (parseWinInput >>> ((game >>^ render) &&& handleExit))
-
+     animate
+       "Mandelbrot"
+       resX
+       resY
+       (parseWinInput >>> ((game >>^ render) &&& handleExit))
+       -- (parseWinInput >>> (mainGame &&& handleExit))
