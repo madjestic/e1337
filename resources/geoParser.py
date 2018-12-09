@@ -1,10 +1,14 @@
 # Pre parser of geo.json (arrays)
+
+# Use example:
+# $ python ./geoParser.py
+
 import json
-from itertools import izip
+# from itertools import izip
 
 def toDict (jsonFile):
     i        = iter (jsonFile)
-    jsonDict = dict (izip (i, i))
+    jsonDict = dict (zip (i, i))
     return jsonDict
 
 def makeDict (jsonFile):
@@ -28,7 +32,7 @@ def restoreArrayFromIndex (array, indices):
 fileIn  = "model.geo"
 fileOut = "model.pgeo" # pgeo - processed geo, in JSON format
 
-outfile = file(fileIn, "r")
+outfile = open(fileIn, "r")
 jsonFile = json.loads (outfile.read ())
 outfile.close()
 

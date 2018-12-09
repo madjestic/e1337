@@ -28,8 +28,8 @@ import Types
 import Geometry
 
 -- < Game Types > ---------------------------------------------------------
-data Game       = Game { time :: Double  }
-                deriving Show
+-- data Game       = Game { time :: Double  }
+--                 deriving Show
 
 type Clip       = Double
 
@@ -307,53 +307,116 @@ animate title winWidth winHeight sf = do
 
 -- < Input Handling > -----------------------------------------------------
 
-stateReleased :: Double -> SF AppInput Double
-stateReleased k0 =
-  switch sf cont
-    where
-         sf = proc input -> do
-            offset    <- constant k0 -< ()
-            zoomIn   <- trigger -< input
-            returnA  -< (offset, zoomIn `tag` offset):: (Double, Event Double)
-         cont x = stateTriggered (x)
+-- stateReleased :: Double -> SF AppInput Double
+-- stateReleased k0 =
+--   switch sf cont
+--     where
+--          sf = proc input -> do
+--             offset    <- constant k0 -< ()
+--             zoomIn   <- trigger -< input
+--             returnA  -< (offset, zoomIn `tag` offset):: (Double, Event Double)
+--          cont x = stateTriggered (x)
 
-stateTriggered :: Double -> SF AppInput Double
-stateTriggered k0 =
-  switch sf cont
-    where
-         sf = proc input -> do
-            offset    <- (k0 +) ^<< integral <<< constant 0.1 -< ()
-            zoomIn   <- release -< input
-            returnA  -< (offset, zoomIn `tag` offset):: (Double, Event Double)
-         cont x = stateReleased (x)
+-- stateTriggered :: Double -> SF AppInput Double
+-- stateTriggered k0 =
+--   switch sf cont
+--     where
+--          sf = proc input -> do
+--             offset    <- (k0 +) ^<< integral <<< constant 0.1 -< ()
+--             zoomIn   <- release -< input
+--             returnA  -< (offset, zoomIn `tag` offset):: (Double, Event Double)
+--          cont x = stateReleased (x)
 
-trigger :: SF AppInput (Event ())
-trigger =
-  proc input -> do
-    upTapHold   <- keyPressedRepeat (SDL.ScancodeSpace, True) -< input
-    upTap       <- keyPressed       (SDL.ScancodeSpace)       -< input
-    returnA     -< lMerge upTap upTapHold
+-- trigger :: SF AppInput (Event ())
+-- trigger =
+--   proc input -> do
+--     upTapHold   <- keyPressedRepeat (SDL.ScancodeSpace, True) -< input
+--     upTap       <- keyPressed       (SDL.ScancodeSpace)       -< input
+--     returnA     -< lMerge upTap upTapHold
 
-release :: SF AppInput (Event ())
-release =
-  proc input -> do
-    unTap    <- keyReleased      (SDL.ScancodeSpace)       -< input
-    returnA  -< unTap
+-- release :: SF AppInput (Event ())
+-- release =
+--   proc input -> do
+--     unTap    <- keyReleased      (SDL.ScancodeSpace)       -< input
+--     returnA  -< unTap
 
 initClip :: Double
 initClip = 0
 
 exitTrigger :: SF AppInput (Event ())
-exitTrigger =
-  proc input -> do
-    qTap     <- keyPressed ScancodeQ -< input
-    returnA  -< qTap
+exitTrigger = undefined
+  -- proc input -> do
+  --   qTap     <- keyPressed ScancodeQ -< input
+  --   returnA  -< qTap
 
 -- < Game Logic > ---------------------------------------------------------
+data GameStage = GameIntro
+               | GamePlaying
+               | GameFinished
+               | GameMenu
+               deriving Show
+
+data Game =
+     Game
+     { mass :: Float
+     , pPos :: Double    -- Player Position
+     , bPos :: Pos       -- Ball   Position
+     , gStg :: GameStage -- Game   Stage
+     } 
+  deriving Show
+
+type Pos  = (Double, Double)
+
+defaultGame :: Game
+defaultGame = Game pp0 bp0 GameIntro
+  where
+    pp0 = 0         :: Double
+    bp0 = (0.0,0.4) :: (Double, Double)
+
+mainGame :: SF AppInput Game
+mainGame =
+  loopPre defaultGame $ 
+  proc (input, gameState) -> do
+    gs <- case gStg gameState of
+            GameIntro   -> gameIntro -< (input, gameState)
+            GamePlaying -> gamePlay  -< input
+    returnA -< (gs, gs)
+
+gameIntro :: SF (AppInput, Game) Game
+gameIntro =
+  switch sf cont        
+     where sf =
+             proc (input, gameState) -> do
+               introState <- returnA -< gameState
+               playState  <- returnA -< gameState { gStg =  GamePlaying }
+               skipE      <- key SDL.ScancodeSpace "Pressed" -< input
+               waitE      <- after loadDelay () -< ()
+               returnA    -< (introState, (skipE `lMerge` waitE) `tag` playState)
+           cont game  = 
+             proc input -> do
+               returnA  -< game
+
+gamePlay :: SF AppInput Game
+gamePlay =
+    switch sf (const mainGame)        
+     where sf =
+             proc input -> do
+               gameState <- gameSession -< input
+               reset     <- key SDL.ScancodeSpace "Pressed" -< input
+               returnA   -< (gameState, reset)
+
 gameSession :: SF AppInput Game
-gameSession = proc input -> do
-     offset <- stateReleased initClip -< input
-     returnA -< Game offset
+gameSession = undefined
+  -- proc input -> do
+  --   ppos         <- playerPos   $ pPos defaultGame -< input
+  --   (bpos, bvel) <- ballPos bv0 $ bPos defaultGame -< ()
+  --   returnA      -< Game ppos bpos GamePlaying
+  --     where bv0 = (0.5,0.5) :: (Double, Double)
+
+-- gameSession :: SF AppInput Game
+-- gameSession = proc input -> do
+--      offset <- stateReleased initClip -< input
+--      returnA -< Game offset
 
 game :: SF AppInput Game
 game = switch sf (\_ -> game)        
@@ -362,8 +425,9 @@ game = switch sf (\_ -> game)
                      gameOver  <- exitTrigger  -< input
                      returnA   -< (gameState, gameOver)
 
-render :: Game -> Time
-render (Game time) = time
+-- render :: Game -> Time
+-- render (Game time) = undefined
+--   time
 
 handleExit :: SF AppInput Bool
 handleExit = quitEvent >>^ isEvent
@@ -376,10 +440,54 @@ resY      = 600  :: CInt
 
 -- < Main Function > -----------------------------------------------------------
 main :: IO ()
-main = do
-     animate
-       "Mandelbrot"
-       resX
-       resY
-       (parseWinInput >>> ((game >>^ render) &&& handleExit))
-       -- (parseWinInput >>> (mainGame &&& handleExit))
+main = undefined
+  -- do
+  --    animate
+  --      "e1337"
+  --      resX
+  --      resY
+  --      --(parseWinInput >>> ((game >>^ render) &&& handleExit))
+  --      (parseWinInput >>> (mainGame &&& handleExit))
+
+{-
+GameState:
+    Position : Pos          :: V3, 64bit
+             , Time         :: Integer + Float or Double
+             , 3xQuaternion :: 3x4, Float
+                 (acceleration for pitch, roll, yaw)
+             --> 12 values + 4 = 16 -> M4
+
+    Pos0    : Pos
+            , Time
+            , Orient       :: 2xQuat, 16bit
+            --> 4 + 4 = 8
+      // for Stellar Bodies:
+            , probablity of collision -> collision map (Size -> Prob)
+
+    Planet : Time
+           , Civilization
+
+    Civilization : Time
+                 , Technology
+
+    Technology : Technology Tree -> a point cloud, representing ideas, which have mass, so that ideas interact with gravity.  Researcers are like particles, circling around, eventually orbiting and colliding with an idea.  Orbitting an idea gives a bonus, hitting an idea gives another bonus and maybe extras, and excludes it from the PC and the sim continues.  Different ideologies or mentalities, defined as social factors, effect the geometry of the idea-space. Thus to some societies certain technologies and other objects from the idea-space take shorter or more trivial paths than to other societies, certain objects may be missing in the idea-space of certain societies and are only obtainable via interaction with other societies, this the idea-spaces are complementrary on the sense of object repertoir, the goemtry remains different. For a society that obtains originally missing idea is like finding a new branch of science, or inserting new objects into an idea-space.
+
+, Gravity Sim to represent scientific effort
+  with research units (spheres) orbit each other and collide,
+  collision representing a scientific discovery or a breakthrough.
+, Physical Params
+
+, Terrain - some sort of evolution, for now can be an Int to define a state variant
+
+
+Cosmic Body:
+  p', Pivot     V3 (center of mass)
+  p , Position  V3 + r , Orientation Q4 -> M2x4 (?)
+  v , Velocity, V3
+  m , Mass      F1
+  d , Density,  F1
+
+
+  a , Acceleration V3
+  a', Angular Velocity 2xQuat (rotation speed)
+-}
