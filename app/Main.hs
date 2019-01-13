@@ -15,9 +15,9 @@ import Foreign.Ptr                            (plusPtr, nullPtr, Ptr)
 import Foreign.Storable                       (sizeOf)
 import FRP.Yampa
 import Graphics.Rendering.OpenGL as GL hiding (Size, Position, Point, pgeo_positions)
-import System.IO
-import System.FilePath
-import Control.Exception
+-- import System.IO
+-- import System.FilePath
+-- import Control.Exception
 import qualified Data.ByteString.Lazy as B
 
 import SDL                             hiding (Point, Vec2, Vec3, Event)
@@ -356,10 +356,17 @@ data GameStage = GameIntro
                | GameMenu
                deriving Show
 
+data Game' =
+     Game'
+     { -- Game State
+     } 
+  deriving Show
+
+
 data Game =
      Game
-     { mass :: Float
-     , pPos :: Double    -- Player Position
+     { -- Game State
+       pPos :: Double    -- Player Position
      , bPos :: Pos       -- Ball   Position
      , gStg :: GameStage -- Game   Stage
      } 
