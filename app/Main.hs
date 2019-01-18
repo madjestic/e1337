@@ -45,14 +45,22 @@ data Shape2D
    = Square Vec2 Size
    deriving Show
 
-newtype Shape3D =
-  Geo
-  {
-    positions :: [ Vec3 ]
-  }
+newtype Shape3D
+  =
+    Geo
+    {
+      positions :: [Vec3]
+    }
   deriving Show
 
-type Drawable   = [Vertex4 Double]
+-- type Drawable   = [Vertex4 Double]
+data Drawable
+  =
+    Drawable
+    {
+      verts  :: [Vertex4 Double]
+    , uvs    :: [Vertex4 Double]
+    }
 type Size       = Double
 
 class Vec2Vertex a where
@@ -64,14 +72,23 @@ instance Vec2Vertex Vec3 where
   toVertex4 :: Vec3 -> Vertex4 Double
   toVertex4 (k, l, m) = Vertex4 k l m 1
 
-class Shape2Drawable a where
-  toDrawable :: a -> Drawable
-instance Shape2Drawable Shape2D where
-  toDrawable :: Shape2D -> Drawable
-  toDrawable x = map toVertex4 $ toVec2s x
-instance Shape2Drawable Shape3D where
-  toDrawable :: Shape3D -> Drawable
-  toDrawable x = map toVertex4 $ toVec3s x
+class Drawables a where
+  fromShape :: a -> IO Drawable
+instance Drawables Shape2D where
+  fromShape :: Shape2D -> IO Drawable
+  fromShape x = 
+    do
+      -- * TODO : complete undefined
+      let ps  = map toVertex4 $ toVec2s x
+          uvs = undefined :: [Vertex4 Double]
+      return $ Drawable ps uvs
+instance Drawables Shape3D where
+  fromShape :: Shape3D -> IO Drawable
+  fromShape x =
+    do
+      let ps  = map toVertex4 $ toVec3s x
+          uvs = undefined :: [Vertex4 Double]
+      return $ Drawable ps uvs
   
 square :: Vec2 -> Double -> [Vec2]
 square pos side = [p1, p2, p3,
@@ -190,7 +207,7 @@ closeWindow window = do
     SDL.quit
 
 
--- ** TODO : (Drawable -> Double) is, effectively, a state passing, refactor to more scalable
+-- * TODO : (Drawable -> Double) is, effectively, a state passing, refactor to more scalable
 -- i.e. pass a state data structure instead
 draw :: SDL.Window -> Drawable -> Double -> IO ()
 draw window drawable offset = do
@@ -206,16 +223,19 @@ draw window drawable offset = do
 -- < OpenGL > -------------------------------------------------------------
 data Descriptor = Descriptor VertexArrayObject ArrayIndex NumArrayIndices
 
-initResources :: [Vertex4 Double] -> Double -> IO Descriptor
-initResources vs offset = do
+
+-- * TODO : same, state passing is clumsy and incomplete
+--initResources :: [Vertex4 Double] -> Double -> IO Descriptor
+initResources :: Drawable -> Double -> IO Descriptor
+initResources dw offset = do
     triangles <- genObjectName
     bindVertexArrayObject $= Just triangles
 
     --
     -- Declaring VBO: vertices
     --
-    let vertices = vs
-        numVertices = length vertices
+    let vs          = verts dw
+        numVertices = length vs
 
     vertexBuffer <- genObjectName
     bindBuffer ArrayBuffer $= Just vertexBuffer
@@ -286,8 +306,11 @@ animate title winWidth winHeight sf = do
             -- let ps  = pgeo_positions model
             -- let geo = Geo ps
             geo <- readPGeo
-            draw window ( toDrawable $ Geo $ (\(ps, _) -> ps) geo ) offset
-            --draw window ( toDrawable geo ) offset
+            -- TODO : pass state
+            --drawable <- fromShape $ Geo $ (\(ps, _) -> ps) geo
+            drawable <- fromShape $ Geo $ (\(ps, _) -> ps) geo
+            --draw window ( fromShape $ Geo $ (\(ps, _) -> ps) geo ) offset
+            draw window drawable offset
             return shouldExit 
 
     reactimate (return NoEvent)
