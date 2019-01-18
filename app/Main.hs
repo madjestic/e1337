@@ -3,11 +3,13 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE OverloadedStrings, Arrows #-}
+{-# LANGUAGE MultiWayIf #-}
 module Main where 
 
 import Control.Concurrent
 import Control.Monad
 import Data.Aeson                             hiding (withArray)
+import Data.Maybe                             (fromMaybe)
 import Data.Text                              (Text)
 import Foreign.C                              
 import Foreign.Marshal.Array                  (withArray)
@@ -15,34 +17,40 @@ import Foreign.Ptr                            (plusPtr, nullPtr, Ptr)
 import Foreign.Storable                       (sizeOf)
 import FRP.Yampa
 import Graphics.Rendering.OpenGL as GL hiding (Size, Position, Point, pgeo_positions)
--- import System.IO
--- import System.FilePath
--- import Control.Exception
 import qualified Data.ByteString.Lazy as B
 
 import SDL                             hiding (Point, Vec2, Vec3, Event)
 
 import NGL.LoadShaders
 import Input
-import Types
-import Geometry
 
--- < Game Types > ---------------------------------------------------------
--- data Game       = Game { time :: Double  }
---                 deriving Show
+type WinInput = Event SDL.EventPayload
+type Vec2     = (Double, Double)
+type Vec3     = (Double, Double, Double)
 
-type Clip       = Double
+data PGeo =
+     PGeo
+     {
+       pgeo_positions :: [Vec3] -- position of vertices positions as Vec3
+     , uv             :: [Vec3]
+     } deriving Show
 
 -- < NGL (NGL is not a Graphics Library) > --------------------------------
-data Projection = Planar                
-                deriving Show 
-data Shape2     = Square Vec2 Size deriving Show
 
-data Shape3     = Geo
-                  {
-                    positions :: [ Vec3 ]
-                  }
-                deriving Show
+data Projection
+   = Planar
+   deriving Show
+
+data Shape2D
+   = Square Vec2 Size
+   deriving Show
+
+newtype Shape3D =
+  Geo
+  {
+    positions :: [ Vec3 ]
+  }
+  deriving Show
 
 type Drawable   = [Vertex4 Double]
 type Size       = Double
@@ -58,11 +66,11 @@ instance Vec2Vertex Vec3 where
 
 class Shape2Drawable a where
   toDrawable :: a -> Drawable
-instance Shape2Drawable Shape2 where
-  toDrawable :: Shape2 -> Drawable
+instance Shape2Drawable Shape2D where
+  toDrawable :: Shape2D -> Drawable
   toDrawable x = map toVertex4 $ toVec2s x
-instance Shape2Drawable Shape3 where
-  toDrawable :: Shape3 -> Drawable
+instance Shape2Drawable Shape3D where
+  toDrawable :: Shape3D -> Drawable
   toDrawable x = map toVertex4 $ toVec3s x
   
 square :: Vec2 -> Double -> [Vec2]
@@ -84,10 +92,10 @@ liftVec2 (x,y) = (x, y, 0.0)
 liftVec2s :: [Vec2] -> [Vec3]
 liftVec2s = map liftVec2
 
-toVec2s :: Shape2 -> [Vec2]
+toVec2s :: Shape2D -> [Vec2]
 toVec2s (Square pos side) =  square pos side
 
-toVec3s :: Shape3 -> [Vec3]
+toVec3s :: Shape3D -> [Vec3]
 toVec3s Geo { positions } = positions
 
 toUV :: Projection -> [TexCoord2 Double]
@@ -102,33 +110,33 @@ toTexCoord2 (k, l, m) = TexCoord2 k l
 toTexCoord2s :: [(a, a, a)] -> [TexCoord2 a]
 toTexCoord2s = map toTexCoord2 
 
-
 projectPlanar :: [Vec2] -> [TexCoord2 Double]
 projectPlanar      = map $ uncurry TexCoord2
     
 -- < Reading PGeo > --------------------------------------------------------
-data Position = Position [Vec3] deriving Show
-data UV       = UV       [Vec3] deriving Show
+
+newtype Position = Position [Vec3] deriving Show
+newtype UV       = UV       [Vec3] deriving Show
 
 instance FromJSON PGeo where
   parseJSON (Object o) =
      PGeo
-       <$> ((o .: "PGeo") >>= (.: "pgeo_positions"))
+       <$> ((o .: "PGeo") >>= (.: "position"))
        <*> ((o .: "PGeo") >>= (.: "uv"))
   parseJSON _ = mzero
 
 instance FromJSON Position where
     parseJSON (Object o) =
       do
-        pts <- o .: "pgeo_positions"
-        fmap Position $ parseJSON pts
+        pts <- o .: "position"
+        Position <$> parseJSON pts
     parseJSON _ = mzero
 
 instance FromJSON UV where
     parseJSON (Object o) =
       do
         uv <- o .: "uv"
-        fmap UV $ parseJSON uv
+        UV <$> parseJSON uv
     parseJSON _ = mzero
 
 type Positions = [Vertex4 Double] 
@@ -136,46 +144,27 @@ type Positions = [Vertex4 Double]
 data Transform = Transform {}
 
 jsonFile :: FilePath
-jsonFile = "model.pgeo"           
+jsonFile = "src/model.pgeo"           
 
 getJSON :: FilePath -> IO B.ByteString
-getJSON jsonFile = B.readFile jsonFile
+getJSON  = B.readFile
 
 readPGeo :: IO ([Vec3], [Vec3])
 readPGeo =
   do
     d <- (eitherDecode <$> getJSON jsonFile) :: IO (Either String PGeo)
-    let positions =
-          pgeo_positions . fromJust $ fromEitherDecode d
-          where
-            fromEitherDecode d =
-              do
-                case d of
-                  Left err -> Nothing
-                  Right ps -> Just ps
-                  
-            fromJust pgeo =
-              do
-                case pgeo of
-                  Just pgeo -> pgeo
-                  Nothing   -> PGeo [] []
+    let positions = (pgeo_positions . fromEitherDecode) d
+    let uvs       = (uv             . fromEitherDecode) d
+    return ( positions
+           , uvs)
 
-    let uvs =
-          uv . fromJust $ fromEitherDecode d
-          where
-            fromEitherDecode d =
-              do
-                case d of
-                  Left err -> Nothing
-                  Right ps -> Just ps
+      where
+        fromEitherDecode = fromMaybe (PGeo [] []) . fromEither
+        fromEither d =
+          case d of
+            Left err -> Nothing
+            Right ps -> Just ps
                   
-            fromJust pgeo =
-              do
-                case pgeo of
-                  Just pgeo -> pgeo
-                  Nothing   -> PGeo [] []
-
-    return (positions, uvs)
 
 -- < Rendering > ----------------------------------------------------------
 openWindow :: Text -> (CInt, CInt) -> IO SDL.Window
@@ -191,7 +180,7 @@ openWindow title (sizex,sizey) = do
             SDL.defaultWindow {SDL.windowInitialSize = V2 sizex sizey,
                                SDL.windowOpenGL = Just SDL.defaultOpenGL}
     SDL.showWindow window
-    _ <- SDL.glCreateContext(window)
+    _ <- SDL.glCreateContext window
     
     return window
 
@@ -200,6 +189,9 @@ closeWindow window = do
     SDL.destroyWindow window
     SDL.quit
 
+
+-- ** TODO : (Drawable -> Double) is, effectively, a state passing, refactor to more scalable
+-- i.e. pass a state data structure instead
 draw :: SDL.Window -> Drawable -> Double -> IO ()
 draw window drawable offset = do
       (Descriptor triangles firstIndex numVertices) <- initResources drawable offset
@@ -214,8 +206,8 @@ draw window drawable offset = do
 -- < OpenGL > -------------------------------------------------------------
 data Descriptor = Descriptor VertexArrayObject ArrayIndex NumArrayIndices
 
-initResources :: ([Vertex4 Double]) -> Double -> IO Descriptor
-initResources (vs) offset = do
+initResources :: [Vertex4 Double] -> Double -> IO Descriptor
+initResources vs offset = do
     triangles <- genObjectName
     bindVertexArrayObject $= Just triangles
 
@@ -240,11 +232,10 @@ initResources (vs) offset = do
     --
     -- Declaring VBO: UVs
     --
-    -- let uv = toUV Planar
-    -- (_, uvs) <- readPGeo
-    -- (_, uvs) <- readPGeo
-    let uvs = uv $ model
-    let uv  = toTexCoord2s uvs
+
+    --let uvs = uv model
+    geo <- readPGeo
+    let uv  = toTexCoord2s $ (\(_, uv) -> uv) geo
 
     textureBuffer <- genObjectName
     bindBuffer ArrayBuffer $= Just textureBuffer
@@ -273,7 +264,7 @@ bufferOffset = plusPtr nullPtr . fromIntegral
 
 -- < Animate > ------------------------------------------------------------
 
-type WinOutput = (Double, Bool)
+type WinOutput = (Game, Bool)
 
 animate :: Text                   -- ^ window title
         -> CInt                   -- ^ window width in pixels
@@ -291,12 +282,13 @@ animate title winWidth winHeight sf = do
             mEvent <- SDL.pollEvent                          
             return (dt, Event . SDL.eventPayload <$> mEvent) 
 
-        renderOutput _ (offset, shouldExit) = do -- | add (winx, winy) and process it similar to (offset)
-            let ps  = pgeo_positions $ model
-            let geo = Geo ps
-            draw window ( toDrawable geo) offset
+        renderOutput _ (Game offset _, shouldExit) = do -- | add (winx, winy) and process it similar to (offset)
+            -- let ps  = pgeo_positions model
+            -- let geo = Geo ps
+            geo <- readPGeo
+            draw window ( toDrawable $ Geo $ (\(ps, _) -> ps) geo ) offset
+            --draw window ( toDrawable geo ) offset
             return shouldExit 
-            -- draw window ( toDrawable (Square (0.0, 0.0) 1.0)) offset
 
     reactimate (return NoEvent)
                senseInput
@@ -305,50 +297,6 @@ animate title winWidth winHeight sf = do
 
     closeWindow window
 
--- < Input Handling > -----------------------------------------------------
-
--- stateReleased :: Double -> SF AppInput Double
--- stateReleased k0 =
---   switch sf cont
---     where
---          sf = proc input -> do
---             offset    <- constant k0 -< ()
---             zoomIn   <- trigger -< input
---             returnA  -< (offset, zoomIn `tag` offset):: (Double, Event Double)
---          cont x = stateTriggered (x)
-
--- stateTriggered :: Double -> SF AppInput Double
--- stateTriggered k0 =
---   switch sf cont
---     where
---          sf = proc input -> do
---             offset    <- (k0 +) ^<< integral <<< constant 0.1 -< ()
---             zoomIn   <- release -< input
---             returnA  -< (offset, zoomIn `tag` offset):: (Double, Event Double)
---          cont x = stateReleased (x)
-
--- trigger :: SF AppInput (Event ())
--- trigger =
---   proc input -> do
---     upTapHold   <- keyPressedRepeat (SDL.ScancodeSpace, True) -< input
---     upTap       <- keyPressed       (SDL.ScancodeSpace)       -< input
---     returnA     -< lMerge upTap upTapHold
-
--- release :: SF AppInput (Event ())
--- release =
---   proc input -> do
---     unTap    <- keyReleased      (SDL.ScancodeSpace)       -< input
---     returnA  -< unTap
-
-initClip :: Double
-initClip = 0
-
-exitTrigger :: SF AppInput (Event ())
-exitTrigger = undefined
-  -- proc input -> do
-  --   qTap     <- keyPressed ScancodeQ -< input
-  --   returnA  -< qTap
-
 -- < Game Logic > ---------------------------------------------------------
 data GameStage = GameIntro
                | GamePlaying
@@ -356,29 +304,23 @@ data GameStage = GameIntro
                | GameMenu
                deriving Show
 
-data Game' =
-     Game'
-     { -- Game State
-     } 
-  deriving Show
-
-
 data Game =
      Game
      { -- Game State
-       pPos :: Double    -- Player Position
-     , bPos :: Pos       -- Ball   Position
-     , gStg :: GameStage -- Game   Stage
+       pVal :: Double
+     -- , pPos  :: Double    -- Player Position
+     -- , bPos  :: Pos       -- Ball   Position
+     , gStg  :: GameStage -- Game   Stage
      } 
-  deriving Show
+     deriving Show
 
 type Pos  = (Double, Double)
 
 defaultGame :: Game
-defaultGame = Game pp0 bp0 GameIntro
+defaultGame =
+  Game pt0 GameIntro
   where
-    pp0 = 0         :: Double
-    bp0 = (0.0,0.4) :: (Double, Double)
+    pt0 = 0 :: Double
 
 mainGame :: SF AppInput Game
 mainGame =
@@ -412,29 +354,46 @@ gamePlay =
                reset     <- key SDL.ScancodeSpace "Pressed" -< input
                returnA   -< (gameState, reset)
 
+playerVal :: Double -> SF AppInput Double
+playerVal pp0 =
+  switch sf cont
+    where
+      sf = proc input -> do
+        keyLeft  <- key SDL.ScancodeLeft  "Pressed" -< input
+        keyRight <- key SDL.ScancodeRight "Pressed" -< input
+        let res :: (  Double
+                    , Event ()
+                    , Event ())
+            res =  ( pp0
+                   , keyLeft
+                   , keyRight)
+        returnA -< (pp0, mergeEvents
+                         [ keyLeft
+                         , keyRight ] `tag` res)
+
+      cont (x, keyLeft, keyRight) =
+        if | isEvent keyLeft -> incVal x (-0.5)
+           | otherwise       -> incVal x   0.5
+
+incVal :: Double -> Double -> SF AppInput Double
+incVal pp0 v0 =
+  switch sf cont
+    where
+         sf = proc input -> do
+            p       <- -- DT.trace ("p: " ++ show pp0 ++ "\n") $
+                       (pp0 +) ^<< integral -< v0
+            keyLeft <- key SDL.ScancodeLeft  "Released" -< input
+            keyRight<- key SDL.ScancodeRight "Released" -< input
+            returnA -< (p, mergeEvents
+                           [ keyLeft  
+                           , keyRight ] `tag` p) :: (Double, Event Double)
+         cont = playerVal
+
 gameSession :: SF AppInput Game
-gameSession = undefined
-  -- proc input -> do
-  --   ppos         <- playerPos   $ pPos defaultGame -< input
-  --   (bpos, bvel) <- ballPos bv0 $ bPos defaultGame -< ()
-  --   returnA      -< Game ppos bpos GamePlaying
-  --     where bv0 = (0.5,0.5) :: (Double, Double)
-
--- gameSession :: SF AppInput Game
--- gameSession = proc input -> do
---      offset <- stateReleased initClip -< input
---      returnA -< Game offset
-
-game :: SF AppInput Game
-game = switch sf (\_ -> game)        
-     where sf = proc input -> do
-                     gameState <- gameSession  -< input
-                     gameOver  <- exitTrigger  -< input
-                     returnA   -< (gameState, gameOver)
-
--- render :: Game -> Time
--- render (Game time) = undefined
---   time
+gameSession = 
+  proc input -> do
+       pval  <- playerVal $ pVal defaultGame -< input
+       returnA      -< Game pval GamePlaying
 
 handleExit :: SF AppInput Bool
 handleExit = quitEvent >>^ isEvent
@@ -447,14 +406,12 @@ resY      = 600  :: CInt
 
 -- < Main Function > -----------------------------------------------------------
 main :: IO ()
-main = undefined
-  -- do
-  --    animate
-  --      "e1337"
-  --      resX
-  --      resY
-  --      --(parseWinInput >>> ((game >>^ render) &&& handleExit))
-  --      (parseWinInput >>> (mainGame &&& handleExit))
+main = 
+     animate
+       "e1337"
+       resX
+       resY
+       (parseWinInput >>> (mainGame &&& handleExit))
 
 {-
 GameState:
