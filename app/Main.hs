@@ -24,10 +24,6 @@ import SDL                             hiding (Point, Vec2, Vec3, Event)
 import NGL.LoadShaders
 import Input
 
-type WinInput = Event SDL.EventPayload
-type Vec2     = (Double, Double)
-type Vec3     = (Double, Double, Double)
-
 -- < NGL (NGL is not a Graphics Library) > --------------------------------
 
 data Projection
@@ -66,18 +62,17 @@ instance Vec2Vertex Vec3 where
   toVertex4 (k, l, m) = Vertex4 k l m 1
 
 class Drawables a where
-  fromShape :: a -> IO Drawable
+  toDrawable :: a -> IO Drawable
 instance Drawables Shape2D where
-  fromShape :: Shape2D -> IO Drawable
-  fromShape x = 
+  toDrawable :: Shape2D -> IO Drawable
+  toDrawable x = 
     do
-      -- * TODO : complete undefined
       let ps  = map toVertex4 $ (\ (Square pos side)-> square pos side) x
-          uvs = toUV Planar :: [TexCoord2 Double]
+          uvs = toUV Planar
       return $ Drawable ps uvs
 instance Drawables Geo where
-  fromShape :: Geo -> IO Drawable
-  fromShape geo =
+  toDrawable :: Geo -> IO Drawable
+  toDrawable geo =
     do
       let ps  = map toVertex4   $ position geo
           uvs = map toTexCoord2 $ uv geo
@@ -94,19 +89,6 @@ square pos side = [p1, p2, p3,
         p2 = (x - r, y + r)
         p3 = (x - r, y - r)
         p4 = (x + r, y - r)
-
-
-liftVec2 :: Vec2 -> Vec3
-liftVec2 (x,y) = (x, y, 0.0)
-
-liftVec2s :: [Vec2] -> [Vec3]
-liftVec2s = map liftVec2
-
-toVec2s :: Shape2D -> [Vec2]
-toVec2s (Square pos side) =  square pos side
-
-toVec3s :: Geo -> [Vec3]
-toVec3s Geo { position } = position
 
 toUV :: Projection -> [TexCoord2 Double]
 toUV Planar =
@@ -131,8 +113,8 @@ newtype UV       = UV       [Vec3] deriving Show
 instance FromJSON Geo where
   parseJSON (Object o) =
      Geo
-       <$> ((o .: "Geo") >>= (.: "position"))
-       <*> ((o .: "Geo") >>= (.: "uv"))
+       <$> ((o .: "PGeo") >>= (.: "position"))
+       <*> ((o .: "PGeo") >>= (.: "uv"))
   parseJSON _ = mzero
 
 instance FromJSON Position where
@@ -150,22 +132,20 @@ instance FromJSON UV where
     parseJSON _ = mzero
 
 type Positions = [Vertex4 Double] 
-
 data Transform = Transform {}
 
 jsonFile :: FilePath
-jsonFile = "src/model.pgeo"           
+jsonFile = "src/model.pgeo"
 
 getJSON :: FilePath -> IO B.ByteString
 getJSON  = B.readFile
 
---readGeo :: IO ([Vec3], [Vec3])
-readGeo :: IO Geo
-readGeo =
+readPGeo :: FilePath -> IO Geo
+readPGeo jsonFile =
   do
     d <- (eitherDecode <$> getJSON jsonFile) :: IO (Either String Geo)
-    let ps        = (position      . fromEitherDecode) d
-    let uvs       = (uv            . fromEitherDecode) d
+    let ps        = (position . fromEitherDecode) d
+    let uvs       = (uv       . fromEitherDecode) d
     return $ Geo ps uvs
 
       where
@@ -175,7 +155,6 @@ readGeo =
             Left err -> Nothing
             Right ps -> Just ps
                   
-
 -- < Rendering > ----------------------------------------------------------
 openWindow :: Text -> (CInt, CInt) -> IO SDL.Window
 openWindow title (sizex,sizey) = do
@@ -245,10 +224,7 @@ initResources dw offset = do
     --
     -- Declaring VBO: UVs
     --
-
-    --let uvs = uv model
-    geo <- readGeo
-    let uv  = undefined :: [TexCoord2 Double] --toTexCoord2s $ (\(_, uv) -> uv) geo
+    let uv  = uvs dw
 
     textureBuffer <- genObjectName
     bindBuffer ArrayBuffer $= Just textureBuffer
@@ -277,6 +253,7 @@ bufferOffset = plusPtr nullPtr . fromIntegral
 
 -- < Animate > ------------------------------------------------------------
 
+type WinInput = Event SDL.EventPayload
 type WinOutput = (Game, Bool)
 
 animate :: Text                   -- ^ window title
@@ -295,13 +272,8 @@ animate title winWidth winHeight sf = do
             mEvent <- SDL.pollEvent                          
             return (dt, Event . SDL.eventPayload <$> mEvent) 
 
-        renderOutput _ (Game offset _, shouldExit) = do -- | add (winx, winy) and process it similar to (offset)
-          
-            -- TODO : Game -> Geo
-            -- instead of reading a file with Geo, read it from Game (state)
-            geo <- readGeo
-            drawable <- fromShape geo
-
+        renderOutput _ (Game offset geo _, shouldExit) = do -- | add (winx, winy) and process it similar to (offset)
+            drawable <- toDrawable geo
             draw window drawable offset
             return shouldExit 
 
@@ -315,6 +287,9 @@ animate title winWidth winHeight sf = do
 --fromGeo :: a -> 
       
 -- < Game Logic > ---------------------------------------------------------
+type Vec2     = (Double, Double)
+type Vec3     = (Double, Double, Double)
+
 data GameStage = GameIntro
                | GamePlaying
                | GameFinished
@@ -324,7 +299,8 @@ data GameStage = GameIntro
 data Game =
      Game
      { -- Game State
-       pVal :: Double
+       pVal     :: Double
+     , geometry :: Geo
      -- , pPos  :: Double    -- Player Position
      -- , bPos  :: Pos       -- Ball   Position
      , gStg  :: GameStage -- Game   Stage
@@ -333,19 +309,14 @@ data Game =
 
 type Pos  = (Double, Double)
 
-defaultGame :: Game
-defaultGame =
-  Game pt0 GameIntro
-  where
-    pt0 = 0 :: Double
 
-mainGame :: SF AppInput Game
-mainGame =
-  loopPre defaultGame $ 
+mainGame :: Game -> SF AppInput Game
+mainGame initGame = 
+  loopPre initGame $ 
   proc (input, gameState) -> do
     gs <- case gStg gameState of
-            GameIntro   -> gameIntro -< (input, gameState)
-            GamePlaying -> gamePlay  -< input
+            GameIntro   -> gameIntro   -< (input, gameState)
+            GamePlaying -> gamePlay initGame -< input
     returnA -< (gs, gs)
 
 gameIntro :: SF (AppInput, Game) Game
@@ -362,12 +333,12 @@ gameIntro =
              proc input -> do
                returnA  -< game
 
-gamePlay :: SF AppInput Game
-gamePlay =
-    switch sf (const mainGame)        
+gamePlay :: Game -> SF AppInput Game
+gamePlay gameState =
+    switch sf (const (mainGame gameState))        
      where sf =
              proc input -> do
-               gameState <- gameSession -< input
+               gameState <- gameSession gameState -< input
                reset     <- key SDL.ScancodeSpace "Pressed" -< input
                returnA   -< (gameState, reset)
 
@@ -406,14 +377,21 @@ incVal pp0 v0 =
                            , keyRight ] `tag` p) :: (Double, Event Double)
          cont = playerVal
 
-gameSession :: SF AppInput Game
-gameSession = 
+gameSession :: Game -> SF AppInput Game
+gameSession gameState = 
   proc input -> do
-       pval  <- playerVal $ pVal defaultGame -< input
-       returnA      -< Game pval GamePlaying
+       pval  <- playerVal $ pVal gameState -< input
+       returnA -< Game pval (geometry gameState) GamePlaying
 
 handleExit :: SF AppInput Bool
 handleExit = quitEvent >>^ isEvent
+
+initGame :: IO Game
+initGame =
+  do
+    geo <- readPGeo jsonFile
+    let initGame = Game 0.0 geo GameIntro
+    return initGame
 
 -- < Global Constants > ---------------------------------------------------
 mBlur     = 0.25 :: Float
@@ -423,12 +401,13 @@ resY      = 600  :: CInt
 
 -- < Main Function > -----------------------------------------------------------
 main :: IO ()
-main = 
-     animate
-       "e1337"
-       resX
-       resY
-       (parseWinInput >>> (mainGame &&& handleExit))
+main = do
+  initState <- initGame
+  animate
+    "e1337"
+    resX
+    resY
+    (parseWinInput >>> ((mainGame initState) &&& handleExit))
 
 {-
 GameState:
