@@ -16,7 +16,7 @@ import Foreign.Marshal.Array                  (withArray)
 import Foreign.Ptr                            (plusPtr, nullPtr, Ptr)
 import Foreign.Storable                       (sizeOf)
 import FRP.Yampa
-import Graphics.Rendering.OpenGL as GL hiding (Size, Position, Point, pgeo_positions)
+import Graphics.Rendering.OpenGL as GL hiding (Size, Position, Point, position)
 import qualified Data.ByteString.Lazy as B
 
 import SDL                             hiding (Point, Vec2, Vec3, Event)
@@ -28,13 +28,6 @@ type WinInput = Event SDL.EventPayload
 type Vec2     = (Double, Double)
 type Vec3     = (Double, Double, Double)
 
-data PGeo =
-     PGeo
-     {
-       pgeo_positions :: [Vec3] -- position of vertices positions as Vec3
-     , uv             :: [Vec3]
-     } deriving Show
-
 -- < NGL (NGL is not a Graphics Library) > --------------------------------
 
 data Projection
@@ -45,21 +38,21 @@ data Shape2D
    = Square Vec2 Size
    deriving Show
 
-newtype Shape3D
+data Geo
   =
     Geo
     {
-      positions :: [Vec3]
+      position :: [Vec3]
+    , uv       :: [Vec3]
     }
   deriving Show
 
--- type Drawable   = [Vertex4 Double]
 data Drawable
   =
     Drawable
     {
-      verts  :: [Vertex4 Double]
-    , uvs    :: [Vertex4 Double]
+      verts  :: [Vertex4   Double]
+    , uvs    :: [TexCoord2 Double]
     }
 type Size       = Double
 
@@ -79,15 +72,15 @@ instance Drawables Shape2D where
   fromShape x = 
     do
       -- * TODO : complete undefined
-      let ps  = map toVertex4 $ toVec2s x
-          uvs = undefined :: [Vertex4 Double]
+      let ps  = map toVertex4 $ (\ (Square pos side)-> square pos side) x
+          uvs = toUV Planar :: [TexCoord2 Double]
       return $ Drawable ps uvs
-instance Drawables Shape3D where
-  fromShape :: Shape3D -> IO Drawable
-  fromShape x =
+instance Drawables Geo where
+  fromShape :: Geo -> IO Drawable
+  fromShape geo =
     do
-      let ps  = map toVertex4 $ toVec3s x
-          uvs = undefined :: [Vertex4 Double]
+      let ps  = map toVertex4   $ position geo
+          uvs = map toTexCoord2 $ uv geo
       return $ Drawable ps uvs
   
 square :: Vec2 -> Double -> [Vec2]
@@ -112,8 +105,8 @@ liftVec2s = map liftVec2
 toVec2s :: Shape2D -> [Vec2]
 toVec2s (Square pos side) =  square pos side
 
-toVec3s :: Shape3D -> [Vec3]
-toVec3s Geo { positions } = positions
+toVec3s :: Geo -> [Vec3]
+toVec3s Geo { position } = position
 
 toUV :: Projection -> [TexCoord2 Double]
 toUV Planar =
@@ -130,16 +123,16 @@ toTexCoord2s = map toTexCoord2
 projectPlanar :: [Vec2] -> [TexCoord2 Double]
 projectPlanar      = map $ uncurry TexCoord2
     
--- < Reading PGeo > --------------------------------------------------------
+-- < Reading Geo > --------------------------------------------------------
 
 newtype Position = Position [Vec3] deriving Show
 newtype UV       = UV       [Vec3] deriving Show
 
-instance FromJSON PGeo where
+instance FromJSON Geo where
   parseJSON (Object o) =
-     PGeo
-       <$> ((o .: "PGeo") >>= (.: "position"))
-       <*> ((o .: "PGeo") >>= (.: "uv"))
+     Geo
+       <$> ((o .: "Geo") >>= (.: "position"))
+       <*> ((o .: "Geo") >>= (.: "uv"))
   parseJSON _ = mzero
 
 instance FromJSON Position where
@@ -166,17 +159,17 @@ jsonFile = "src/model.pgeo"
 getJSON :: FilePath -> IO B.ByteString
 getJSON  = B.readFile
 
-readPGeo :: IO ([Vec3], [Vec3])
-readPGeo =
+--readGeo :: IO ([Vec3], [Vec3])
+readGeo :: IO Geo
+readGeo =
   do
-    d <- (eitherDecode <$> getJSON jsonFile) :: IO (Either String PGeo)
-    let positions = (pgeo_positions . fromEitherDecode) d
-    let uvs       = (uv             . fromEitherDecode) d
-    return ( positions
-           , uvs)
+    d <- (eitherDecode <$> getJSON jsonFile) :: IO (Either String Geo)
+    let ps        = (position      . fromEitherDecode) d
+    let uvs       = (uv            . fromEitherDecode) d
+    return $ Geo ps uvs
 
       where
-        fromEitherDecode = fromMaybe (PGeo [] []) . fromEither
+        fromEitherDecode = fromMaybe (Geo [] []) . fromEither
         fromEither d =
           case d of
             Left err -> Nothing
@@ -254,8 +247,8 @@ initResources dw offset = do
     --
 
     --let uvs = uv model
-    geo <- readPGeo
-    let uv  = toTexCoord2s $ (\(_, uv) -> uv) geo
+    geo <- readGeo
+    let uv  = undefined :: [TexCoord2 Double] --toTexCoord2s $ (\(_, uv) -> uv) geo
 
     textureBuffer <- genObjectName
     bindBuffer ArrayBuffer $= Just textureBuffer
@@ -303,13 +296,12 @@ animate title winWidth winHeight sf = do
             return (dt, Event . SDL.eventPayload <$> mEvent) 
 
         renderOutput _ (Game offset _, shouldExit) = do -- | add (winx, winy) and process it similar to (offset)
-            -- let ps  = pgeo_positions model
-            -- let geo = Geo ps
-            geo <- readPGeo
-            -- TODO : pass state
-            --drawable <- fromShape $ Geo $ (\(ps, _) -> ps) geo
-            drawable <- fromShape $ Geo $ (\(ps, _) -> ps) geo
-            --draw window ( fromShape $ Geo $ (\(ps, _) -> ps) geo ) offset
+          
+            -- TODO : Game -> Geo
+            -- instead of reading a file with Geo, read it from Game (state)
+            geo <- readGeo
+            drawable <- fromShape geo
+
             draw window drawable offset
             return shouldExit 
 
@@ -320,6 +312,8 @@ animate title winWidth winHeight sf = do
 
     closeWindow window
 
+--fromGeo :: a -> 
+      
 -- < Game Logic > ---------------------------------------------------------
 data GameStage = GameIntro
                | GamePlaying
