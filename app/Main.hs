@@ -26,23 +26,6 @@ import Input
 
 -- < NGL (NGL is not a Graphics Library) > --------------------------------
 
-data Projection
-   = Planar
-   deriving Show
-
-data Shape2D
-   = Square Vec2 Size
-   deriving Show
-
-data Geo
-  =
-    Geo
-    {
-      position :: [Vec3]
-    , uv       :: [Vec3]
-    }
-  deriving Show
-
 data Drawable
   =
     Drawable
@@ -61,6 +44,34 @@ instance Vec2Vertex Vec3 where
   toVertex4 :: Vec3 -> Vertex4 Double
   toVertex4 (k, l, m) = Vertex4 k l m 1
 
+-- < 2D Shapes > -----------------------------------------------------------
+data Shape2D
+   = Square Vec2 Size
+   deriving Show
+
+square :: Vec2 -> Double -> [Vec2]
+square pos side = [p1, p2, p3,
+                   p1, p3, p4]
+    where          
+        x = fst pos
+        y = snd pos
+        r = side/2 
+        p1 = (x + r, y + r)
+        p2 = (x - r, y + r)
+        p3 = (x - r, y - r)
+        p4 = (x + r, y - r)
+
+-- < 3D Shapes > -----------------------------------------------------------
+data Geo
+  =
+    Geo
+    {
+      position :: [Vec3]
+    , uv       :: [Vec3]
+    }
+  deriving Show
+
+-- < Shapes to Drawable > --------------------------------------------------
 class Drawables a where
   toDrawable :: a -> IO Drawable
 instance Drawables Shape2D where
@@ -78,17 +89,10 @@ instance Drawables Geo where
           uvs = map toTexCoord2 $ uv geo
       return $ Drawable ps uvs
   
-square :: Vec2 -> Double -> [Vec2]
-square pos side = [p1, p2, p3,
-                   p1, p3, p4]
-    where          
-        x = fst pos
-        y = snd pos
-        r = side/2 
-        p1 = (x + r, y + r)
-        p2 = (x - r, y + r)
-        p3 = (x - r, y - r)
-        p4 = (x + r, y - r)
+-- < Texturing > ----------------------------------------------------------
+data Projection
+   = Planar
+   deriving Show
 
 toUV :: Projection -> [TexCoord2 Double]
 toUV Planar =
@@ -106,7 +110,6 @@ projectPlanar :: [Vec2] -> [TexCoord2 Double]
 projectPlanar      = map $ uncurry TexCoord2
     
 -- < Reading Geo > --------------------------------------------------------
-
 newtype Position = Position [Vec3] deriving Show
 newtype UV       = UV       [Vec3] deriving Show
 
@@ -195,18 +198,15 @@ draw window drawable offset = do
 -- < OpenGL > -------------------------------------------------------------
 data Descriptor = Descriptor VertexArrayObject ArrayIndex NumArrayIndices
 
-
--- * TODO : same, state passing is clumsy and incomplete
---initResources :: [Vertex4 Double] -> Double -> IO Descriptor
 initResources :: Drawable -> Double -> IO Descriptor
-initResources dw offset = do
+initResources drawable offset = do
     triangles <- genObjectName
     bindVertexArrayObject $= Just triangles
 
     --
     -- Declaring VBO: vertices
     --
-    let vs          = verts dw
+    let vs          = verts drawable
         numVertices = length vs
 
     vertexBuffer <- genObjectName
@@ -224,7 +224,7 @@ initResources dw offset = do
     --
     -- Declaring VBO: UVs
     --
-    let uv  = uvs dw
+    let uv  = uvs drawable
 
     textureBuffer <- genObjectName
     bindBuffer ArrayBuffer $= Just textureBuffer
@@ -252,7 +252,6 @@ bufferOffset :: Integral a => a -> Ptr b
 bufferOffset = plusPtr nullPtr . fromIntegral
 
 -- < Animate > ------------------------------------------------------------
-
 type WinInput = Event SDL.EventPayload
 type WinOutput = (Game, Bool)
 
@@ -284,31 +283,31 @@ animate title winWidth winHeight sf = do
 
     closeWindow window
 
---fromGeo :: a -> 
-      
 -- < Game Logic > ---------------------------------------------------------
+type Pos      = (Double, Double)
 type Vec2     = (Double, Double)
 type Vec3     = (Double, Double, Double)
 
-data GameStage = GameIntro
-               | GamePlaying
-               | GameFinished
-               | GameMenu
-               deriving Show
+-- meta game state
+data GameStage =
+     GameIntro
+   | GamePlaying
+   | GameFinished
+   | GameMenu
+   deriving Show
 
+-- game state
 data Game =
      Game
      { -- Game State
        pVal     :: Double
      , geometry :: Geo
+     --, tr       :: [] -- M4
      -- , pPos  :: Double    -- Player Position
      -- , bPos  :: Pos       -- Ball   Position
      , gStg  :: GameStage -- Game   Stage
      } 
      deriving Show
-
-type Pos  = (Double, Double)
-
 
 mainGame :: Game -> SF AppInput Game
 mainGame initGame = 
