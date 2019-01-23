@@ -15,8 +15,9 @@ import Foreign.C
 import Foreign.Marshal.Array                  (withArray)
 import Foreign.Ptr                            (plusPtr, nullPtr, Ptr)
 import Foreign.Storable                       (sizeOf)
-import FRP.Yampa
-import Graphics.Rendering.OpenGL as GL hiding (Size, Position, Point, position)
+import FRP.Yampa                            hiding (identity)
+import Graphics.Rendering.OpenGL      as GL hiding (Size, Position, Point, position)
+import Linear.Matrix
 import qualified Data.ByteString.Lazy as B
 
 import SDL                             hiding (Point, Vec2, Vec3, Event)
@@ -181,31 +182,31 @@ closeWindow window = do
     SDL.destroyWindow window
     SDL.quit
 
+draw :: SDL.Window -> Game -> IO ()
+draw window game =
+  do
+    (Descriptor triangles firstIndex numVertices) <- initResources game
 
--- * TODO : (Drawable -> Double) is, effectively, a state passing, refactor to more scalable
--- i.e. pass a state data structure instead
-draw :: SDL.Window -> Drawable -> Double -> IO ()
-draw window drawable offset = do
-      (Descriptor triangles firstIndex numVertices) <- initResources drawable offset
+    GL.clearColor $= Color4 0 0 0 1
+    GL.clear [ColorBuffer]
+    bindVertexArrayObject $= Just triangles
+    drawArrays Triangles firstIndex numVertices
 
-      GL.clearColor $= Color4 0 0 0 1
-      GL.clear [ColorBuffer]
-      bindVertexArrayObject $= Just triangles
-      drawArrays Triangles firstIndex numVertices
-
-      SDL.glSwapWindow window
+    SDL.glSwapWindow window
 
 -- < OpenGL > -------------------------------------------------------------
 data Descriptor = Descriptor VertexArrayObject ArrayIndex NumArrayIndices
 
-initResources :: Drawable -> Double -> IO Descriptor
-initResources drawable offset = do
+initResources :: Game -> IO Descriptor
+initResources game = do
+  
     triangles <- genObjectName
     bindVertexArrayObject $= Just triangles
 
     --
     -- Declaring VBO: vertices
     --
+    drawable <- toDrawable (geometry game)
     let vs          = verts drawable
         numVertices = length vs
 
@@ -242,9 +243,11 @@ initResources drawable offset = do
         ShaderInfo FragmentShader (FileSource "shaders/shader.frag")]
     currentProgram $= Just program
 
+    --
     -- Set Uniforms
+    --
     location <- get (uniformLocation program "fTime")
-    uniform location $= (realToFrac offset :: GLfloat)
+    uniform location $= (realToFrac (pVal game) :: GLfloat)
 
     return $ Descriptor triangles firstIndex (fromIntegral numVertices)    
 
@@ -271,9 +274,9 @@ animate title winWidth winHeight sf = do
             mEvent <- SDL.pollEvent                          
             return (dt, Event . SDL.eventPayload <$> mEvent) 
 
-        renderOutput _ (Game offset geo _, shouldExit) = do -- | add (winx, winy) and process it similar to (offset)
-            drawable <- toDrawable geo
-            draw window drawable offset
+        renderOutput _ (game, shouldExit) =
+          do
+            draw window game
             return shouldExit 
 
     reactimate (return NoEvent)
@@ -299,22 +302,20 @@ data GameStage =
 -- game state
 data Game =
      Game
-     { -- Game State
+     { 
        pVal     :: Double
      , geometry :: Geo
-     --, tr       :: [] -- M4
-     -- , pPos  :: Double    -- Player Position
-     -- , bPos  :: Pos       -- Ball   Position
-     , gStg  :: GameStage -- Game   Stage
+     , pos1     :: M44 Double
+     , gStg     :: GameStage
      } 
      deriving Show
 
 mainGame :: Game -> SF AppInput Game
 mainGame initGame = 
   loopPre initGame $ 
-  proc (input, gameState) -> do
-    gs <- case gStg gameState of
-            GameIntro   -> gameIntro   -< (input, gameState)
+  proc (input, game) -> do
+    gs <- case gStg game of
+            GameIntro   -> gameIntro   -< (input, game)
             GamePlaying -> gamePlay initGame -< input
     returnA -< (gs, gs)
 
@@ -322,9 +323,9 @@ gameIntro :: SF (AppInput, Game) Game
 gameIntro =
   switch sf cont        
      where sf =
-             proc (input, gameState) -> do
-               introState <- returnA -< gameState
-               playState  <- returnA -< gameState { gStg =  GamePlaying }
+             proc (input, game) -> do
+               introState <- returnA -< game
+               playState  <- returnA -< game { gStg =  GamePlaying }
                skipE      <- key SDL.ScancodeSpace "Pressed" -< input
                waitE      <- after loadDelay () -< ()
                returnA    -< (introState, (skipE `lMerge` waitE) `tag` playState)
@@ -333,13 +334,13 @@ gameIntro =
                returnA  -< game
 
 gamePlay :: Game -> SF AppInput Game
-gamePlay gameState =
-    switch sf (const (mainGame gameState))        
+gamePlay game =
+    switch sf (const (mainGame game))        
      where sf =
              proc input -> do
-               gameState <- gameSession gameState -< input
+               game <- update game -< input
                reset     <- key SDL.ScancodeSpace "Pressed" -< input
-               returnA   -< (gameState, reset)
+               returnA   -< (game, reset)
 
 playerVal :: Double -> SF AppInput Double
 playerVal pp0 =
@@ -376,11 +377,14 @@ incVal pp0 v0 =
                            , keyRight ] `tag` p) :: (Double, Event Double)
          cont = playerVal
 
-gameSession :: Game -> SF AppInput Game
-gameSession gameState = 
+defM44 :: M44 Double
+defM44 = identity
+
+update :: Game -> SF AppInput Game
+update game = 
   proc input -> do
-       pval  <- playerVal $ pVal gameState -< input
-       returnA -< Game pval (geometry gameState) GamePlaying
+       val     <- playerVal $ pVal game -< input
+       returnA -< Game val (geometry game) (pos1 game) GamePlaying
 
 handleExit :: SF AppInput Bool
 handleExit = quitEvent >>^ isEvent
@@ -389,7 +393,7 @@ initGame :: IO Game
 initGame =
   do
     geo <- readPGeo jsonFile
-    let initGame = Game 0.0 geo GameIntro
+    let initGame = Game 0.0 geo defM44 GameIntro
     return initGame
 
 -- < Global Constants > ---------------------------------------------------
