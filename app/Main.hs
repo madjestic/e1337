@@ -8,24 +8,22 @@ module Main where
 
 import Control.Concurrent
 import Control.Monad
-import Data.Aeson                             hiding (withArray)
-import Data.Maybe                             (fromMaybe)
 import Data.Text                              (Text)
 import Foreign.C                              
 import Foreign.Marshal.Array                  (withArray)
 import Foreign.Ptr                            (plusPtr, nullPtr, Ptr)
 import Foreign.Storable                       (sizeOf)
-import FRP.Yampa                            hiding (identity)
-import Graphics.Rendering.OpenGL      as GL hiding (Size, Position, Point, position)
+import FRP.Yampa                              hiding (identity)
+import Graphics.Rendering.OpenGL as GL        hiding (Size, Position, Point, position)
 import Linear.Matrix
-import qualified Data.ByteString.Lazy as B
-
-import SDL                             hiding (Point, Vec2, Vec3, Event)
+import SDL                                    hiding (Point, Vec2, Vec3, Event)
 
 import NGL.LoadShaders
+import Game
+import Geometry
 import Input
 
--- < NGL (NGL is not a Graphics Library) > --------------------------------
+-- < NGL (NGL is not a Graphics Library) > -------------------------------------
 
 data Drawable
   =
@@ -36,12 +34,12 @@ data Drawable
     }
 type Size       = Double
 
-class Vec2Vertex a where
+class FromVector a where
   toVertex4  :: a -> Vertex4 Double
-instance Vec2Vertex Vec2 where
+instance FromVector Vec2 where
   toVertex4 :: Vec2 -> Vertex4 Double
   toVertex4 (k, l)    = Vertex4 k l 0 1
-instance Vec2Vertex Vec3 where
+instance FromVector Vec3 where
   toVertex4 :: Vec3 -> Vertex4 Double
   toVertex4 (k, l, m) = Vertex4 k l m 1
 
@@ -61,16 +59,6 @@ square pos side = [p1, p2, p3,
         p2 = (x - r, y + r)
         p3 = (x - r, y - r)
         p4 = (x + r, y - r)
-
--- < 3D Shapes > -----------------------------------------------------------
-data Geo
-  =
-    Geo
-    {
-      position :: [Vec3]
-    , uv       :: [Vec3]
-    }
-  deriving Show
 
 -- < Shapes to Drawable > --------------------------------------------------
 class Drawables a where
@@ -109,55 +97,12 @@ toTexCoord2s = map toTexCoord2
 
 projectPlanar :: [Vec2] -> [TexCoord2 Double]
 projectPlanar      = map $ uncurry TexCoord2
-    
--- < Reading Geo > --------------------------------------------------------
-newtype Position = Position [Vec3] deriving Show
-newtype UV       = UV       [Vec3] deriving Show
 
-instance FromJSON Geo where
-  parseJSON (Object o) =
-     Geo
-       <$> ((o .: "PGeo") >>= (.: "position"))
-       <*> ((o .: "PGeo") >>= (.: "uv"))
-  parseJSON _ = mzero
-
-instance FromJSON Position where
-    parseJSON (Object o) =
-      do
-        pts <- o .: "position"
-        Position <$> parseJSON pts
-    parseJSON _ = mzero
-
-instance FromJSON UV where
-    parseJSON (Object o) =
-      do
-        uv <- o .: "uv"
-        UV <$> parseJSON uv
-    parseJSON _ = mzero
-
-type Positions = [Vertex4 Double] 
-data Transform = Transform {}
-
-jsonFile :: FilePath
-jsonFile = "src/model.pgeo"
-
-getJSON :: FilePath -> IO B.ByteString
-getJSON  = B.readFile
-
-readPGeo :: FilePath -> IO Geo
-readPGeo jsonFile =
-  do
-    d <- (eitherDecode <$> getJSON jsonFile) :: IO (Either String Geo)
-    let ps        = (position . fromEitherDecode) d
-    let uvs       = (uv       . fromEitherDecode) d
-    return $ Geo ps uvs
-
-      where
-        fromEitherDecode = fromMaybe (Geo [] []) . fromEither
-        fromEither d =
-          case d of
-            Left err -> Nothing
-            Right ps -> Just ps
+-- RRRRRR  EEEEEEE NN   NN DDDDD   EEEEEEE RRRRRR  IIIII NN   NN   GGGG  
+-- RR   RR EE      NNN  NN DD  DD  EE      RR   RR  III  NNN  NN  GG  GG 
+-- RRRRRR  EEEEE   NN N NN DD   DD EEEEE   RRRRRR   III  NN N NN GG      
+-- RR  RR  EE      NN  NNN DD   DD EE      RR  RR   III  NN  NNN GG   GG 
+-- RR   RR EEEEEEE NN   NN DDDDDD  EEEEEEE RR   RR IIIII NN   NN  GGGGGG 
                   
 -- < Rendering > ----------------------------------------------------------
 openWindow :: Text -> (CInt, CInt) -> IO SDL.Window
@@ -182,10 +127,15 @@ closeWindow window = do
     SDL.destroyWindow window
     SDL.quit
 
+-- TODO : Game -> Camera -> [Object]
+render :: Game -> Drawable
+render = undefined
+
+-- draw :: SDL.Window -> Drawable -> IO ()
 draw :: SDL.Window -> Game -> IO ()
-draw window game =
+draw window drw =
   do
-    (Descriptor triangles firstIndex numVertices) <- initResources game
+    (Descriptor triangles firstIndex numVertices) <- initResources drw
 
     GL.clearColor $= Color4 0 0 0 1
     GL.clear [ColorBuffer]
@@ -193,6 +143,16 @@ draw window game =
     drawArrays Triangles firstIndex numVertices
 
     SDL.glSwapWindow window
+
+
+--  .d88888b. 8888888b. 8888888888888b    888 .d8888b. 888      
+-- d88P" "Y88b888   Y88b888       8888b   888d88P  Y88b888      
+-- 888     888888    888888       88888b  888888    888888      
+-- 888     888888   d88P8888888   888Y88b 888888       888      
+-- 888     8888888888P" 888       888 Y88b888888  88888888      
+-- 888     888888       888       888  Y88888888    888888      
+-- Y88b. .d88P888       888       888   Y8888Y88b  d88P888      
+--  "Y88888P" 888       8888888888888    Y888 "Y8888P8888888888 
 
 -- < OpenGL > -------------------------------------------------------------
 data Descriptor = Descriptor VertexArrayObject ArrayIndex NumArrayIndices
@@ -254,6 +214,16 @@ initResources game = do
 bufferOffset :: Integral a => a -> Ptr b
 bufferOffset = plusPtr nullPtr . fromIntegral
 
+
+--        d8888888b    8888888888888b     d888       d8888888888888888888888888 
+--       d888888888b   888  888  8888b   d8888      d88888    888    888        
+--      d88P88888888b  888  888  88888b.d88888     d88P888    888    888        
+--     d88P 888888Y88b 888  888  888Y88888P888    d88P 888    888    8888888    
+--    d88P  888888 Y88b888  888  888 Y888P 888   d88P  888    888    888        
+--   d88P   888888  Y88888  888  888  Y8P  888  d88P   888    888    888        
+--  d8888888888888   Y8888  888  888   "   888 d8888888888    888    888        
+-- d88P     888888    Y8888888888888       888d88P     888    888    8888888888 
+
 -- < Animate > ------------------------------------------------------------
 type WinInput = Event SDL.EventPayload
 type WinOutput = (Game, Bool)
@@ -276,7 +246,7 @@ animate title winWidth winHeight sf = do
 
         renderOutput _ (game, shouldExit) =
           do
-            draw window game
+            draw window game -- game => (game -> renderable
             return shouldExit 
 
     reactimate (return NoEvent)
@@ -286,29 +256,20 @@ animate title winWidth winHeight sf = do
 
     closeWindow window
 
+
+--  .d8888b.88888888888    d8888888888888888888888888888b     d888       d8888 .d8888b. 888    8888888888888b    8888888888888 
+-- d88P  Y88b   888       d88888    888    888       8888b   d8888      d88888d88P  Y88b888    888  888  8888b   888888        
+-- Y88b.        888      d88P888    888    888       88888b.d88888     d88P888888    888888    888  888  88888b  888888        
+--  "Y888b.     888     d88P 888    888    8888888   888Y88888P888    d88P 888888       8888888888  888  888Y88b 8888888888    
+--     "Y88b.   888    d88P  888    888    888       888 Y888P 888   d88P  888888       888    888  888  888 Y88b888888        
+--       "888   888   d88P   888    888    888       888  Y8P  888  d88P   888888    888888    888  888  888  Y88888888        
+-- Y88b  d88P   888  d8888888888    888    888       888   "   888 d8888888888Y88b  d88P888    888  888  888   Y8888888        
+--  "Y8888P"    888 d88P     888    888    8888888888888       888d88P     888 "Y8888P" 888    8888888888888    Y8888888888888 
+
 -- < Game Logic > ---------------------------------------------------------
 type Pos      = (Double, Double)
 type Vec2     = (Double, Double)
 type Vec3     = (Double, Double, Double)
-
--- meta game state
-data GameStage =
-     GameIntro
-   | GamePlaying
-   | GameFinished
-   | GameMenu
-   deriving Show
-
--- game state
-data Game =
-     Game
-     { 
-       pVal     :: Double
-     , geometry :: Geo
-     , pos1     :: M44 Double
-     , gStg     :: GameStage
-     } 
-     deriving Show
 
 mainGame :: Game -> SF AppInput Game
 mainGame initGame = 
@@ -342,8 +303,8 @@ gamePlay game =
                reset     <- key SDL.ScancodeSpace "Pressed" -< input
                returnA   -< (game, reset)
 
-playerVal :: Double -> SF AppInput Double
-playerVal pp0 =
+updatePVal :: Double -> SF AppInput Double
+updatePVal pp0 =
   switch sf cont
     where
       sf = proc input -> do
@@ -360,11 +321,11 @@ playerVal pp0 =
                          , keyRight ] `tag` res)
 
       cont (x, keyLeft, keyRight) =
-        if | isEvent keyLeft -> incVal x (-0.5)
-           | otherwise       -> incVal x   0.5
+        if | isEvent keyLeft -> updatePVal' x (-0.5)
+           | otherwise       -> updatePVal' x   0.5
 
-incVal :: Double -> Double -> SF AppInput Double
-incVal pp0 v0 =
+updatePVal' :: Double -> Double -> SF AppInput Double
+updatePVal' pp0 v0 =
   switch sf cont
     where
          sf = proc input -> do
@@ -375,7 +336,7 @@ incVal pp0 v0 =
             returnA -< (p, mergeEvents
                            [ keyLeft  
                            , keyRight ] `tag` p) :: (Double, Event Double)
-         cont = playerVal
+         cont = updatePVal
 
 defM44 :: M44 Double
 defM44 = identity
@@ -383,11 +344,15 @@ defM44 = identity
 update :: Game -> SF AppInput Game
 update game = 
   proc input -> do
-       val     <- playerVal $ pVal game -< input
-       returnA -< Game val (geometry game) (pos1 game) GamePlaying
+       pVal     <- updatePVal $ pVal game -< input
+       --pos update
+       returnA -< Game pVal (geometry game) (pos game) GamePlaying
 
 handleExit :: SF AppInput Bool
 handleExit = quitEvent >>^ isEvent
+
+jsonFile :: FilePath
+jsonFile = "src/model.pgeo"
 
 initGame :: IO Game
 initGame =
@@ -396,11 +361,26 @@ initGame =
     let initGame = Game 0.0 geo defM44 GameIntro
     return initGame
 
+--  CCCCC   OOOOO  NN   NN  SSSSS  TTTTTTT   AAA   NN   NNn TTTTTTT  SSSSS  
+-- CC    C OO   OO NNN  NN SS        TTT    AAAAA  NNN  NN   TTT   SS      
+-- CC      OO   OO NN N NN  SSSSS    TTT   AA   AA NN N NN   TTT    SSSSS  
+-- CC    C OO   OO NN  NNN      SS   TTT   AAAAAAA NN  NNN   TTT        SS 
+--  CCCCC   OOOO0  NN   NN  SSSSS    TTT   AA   AA NN   NN   TTT    SSSSS  
+
 -- < Global Constants > ---------------------------------------------------
 mBlur     = 0.25 :: Float
 loadDelay = 2.0  :: Double
 resX      = 800  :: CInt
 resY      = 600  :: CInt
+
+-- 888b     d888       d88888888888888b    888 
+-- 8888b   d8888      d88888  888  8888b   888 
+-- 88888b.d88888     d88P888  888  88888b  888 
+-- 888Y88888P888    d88P 888  888  888Y88b 888 
+-- 888 Y888P 888   d88P  888  888  888 Y88b888 
+-- 888  Y8P  888  d88P   888  888  888  Y88888 
+-- 888   "   888 d8888888888  888  888   Y8888 
+-- 888       888d88P     8888888888888    Y888 
 
 -- < Main Function > -----------------------------------------------------------
 main :: IO ()
@@ -411,46 +391,3 @@ main = do
     resX
     resY
     (parseWinInput >>> ((mainGame initState) &&& handleExit))
-
-{-
-GameState:
-    Position : Pos          :: V3, 64bit
-             , Time         :: Integer + Float or Double
-             , 3xQuaternion :: 3x4, Float
-                 (acceleration for pitch, roll, yaw)
-             --> 12 values + 4 = 16 -> M4
-
-    Pos0    : Pos
-            , Time
-            , Orient       :: 2xQuat, 16bit
-            --> 4 + 4 = 8
-      // for Stellar Bodies:
-            , probablity of collision -> collision map (Size -> Prob)
-
-    Planet : Time
-           , Civilization
-
-    Civilization : Time
-                 , Technology
-
-    Technology : Technology Tree -> a point cloud, representing ideas, which have mass, so that ideas interact with gravity.  Researcers are like particles, circling around, eventually orbiting and colliding with an idea.  Orbitting an idea gives a bonus, hitting an idea gives another bonus and maybe extras, and excludes it from the PC and the sim continues.  Different ideologies or mentalities, defined as social factors, effect the geometry of the idea-space. Thus to some societies certain technologies and other objects from the idea-space take shorter or more trivial paths than to other societies, certain objects may be missing in the idea-space of certain societies and are only obtainable via interaction with other societies, this the idea-spaces are complementrary on the sense of object repertoir, the goemtry remains different. For a society that obtains originally missing idea is like finding a new branch of science, or inserting new objects into an idea-space.
-
-, Gravity Sim to represent scientific effort
-  with research units (spheres) orbit each other and collide,
-  collision representing a scientific discovery or a breakthrough.
-, Physical Params
-
-, Terrain - some sort of evolution, for now can be an Int to define a state variant
-
-
-Cosmic Body:
-  p', Pivot     V3 (center of mass)
-  p , Position  V3 + r , Orientation Q4 -> M2x4 (?)
-  v , Velocity, V3
-  m , Mass      F1
-  d , Density,  F1
-
-
-  a , Acceleration V3
-  a', Angular Velocity 2xQuat (rotation speed)
--}
