@@ -32,13 +32,19 @@ library
               , sdl2       >=2.4.1.0
               , text       >=1.2.2.2
               , linear     >=1.20.8
+              , GLUtil     >=0.10.3
   exposed-modules:
                   Input
                 , Geometry
                 , Game
+                , Rendering
   other-modules:
                 Paths_e1337
-                                                    
+              , Geo
+              , LoadShaders
+              , Shape2D
+              , FromVector
+              , Drawables                                                    
   default-language:                   Haskell2010
                                         
 executable e1337
@@ -58,11 +64,14 @@ executable e1337
               , bytestring >=0.10.8.1
               , sdl2       >=2.4.1.0
               , linear     >=1.20.8
+              , GLUtil     >=0.10.3
   other-modules:
                 Paths_e1337
               , Game
               , Geometry
               , Input
               , NGL.LoadShaders
+              , Rendering
+              , Geo
   default-language:    Haskell2010
 

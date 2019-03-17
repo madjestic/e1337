@@ -78,32 +78,32 @@ data.get('PGeo').update(jsonEntry)
 with open(fileOut, 'w') as outfile:
     json.dump(data, outfile)
 
-### FORMAT Geometry.hs ###
-dataStr = ""
-space    = "          "
+# ### FORMAT Geometry.hs ###
+# dataStr = ""
+# space    = "          "
 
-dataStr += "module Geometry where       \n" # refactor as module Geometry where
-dataStr += "                            \n"
-dataStr += "import Types                \n"
-dataStr += "                            \n"
-dataStr += "model :: PGeo               \n"
-dataStr += "model =                     \n"
-dataStr += "  PGeo ps uvs               \n"
-dataStr += "  where                     \n"
-dataStr += "    uvs = [                 \n"
-for vTuple in vtxTuples:
-    dataStr += space + str ( tuple (vTuple)) +  ",\n"
-dataStr  = dataStr[:-2] + "\n"              # remove the trailing ','
-dataStr += "          ]                 \n"
-dataStr += "    ps  = [                 \n"
-for ptTuple in ptTuples:
-    dataStr += space + str ( tuple (ptTuple)) + ",\n"
-dataStr  = dataStr[:-2] + "\n"              # remove the trailing ','
-dataStr += "          ]                 \n"    
+# dataStr += "module Geometry where       \n" # refactor as module Geometry where
+# dataStr += "                            \n"
+# dataStr += "import Types                \n"
+# dataStr += "                            \n"
+# dataStr += "model :: PGeo               \n"
+# dataStr += "model =                     \n"
+# dataStr += "  PGeo ps uvs               \n"
+# dataStr += "  where                     \n"
+# dataStr += "    uvs = [                 \n"
+# for vTuple in vtxTuples:
+#     dataStr += space + str ( tuple (vTuple)) +  ",\n"
+# dataStr  = dataStr[:-2] + "\n"              # remove the trailing ','
+# dataStr += "          ]                 \n"
+# dataStr += "    ps  = [                 \n"
+# for ptTuple in ptTuples:
+#     dataStr += space + str ( tuple (ptTuple)) + ",\n"
+# dataStr  = dataStr[:-2] + "\n"              # remove the trailing ','
+# dataStr += "          ]                 \n"    
 
-# dataStr += str (ptTuples)
+# # dataStr += str (ptTuples)
 
-strOut = "Geometry.hs"    
-with open(strOut, 'w') as outfile:
-    outfile.write (dataStr)
-outfile.close()
+# strOut = "Geometry.hs"    
+# with open(strOut, 'w') as outfile:
+#     outfile.write (dataStr)
+# outfile.close()

@@ -9,26 +9,32 @@
 
 module Game
   ( Game(..)
-  , GameStage(..)
+  , Stage(..)
+  , Object(..)
   ) where
 
 import Geometry
 import Linear.Matrix
+import Linear.V4
 
 -- meta game state
-data GameStage =
+data Stage =
      GameIntro
    | GamePlaying
    | GameFinished
    | GameMenu
    deriving Show
 
+data Object =
+     Object
+     { scalar    :: Double
+     , geometry  :: Geo
+     , transform :: M44 Double
+     } deriving Show
+
 -- game state
 data Game =
      Game
-     { pVal     :: Double
-     , geometry :: Geo
-     , pos      :: M44 Double
-     , gStg     :: GameStage
-     } 
-     deriving Show
+     { gStg     :: Stage
+     , object   :: Object
+     } deriving Show
