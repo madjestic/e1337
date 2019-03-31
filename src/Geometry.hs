@@ -34,14 +34,20 @@ instance FromVector Vec3 where
 data Geo
   =  Geo
      {
-       position :: [Vec3]
-     , uv       :: [Vec3]
+       position :: Positions
+     , uv       :: UVs
      , indices  :: [Int]
 --     , normal   :: [Vec3]
-     }
-  deriving Show
+     } deriving Show
 
+-- | TODO : replace Vec3 -> Vec4
 type Vec3     = (Double, Double, Double)
+
+type Colors    = [Vec3]
+type Positions = [Vec3]
+type UVs       = [Vec3] 
+
+--type Vec4     =  (Double, Double, Double)
                      
 -- < Reading Geo > --------------------------------------------------------
 newtype Position = Position [Vec3] deriving Show
@@ -87,6 +93,7 @@ readPGeo jsonFile =
     let ps        = (position . fromEitherDecode) d
     let uvs       = (uv       . fromEitherDecode) d
     let ids       = (indices  . fromEitherDecode) d
+    
     return $ Geo ps uvs ids
 
       where

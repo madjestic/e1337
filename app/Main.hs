@@ -27,6 +27,8 @@ import Input
 import Rendering
 import Drawables
 
+import Debug.Trace as DT
+
 --        d8888888b    8888888888888b     d888       d8888888888888888888888888 
 --       d888888888b   888  888  8888b   d8888      d88888    888    888        
 --      d88P88888888b  888  888  88888b.d88888     d88P888    888    888        
@@ -58,6 +60,8 @@ animate title winWidth winHeight sf = do
 
         renderOutput _ (game, shouldExit) =
           do
+            --_ <- DT.trace "Hello!" $ return ()
+            --_ <- DT.trace ("Game: " ++ show game) $ return ()
             draw window game -- game => (game -> renderable
             return shouldExit 
 
@@ -168,6 +172,7 @@ initGame :: IO Game
 initGame =
   do
     geo <- readPGeo jsonFile
+    --_ <- DT.trace ("Game: " ++ show geo) $ return ()
     let obj = Object 0.0 geo (identity::M44 Double)
     let initGame = Game GameIntro obj
     return initGame

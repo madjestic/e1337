@@ -4,9 +4,6 @@ module Rendering
   ( openWindow
   , closeWindow
   , draw
-  --, initIntroResources
-  , initGameResources
-  , initResources
   , Descriptor(..)
   , Drawable(..)
   ) where
@@ -22,6 +19,7 @@ import Graphics.Rendering.OpenGL as GL hiding (position, Size)
 import SDL                             hiding (Point, Event, Timer, (^+^), (*^), (^-^), dot)
 import SDL.Raw.Video
 import SDL.Raw.Enum
+import Data.List.Split
 
 import LoadShaders
 import Game
@@ -29,24 +27,25 @@ import Geometry
 import Drawables
 import Shape2D
 
+import Debug.Trace as DT
+
 resX = 800 :: Int
 resY = 600 :: Int
 
-toTexCoord2 :: (a, a, a) -> TexCoord2 a
-toTexCoord2 (k, l, m) = TexCoord2 k l
-
-toTexCoord2s :: [(a, a, a)] -> [TexCoord2 a]
-toTexCoord2s = map toTexCoord2 
+toTexCoord3 :: (a, a, a) -> TexCoord3 a
+toTexCoord3 (k, l, m) = TexCoord3 k l m
 
 instance Drawables Geo where
   toDrawable :: Geo -> IO Drawable
   toDrawable geo =
     do
       let ps  = map toVertex4   $ position geo
-          uvs = map toTexCoord2 $ uv geo
-          ids = indices geo
+          uvs = map toTexCoord3 $ uv geo
+          ids = map toGLuint $ indices geo
       return $ Drawable ps uvs ids
 
+toGLuint :: Int -> GLuint
+toGLuint x = fromIntegral x
 
 openWindow :: Text -> (CInt, CInt) -> IO SDL.Window
 openWindow title (sizex,sizey) = do
@@ -54,12 +53,19 @@ openWindow title (sizex,sizey) = do
     SDL.HintRenderScaleQuality $= SDL.ScaleLinear                    
     do renderQuality <- SDL.get SDL.HintRenderScaleQuality          
        when (renderQuality /= SDL.ScaleLinear) $                    
-         putStrLn "Warning: Linear texture filtering not enabled!"  
-     
+         putStrLn "Warning: Linear texture filtering not enabled!"
+         
+    let config = OpenGLConfig { glColorPrecision = V4 8 8 8 0
+                              , glDepthPrecision = 24
+                              , glStencilPrecision = 8
+                              , glMultisampleSamples = 8
+                              , glProfile = Compatibility Normal 2 1}
+
     window <- SDL.createWindow
             "e1337"
-            SDL.defaultWindow {SDL.windowInitialSize = V2 sizex sizey,
-                               SDL.windowOpenGL = Just SDL.defaultOpenGL}
+            SDL.defaultWindow { SDL.windowInitialSize = V2 sizex sizey
+                              , SDL.windowOpenGL      = Just config }
+                               --SDL.windowOpenGL = Just SDL.defaultOpenGL}
     SDL.showWindow window
     _ <- SDL.glCreateContext window
     
@@ -72,21 +78,23 @@ closeWindow window = do
 
 -- < OpenGL > -------------------------------------------------------------
 data Descriptor =
-     Descriptor VertexArrayObject ArrayIndex NumArrayIndices
+     --Descriptor VertexArrayObject ArrayIndex NumArrayIndices
+     Descriptor VertexArrayObject NumArrayIndices
 
 draw :: SDL.Window -> Game -> IO ()
 draw window game =
   do
-    (Descriptor vao firstIndex numVertices) <- initResources game
+    --(Descriptor vao firstIndex numVertices) <- initResources game
+    (Descriptor vao numIndices) <- initGameResources game
 
     GL.clearColor $= Color4 1 0 0 1
     GL.clear [ColorBuffer]
     bindVertexArrayObject $= Just vao
-    drawArrays Triangles firstIndex numVertices
+    --drawArrays Triangles firstIndex numVertices
+    drawElements Triangles numIndices GL.UnsignedInt nullPtr
+    GL.pointSize $= 10
 
-    -- multisampling
-    glSetAttribute SDL_GL_MULTISAMPLEBUFFERS 1
-    glSetAttribute SDL_GL_MULTISAMPLESAMPLES 16
+    cullFace $= Just Back
 
     SDL.glSwapWindow window
 
@@ -101,38 +109,51 @@ loadTex f =
     texture2DWrap $= (Repeated, ClampToEdge)
     return t
 
+initVAO :: [Vertex4 Double] -> [TexCoord3 Double] -> [GLuint] -> IO [GLfloat]
+initVAO ps ts idx =
+  return $ concat $
+    fmap (\i -> (\(Vertex4 x y z w) -> fmap realToFrac [x, y, z, w]) (ps!!(fromIntegral (idx!!i))) ++
+                (\(TexCoord3 u v w) -> fmap realToFrac [u, v, w])    (ts!!(fromIntegral       i))) iter
+      where
+        iter = [0..(length idx)-1]
+
 initGameResources :: Game -> IO Descriptor
 initGameResources game =  
   do
-    drawable <- toDrawable $ (geometry . object) game
-    
     -- | VAO
     vao <- genObjectName
     bindVertexArrayObject $= Just vao
 
+    drw <- toDrawable $ (geometry . object) game
+    vs  <- initVAO (verts drw) (uvs drw) (ids drw)
+    -- _ <- DT.trace ("(verts drw): " ++ show (verts drw)) $ return ()
+    -- _ <- DT.trace ("(uvs drw): "   ++ show (uvs drw)) $ return ()
+    -- _ <- DT.trace (" vs: "         ++ show vs) $ return ()
+
     -- | VBO
     vertexBuffer <- genObjectName
     bindBuffer ArrayBuffer $= Just vertexBuffer
-    let vs          = verts drawable
-        numVertices = length vs
     withArray vs $ \ptr ->
       do
-        let sizev = fromIntegral (numVertices * sizeOf (head vs))
+        let sizev = fromIntegral ((length vs) * sizeOf (head vs))
         bufferData ArrayBuffer $= (sizev, ptr, StaticDraw)
 
     -- | EBO
     elementBuffer <- genObjectName
     bindBuffer ElementArrayBuffer $= Just elementBuffer
-    let indices    = ids drawable
-        numIndices = length indices
+    let indices    = [0..(fromIntegral (length $ ids drw) - 1)] :: [GLuint]
+        numIndices = length indices--3 :: Int
+    -- _ <- DT.trace ("indices: " ++ show indices) $ return ()
+    -- _ <- DT.trace ("ids drw: " ++ show (ids drw)) $ return ()
+    -- _ <- DT.trace ("numIndices: " ++ show numIndices) $ return ()
     withArray indices $ \ptr ->
       do
-        let indicesSize = fromIntegral (numIndices * length indices)
+        let indicesSize = fromIntegral (numIndices * sizeOf (head indices))
         bufferData ElementArrayBuffer $= (indicesSize, ptr, StaticDraw)
         
     -- | Bind the pointer to the vertex attribute data
     let floatSize  = (fromIntegral $ sizeOf (0.0::GLfloat)) :: GLsizei
-        stride     = 8 * floatSize
+        stride     =  7 * floatSize
 
     -- | Positions
     let vPosition  = AttribLocation 0
@@ -143,9 +164,9 @@ initGameResources game =
 
     -- | UV
     let uvCoords   = AttribLocation 1
-        uvOffset   = 6 * floatSize
+        uvOffset   = 4 * floatSize
     vertexAttribPointer uvCoords  $=
-        (ToFloat, VertexArrayDescriptor 2 Float stride (bufferOffset uvOffset))
+        (ToFloat, VertexArrayDescriptor 3 Float stride (bufferOffset uvOffset))
     vertexAttribArray uvCoords    $= Enabled
 
     -- | Shaders
@@ -185,65 +206,7 @@ initGameResources game =
     bindVertexArrayObject         $= Nothing
     bindBuffer ElementArrayBuffer $= Nothing
 
-    --return $ Descriptor vao (fromIntegral numIndices)
-    let firstIndex = 0
-    return $ Descriptor vao firstIndex (fromIntegral numVertices)
-
--- debug, for references purposes
-initResources :: Game -> IO Descriptor
-initResources game = do
-  
-    vao <- genObjectName
-    bindVertexArrayObject $= Just vao
-
-    --
-    -- Declaring VBO: vertices
-    --
-    drawable <- toDrawable $ (geometry . object) game
-    let vs          = verts drawable
-        numVertices = length vs
-
-    vertexBuffer <- genObjectName
-    bindBuffer ArrayBuffer $= Just vertexBuffer
-    withArray vs $ \ptr -> do
-        let size = fromIntegral (numVertices * sizeOf (head vs))
-        bufferData ArrayBuffer $= (size, ptr, StaticDraw)
-
-    let firstIndex = 0
-        vPosition = AttribLocation 0
-    vertexAttribPointer vPosition $=
-        (ToFloat, VertexArrayDescriptor 4 GL.Double 0 (bufferOffset firstIndex))
-    vertexAttribArray vPosition $= Enabled
-
-    --
-    -- Declaring VBO: UVs
-    --
-    let uv  = uvs drawable
-
-    textureBuffer <- genObjectName
-    bindBuffer ArrayBuffer $= Just textureBuffer
-    withArray uv $ \ptr -> do
-        let size = fromIntegral (numVertices * sizeOf (head uv))
-        bufferData ArrayBuffer $= (size, ptr, StaticDraw)
-
-    let uvCoords = AttribLocation 1
-    vertexAttribPointer uvCoords $=
-        (ToFloat, VertexArrayDescriptor 2 GL.Double 0 (bufferOffset firstIndex))
-    vertexAttribArray uvCoords   $= Enabled
-
-    program <- loadShaders [
-        ShaderInfo VertexShader   (FileSource "shaders/shader.vert"),
-        ShaderInfo FragmentShader (FileSource "shaders/shader.frag")]
-    currentProgram $= Just program
-
-    --
-    -- Set Uniforms
-    --
-    location <- get (uniformLocation program "fTime")
-    uniform location $= (realToFrac (scalar . object $ game) :: GLfloat)
-
-    return $ Descriptor vao firstIndex (fromIntegral numVertices)    
-    
+    return $ Descriptor vao (fromIntegral numIndices)
 
 bufferOffset :: Integral a => a -> Ptr b
 bufferOffset = plusPtr nullPtr . fromIntegral

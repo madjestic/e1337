@@ -1,5 +1,5 @@
 all:
 	@echo "Parsing Geometry"
 	@python geoParser.py
-	@echo "copying Geometry.hs to /src"
-	@cp ./Geometry.hs ../src/Geometry.hs
+	@echo "copying model.pgeo to /src"
+	@cp ./model.pgeo ../src/model.pgeo
