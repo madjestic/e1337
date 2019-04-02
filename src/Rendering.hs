@@ -20,12 +20,15 @@ import SDL                             hiding (Point, Event, Timer, (^+^), (*^),
 import SDL.Raw.Video
 import SDL.Raw.Enum
 import Data.List.Split
+import Data.List.Index
 
 import LoadShaders
 import Game
 import Geometry
 import Drawables
 import Shape2D
+
+import Data.Set as DS (fromList, toList)
 
 import Debug.Trace as DT
 
@@ -117,18 +120,85 @@ initVAO ps ts idx =
       where
         iter = [0..(length idx)-1]
 
+         -- :: initVAO   -> Stride -> indexed VAO
+indexedListSet :: [GLfloat] -> Int -> IO [(Int,[GLfloat])]
+indexedListSet vao n =
+  do
+    -- _ <- DT.trace ("vao: " ++ show vao) $ return ()
+    -- _ <- DT.trace ("number of tuples: " ++ show (length result)) $ return ()
+    -- _ <- DT.trace ("result: " ++ show result) $ return ()
+    return result
+      where
+        result = fmap (\x -> x) $ indexed $ DS.toList $ DS.fromList $ chunksOf n $ vao
+
+-- feedback list
+indexedList :: [(Int,[GLfloat])] -> [(Int,[GLfloat])] -> [(Int,[GLfloat])]
+indexedList loa []     = loa
+indexedList loa [x]    = indexedList (matchIndex loa x) []
+indexedList loa (x:xs) = indexedList (matchIndex loa x) xs
+
+matchIndex :: [(Int,[GLfloat])] -> (Int,[GLfloat]) -> [(Int,[GLfloat])]
+matchIndex loa ia@(i, iVal) = fmap (\la@(j, jVal) -> case () of
+                                                _ | iVal == jVal -> ia
+                                                  | otherwise    -> la) loa
+
+           -- [attrs]  -> stride -> [index]
+toIndex :: [GLfloat] -> Int -> IO [Int]
+toIndex vao n =
+  do
+    loa <- return $ indexed $ chunksOf n $ vao
+    --_ <- DT.trace ("loa: " ++ show loa) $ return ()
+    ia  <- indexedListSet vao n
+    --_ <- DT.trace ("ia: " ++ show ia) $ return ()
+    il  <- return $ indexedList loa ia
+    --_ <- DT.trace ("il: " ++ show il) $ return ()
+    result <-return $ fmap (\(i,_) -> i) il
+    --_ <- DT.trace ("result: " ++ show result) $ return ()
+    return result
+
+           -- [attrs]  -> stride -> ([], [index])
+toIndex' :: [GLfloat] -> Int -> IO ([GLfloat],[GLuint])
+toIndex' vao n =
+  do
+    loa <- return $ indexed $ chunksOf n $ vao
+    ia  <- indexedListSet vao n
+    il  <- return $ indexedList loa ia
+    is  <-return $ fmap (\(i,_) -> (fromIntegral i)) il -- indices
+    ils <- indexedListSet vao n
+    let vaoi = concat $ fmap (\x -> snd x) ils
+    return (vaoi, is)
+    
+
+
+-- toGLfloat :: (Int,[GLfloat]) -> [GLfloat]
+-- toGLfloat (_,x) = 
+
+          -- indexedList -> [index] -> vao
+fromIndex :: [(Int,[GLfloat])] -> [Int] -> IO [GLfloat]
+fromIndex ias is = return $ concat $ fmap (\i -> snd (ias!!i)) is
+
 initGameResources :: Game -> IO Descriptor
 initGameResources game =  
   do
+
+    drw <- toDrawable $ (geometry . object) game
+    vsi <- initVAO (verts drw) (uvs drw) (ids drw)
+    _ <- DT.trace ("vsi: " ++ show vsi) $ return ()    
+    is  <- toIndex vsi 7
+    _ <- DT.trace ("is: " ++ show is) $ return ()
+    iss <- toIndex' vsi 7
+    _ <- DT.trace ("iss: " ++ show iss) $ return ()    
+    vis <- indexedListSet vsi 7
+    _ <- DT.trace ("vis: " ++ show is) $ return ()
+    vs'  <- fromIndex vis is
+    _ <- DT.trace ("vs': " ++ show vs') $ return ()
+    let vs = fst iss
+    _ <- DT.trace ("vs: " ++ show vs) $ return ()
+    --_   <- indexedListSet vs 7
+
     -- | VAO
     vao <- genObjectName
     bindVertexArrayObject $= Just vao
-
-    drw <- toDrawable $ (geometry . object) game
-    vs  <- initVAO (verts drw) (uvs drw) (ids drw)
-    -- _ <- DT.trace ("(verts drw): " ++ show (verts drw)) $ return ()
-    -- _ <- DT.trace ("(uvs drw): "   ++ show (uvs drw)) $ return ()
-    -- _ <- DT.trace (" vs: "         ++ show vs) $ return ()
 
     -- | VBO
     vertexBuffer <- genObjectName
@@ -141,11 +211,9 @@ initGameResources game =
     -- | EBO
     elementBuffer <- genObjectName
     bindBuffer ElementArrayBuffer $= Just elementBuffer
-    let indices    = [0..(fromIntegral (length $ ids drw) - 1)] :: [GLuint]
-        numIndices = length indices--3 :: Int
-    -- _ <- DT.trace ("indices: " ++ show indices) $ return ()
-    -- _ <- DT.trace ("ids drw: " ++ show (ids drw)) $ return ()
-    -- _ <- DT.trace ("numIndices: " ++ show numIndices) $ return ()
+    --let indices    = [0] :: [GLuint]--reverse $ snd iss --[0..(fromIntegral (length $ ids drw) - 1)] :: [GLuint]
+    let indices    = snd iss --[0..(fromIntegral (length $ ids drw) - 1)] :: [GLuint]
+        numIndices = length indices
     withArray indices $ \ptr ->
       do
         let indicesSize = fromIntegral (numIndices * sizeOf (head indices))
@@ -159,7 +227,7 @@ initGameResources game =
     let vPosition  = AttribLocation 0
         posOffset  = 0 * floatSize
     vertexAttribPointer vPosition $=
-        (ToFloat, VertexArrayDescriptor 3 Float stride (bufferOffset posOffset))
+        (ToFloat, VertexArrayDescriptor 4 Float stride (bufferOffset posOffset))
     vertexAttribArray vPosition   $= Enabled
 
     -- | UV
