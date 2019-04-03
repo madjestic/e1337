@@ -124,18 +124,18 @@ initVAO ps ts idx =
 indexedListSet :: [GLfloat] -> Int -> IO [(Int,[GLfloat])]
 indexedListSet vao n =
   do
-    -- _ <- DT.trace ("vao: " ++ show vao) $ return ()
-    -- _ <- DT.trace ("number of tuples: " ++ show (length result)) $ return ()
-    -- _ <- DT.trace ("result: " ++ show result) $ return ()
     return result
       where
         result = fmap (\x -> x) $ indexed $ DS.toList $ DS.fromList $ chunksOf n $ vao
 
 -- feedback list
+-- indexedList :: [(Int,[GLfloat])] -> [(Int,[GLfloat])] -> [(Int,[GLfloat])]
+-- indexedList loa []     = loa
+-- indexedList loa [x]    = indexedList (matchIndex loa x) []
+-- indexedList loa (x:xs) = indexedList (matchIndex loa x) xs
+-- is equivalent to:
 indexedList :: [(Int,[GLfloat])] -> [(Int,[GLfloat])] -> [(Int,[GLfloat])]
-indexedList loa []     = loa
-indexedList loa [x]    = indexedList (matchIndex loa x) []
-indexedList loa (x:xs) = indexedList (matchIndex loa x) xs
+indexedList loa ias = foldr (\x y -> matchIndex y x) loa ias
 
 matchIndex :: [(Int,[GLfloat])] -> (Int,[GLfloat]) -> [(Int,[GLfloat])]
 matchIndex loa ia@(i, iVal) = fmap (\la@(j, jVal) -> case () of
@@ -147,13 +147,9 @@ toIndex :: [GLfloat] -> Int -> IO [Int]
 toIndex vao n =
   do
     loa <- return $ indexed $ chunksOf n $ vao
-    --_ <- DT.trace ("loa: " ++ show loa) $ return ()
     ia  <- indexedListSet vao n
-    --_ <- DT.trace ("ia: " ++ show ia) $ return ()
     il  <- return $ indexedList loa ia
-    --_ <- DT.trace ("il: " ++ show il) $ return ()
     result <-return $ fmap (\(i,_) -> i) il
-    --_ <- DT.trace ("result: " ++ show result) $ return ()
     return result
 
            -- [attrs]  -> stride -> ([], [index])
@@ -167,13 +163,7 @@ toIndex' vao n =
     ils <- indexedListSet vao n
     let vaoi = concat $ fmap (\x -> snd x) ils
     return (vaoi, is)
-    
 
-
--- toGLfloat :: (Int,[GLfloat]) -> [GLfloat]
--- toGLfloat (_,x) = 
-
-          -- indexedList -> [index] -> vao
 fromIndex :: [(Int,[GLfloat])] -> [Int] -> IO [GLfloat]
 fromIndex ias is = return $ concat $ fmap (\i -> snd (ias!!i)) is
 
