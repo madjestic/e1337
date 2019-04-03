@@ -120,49 +120,28 @@ initVAO ps ts idx =
       where
         iter = [0..(length idx)-1]
 
-         -- :: initVAO   -> Stride -> indexed VAO
-indexedListSet :: [GLfloat] -> Int -> IO [(Int,[GLfloat])]
-indexedListSet vao n =
+indexedVAO :: [Vertex4 Double] -> [TexCoord3 Double] -> [GLuint] -> Int -> IO ([GLfloat],[GLuint])
+indexedVAO ps ts ids st =
   do
-    return result
-      where
-        result = fmap (\x -> x) $ indexed $ DS.toList $ DS.fromList $ chunksOf n $ vao
+    vs <- initVAO ps ts ids
+    let iListSet = indexedListSet vs st
+    let iList    = indexedList (indexed $ chunksOf st vs) iListSet
+    let idx = fmap (\(i,_) -> (fromIntegral i)) iList
+    let vx  = concat $ fmap (\x -> snd x) iListSet
+    return (vx, idx)
 
--- feedback list
--- indexedList :: [(Int,[GLfloat])] -> [(Int,[GLfloat])] -> [(Int,[GLfloat])]
--- indexedList loa []     = loa
--- indexedList loa [x]    = indexedList (matchIndex loa x) []
--- indexedList loa (x:xs) = indexedList (matchIndex loa x) xs
--- is equivalent to:
+         -- :: initVAO   -> Stride -> indexed VAO
+indexedListSet :: [GLfloat] -> Int -> [(Int,[GLfloat])]
+indexedListSet vao n =
+  fmap (\x -> x) $ indexed $ DS.toList $ DS.fromList $ chunksOf n $ vao
+
 indexedList :: [(Int,[GLfloat])] -> [(Int,[GLfloat])] -> [(Int,[GLfloat])]
 indexedList loa ias = foldr (\x y -> matchIndex y x) loa ias
 
 matchIndex :: [(Int,[GLfloat])] -> (Int,[GLfloat]) -> [(Int,[GLfloat])]
-matchIndex loa ia@(i, iVal) = fmap (\la@(j, jVal) -> case () of
-                                                _ | iVal == jVal -> ia
+matchIndex loa indices@(i, iVal) = fmap (\la@(j, jVal) -> case () of
+                                                _ | iVal == jVal -> indices
                                                   | otherwise    -> la) loa
-
-           -- [attrs]  -> stride -> [index]
-toIndex :: [GLfloat] -> Int -> IO [Int]
-toIndex vao n =
-  do
-    loa <- return $ indexed $ chunksOf n $ vao
-    ia  <- indexedListSet vao n
-    il  <- return $ indexedList loa ia
-    result <-return $ fmap (\(i,_) -> i) il
-    return result
-
-           -- [attrs]  -> stride -> ([], [index])
-toIndex' :: [GLfloat] -> Int -> IO ([GLfloat],[GLuint])
-toIndex' vao n =
-  do
-    loa <- return $ indexed $ chunksOf n $ vao
-    ia  <- indexedListSet vao n
-    il  <- return $ indexedList loa ia
-    is  <-return $ fmap (\(i,_) -> (fromIntegral i)) il -- indices
-    ils <- indexedListSet vao n
-    let vaoi = concat $ fmap (\x -> snd x) ils
-    return (vaoi, is)
 
 fromIndex :: [(Int,[GLfloat])] -> [Int] -> IO [GLfloat]
 fromIndex ias is = return $ concat $ fmap (\i -> snd (ias!!i)) is
@@ -170,21 +149,10 @@ fromIndex ias is = return $ concat $ fmap (\i -> snd (ias!!i)) is
 initGameResources :: Game -> IO Descriptor
 initGameResources game =  
   do
-
     drw <- toDrawable $ (geometry . object) game
-    vsi <- initVAO (verts drw) (uvs drw) (ids drw)
-    _ <- DT.trace ("vsi: " ++ show vsi) $ return ()    
-    is  <- toIndex vsi 7
-    _ <- DT.trace ("is: " ++ show is) $ return ()
-    iss <- toIndex' vsi 7
-    _ <- DT.trace ("iss: " ++ show iss) $ return ()    
-    vis <- indexedListSet vsi 7
-    _ <- DT.trace ("vis: " ++ show is) $ return ()
-    vs'  <- fromIndex vis is
-    _ <- DT.trace ("vs': " ++ show vs') $ return ()
-    let vs = fst iss
-    _ <- DT.trace ("vs: " ++ show vs) $ return ()
-    --_   <- indexedListSet vs 7
+  
+    let stride = 7 -- TODO : stride <- attr sizes
+    (vs, idx) <- indexedVAO (verts drw) (uvs drw) (ids drw) stride
 
     -- | VAO
     vao <- genObjectName
@@ -201,12 +169,10 @@ initGameResources game =
     -- | EBO
     elementBuffer <- genObjectName
     bindBuffer ElementArrayBuffer $= Just elementBuffer
-    --let indices    = [0] :: [GLuint]--reverse $ snd iss --[0..(fromIntegral (length $ ids drw) - 1)] :: [GLuint]
-    let indices    = snd iss --[0..(fromIntegral (length $ ids drw) - 1)] :: [GLuint]
-        numIndices = length indices
-    withArray indices $ \ptr ->
+    let numIndices = length idx
+    withArray idx $ \ptr ->
       do
-        let indicesSize = fromIntegral (numIndices * sizeOf (head indices))
+        let indicesSize = fromIntegral (numIndices * sizeOf (head idx))
         bufferData ElementArrayBuffer $= (indicesSize, ptr, StaticDraw)
         
     -- | Bind the pointer to the vertex attribute data
