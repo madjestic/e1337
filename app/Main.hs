@@ -168,15 +168,6 @@ handleExit = quitEvent >>^ isEvent
 jsonFile :: FilePath
 jsonFile = "src/model.pgeo"
 
-initGame :: IO Game
-initGame =
-  do
-    geo <- readPGeo jsonFile
-    --_ <- DT.trace ("Game: " ++ show geo) $ return ()
-    let obj = Object 0.0 geo (identity::M44 Double)
-    let initGame = Game GameIntro obj
-    return initGame
-
 --  CCCCC   OOOOO  NN   NN  SSSSS  TTTTTTT   AAA   NN   NNn TTTTTTT  SSSSS  
 -- CC    C OO   OO NNN  NN SS        TTT    AAAAA  NNN  NN   TTT   SS      
 -- CC      OO   OO NN N NN  SSSSS    TTT   AA   AA NN N NN   TTT    SSSSS  
@@ -188,6 +179,16 @@ mBlur     = 0.25 :: Float
 loadDelay = 2.0  :: Double
 resX      = 800  :: CInt
 resY      = 600  :: CInt
+
+initGame :: IO Game
+initGame =
+  do
+    geo <- readPGeo jsonFile
+    --_ <- DT.trace ("Game: " ++ show geo) $ return ()
+    let obj = Object 0.0 geo (identity::M44 Double)
+    let initGame = Game GameIntro obj
+    return initGame
+
 
 -- 888b     d888       d88888888888888b    888 
 -- 8888b   d8888      d88888  888  8888b   888 

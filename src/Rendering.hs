@@ -28,7 +28,9 @@ import Geometry
 import Drawables
 import Shape2D
 
-import Data.Set as DS (fromList, toList)
+import Data.Set      as DS (fromList, toList)
+import Data.Foldable as DF (toList)
+import Unsafe.Coerce (unsafeCoerce)
 
 import Debug.Trace as DT
 
@@ -156,7 +158,7 @@ initGameResources game =
 
     -- | VAO
     vao <- genObjectName
-    bindVertexArrayObject $= Just vao
+    bindVertexArrayObject $= Just vao 
 
     -- | VBO
     vertexBuffer <- genObjectName
@@ -215,12 +217,21 @@ initGameResources game =
     location3         <- get (uniformLocation program "u_time")
     uniform location3 $= (currentTime :: GLfloat)
     
-    -- | Set Transform Matrix
-    let tr =
-          [ 1, 0, 0, 0
-          , 0, 1, 0, 0
-          , 0, 0, 1, 0
-          , 0, 0, 0, 1 ] :: [GLfloat]
+    -- -- | Set Transform Matrix
+    -- let tr' =
+    --       [ 1, 0, 0, 0
+    --       , 0, 1, 0, 0
+    --       , 0, 0, 1, 0
+    --       , 0, 0, 0, 0.5 ] :: [GLfloat]
+
+    -- TODO : replace NDC with ortho from http://hackage.haskell.org/package/linear-1.20.8/docs/Linear-Projection.html
+    -- let ndc = fmap realToFrac . concat
+    --         $ fmap DF.toList . DF.toList
+    --         $ (identity::M44 Double) :: [GLfloat]
+
+    let tr  = fmap realToFrac . concat
+            $ fmap DF.toList . DF.toList
+            $ (transform . object) game :: [GLfloat]
           
     transform         <- GL.newMatrix ColumnMajor tr :: IO (GLmatrix GLfloat)
     location4         <- get (uniformLocation program "transform")
