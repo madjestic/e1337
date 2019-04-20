@@ -28,9 +28,9 @@ import Geometry
 import Drawables
 import Shape2D
 
-import Data.Set      as DS (fromList, toList)
-import Data.Foldable as DF (toList)
-import Unsafe.Coerce (unsafeCoerce)
+import Data.Set          as DS (fromList, toList)
+import Data.Foldable     as DF (toList)
+import Linear.Projection as LP (perspective, inversePerspective, frustum)
 
 import Debug.Trace as DT
 
@@ -66,11 +66,13 @@ openWindow title (sizex,sizey) = do
                               , glMultisampleSamples = 8
                               , glProfile = Compatibility Normal 2 1}
 
+    depthFunc $= Just Less
+
     window <- SDL.createWindow
             "e1337"
             SDL.defaultWindow { SDL.windowInitialSize = V2 sizex sizey
                               , SDL.windowOpenGL      = Just config }
-                               --SDL.windowOpenGL = Just SDL.defaultOpenGL}
+
     SDL.showWindow window
     _ <- SDL.glCreateContext window
     
@@ -90,16 +92,17 @@ draw :: SDL.Window -> Game -> IO ()
 draw window game =
   do
     --(Descriptor vao firstIndex numVertices) <- initResources game
-    (Descriptor vao numIndices) <- initGameResources game
+    (Descriptor vao numIndices) <- initResources game
 
     GL.clearColor $= Color4 1 0 0 1
-    GL.clear [ColorBuffer]
+    GL.clear [ColorBuffer, DepthBuffer]
     bindVertexArrayObject $= Just vao
     --drawArrays Triangles firstIndex numVertices
     drawElements Triangles numIndices GL.UnsignedInt nullPtr
     GL.pointSize $= 10
 
-    cullFace $= Just Back
+    cullFace  $= Just Back
+    depthFunc $= Just Less
 
     SDL.glSwapWindow window
 
@@ -148,8 +151,8 @@ matchIndex loa indices@(i, iVal) = fmap (\la@(j, jVal) -> case () of
 fromIndex :: [(Int,[GLfloat])] -> [Int] -> IO [GLfloat]
 fromIndex ias is = return $ concat $ fmap (\i -> snd (ias!!i)) is
 
-initGameResources :: Game -> IO Descriptor
-initGameResources game =  
+initResources :: Game -> IO Descriptor
+initResources game =  
   do
     drw <- toDrawable $ (geometry . object) game
   
@@ -229,11 +232,14 @@ initGameResources game =
     --         $ fmap DF.toList . DF.toList
     --         $ (identity::M44 Double) :: [GLfloat]
 
-    let tr  = fmap realToFrac . concat
-            $ fmap DF.toList . DF.toList
-            $ (transform . object) game :: [GLfloat]
+    let tr =
+            fmap realToFrac . concat
+          $ fmap DF.toList . DF.toList
+          $ (transform . object) game :: [GLfloat]
+
+    let persp = fmap realToFrac . concat $ fmap DF.toList . DF.toList $ LP.perspective (pi/2) (800/600) (0.35) 1.5 :: [GLfloat]
           
-    transform         <- GL.newMatrix ColumnMajor tr :: IO (GLmatrix GLfloat)
+    transform         <- GL.newMatrix ColumnMajor persp :: IO (GLmatrix GLfloat)
     location4         <- get (uniformLocation program "transform")
     uniform location4 $= transform
     
