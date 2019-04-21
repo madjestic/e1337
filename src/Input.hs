@@ -70,6 +70,7 @@ key code mode
 
 quitEvent :: SF AppInput (Event ())
 quitEvent = arr inpQuit >>> edge
+
 -- | Exported as abstract type. Fields are accessed with signal functions.
 -- | AppInput ~= AppInput
 data AppInput =
@@ -105,11 +106,14 @@ scancode ev =
   SDL.keysymScancode $ SDL.keyboardEventKeysym ev
 
 nextAppInput :: AppInput -> SDL.EventPayload -> AppInput
+-- | quit event
 nextAppInput inp SDL.QuitEvent
   = inp { inpQuit = True }
+-- | mouse movement/position
 nextAppInput inp (SDL.MouseMotionEvent ev) =
     inp { inpMousePos = (fromIntegral x, fromIntegral y) }
     where P (V2 x y) = SDL.mouseMotionEventPos ev
+-- | key events          
 nextAppInput inp (SDL.KeyboardEvent ev)
     | scancode ev == SDL.ScancodeEscape
       = inp { inpQuit = True }
@@ -122,6 +126,7 @@ nextAppInput inp (SDL.KeyboardEvent ev)
            | otherwise
            -> inp { inpKeyPressed  = Nothing
                   , inpKeyReleased = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev }
+-- | mouse button events              
 nextAppInput inp (SDL.MouseButtonEvent ev) = inp { inpMouseLeft  = lmb
                                                  , inpMouseRight = rmb }
     where motion = SDL.mouseButtonEventMotion ev

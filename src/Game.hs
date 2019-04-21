@@ -30,6 +30,7 @@ data Object =
      { scalar    :: Double
      , geometry  :: Geo
      , transform :: M44 Double
+     , velocity  :: V4 Double
      } deriving Show
 
 -- game state
