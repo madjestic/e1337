@@ -4,6 +4,7 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE OverloadedStrings, Arrows #-}
 {-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 module Main where 
 
 import Control.Concurrent
@@ -138,10 +139,48 @@ updateTransform mtx0 keys0 =
       sf = proc input -> do
         -- update transform according to Keys
         trans <- mkTrans -< ()
-        let mtx = undefined --(mtx0 ^+^) ^<< integral -< trans
+        -- mtx   <- (mtx0 ^+^) ^<< integral -< trans
+        let mtx = undefined
         keysE <- key SDL.ScancodeSpace "Pressed" -< input -- updateKeys keys0 -< input
         returnA -< (mtx, keysE `tag` mtx) :: (M44 Double, Event (M44 Double))
       cont x = undefined --updateTransform x keys
+
+
+-- | TODO : complete the class instance
+instance VectorSpace (M44 Double) (M44 Double) where
+  zeroVector = identity :: M44 Double
+  -- | Vector with no magnitude (unit for addition).
+
+--   -- | Multiplication by a scalar.
+--   (*^) :: a -> v -> v
+--   (*^) x y = undefined
+
+--   -- | Division by a scalar.
+--   (^/) :: v -> a -> v
+--   v ^/ a = undefined
+
+--   -- | Vector addition
+--   (^+^) :: v -> v -> v
+
+--   -- | Vector subtraction
+--   (^-^) :: v -> v -> v
+--   v1 ^-^ v2 = v1 ^+^ negateVector v2
+
+--   -- | Vector negation. Addition with a negated vector should be
+--   --   same as subtraction.
+--   negateVector :: v -> v
+--   negateVector v = (-1) *^ v
+
+--   -- | Dot product (also known as scalar or inner product).
+--   --
+--   -- For two vectors, mathematically represented as @a = a1,a2,...,an@ and @b
+--   -- = b1,b2,...,bn@, the dot product is @a . b = a1*b1 + a2*b2 + ... +
+--   -- an*bn@.
+--   --
+--   -- Some properties are derived from this. The dot product of a vector with
+--   -- itself is the square of its magnitude ('norm'), and the dot product of
+--   -- two orthogonal vectors is zero.
+--   dot :: v -> v -> a
 
 mkTrans :: SF () (M44 Double)
 mkTrans = undefined
