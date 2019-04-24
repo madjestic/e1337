@@ -14,11 +14,11 @@ import Foreign.C
 import Foreign.Marshal.Array                  (withArray)
 import Foreign.Ptr                            (plusPtr, nullPtr, Ptr)
 import Foreign.Storable                       (sizeOf)
-import Graphics.GLUtil (readTexture, texture2DWrap)
+-- import Graphics.GLUtil (readTexture, texture2DWrap)
 import Graphics.Rendering.OpenGL as GL hiding (position, Size)
 import SDL                             hiding (Point, Event, Timer, (^+^), (*^), (^-^), dot)
-import SDL.Raw.Video
-import SDL.Raw.Enum
+-- import SDL.Raw.Video
+-- import SDL.Raw.Enum
 import Data.List.Split
 import Data.List.Index
 
@@ -30,9 +30,9 @@ import Shape2D
 
 import Data.Set          as DS (fromList, toList)
 import Data.Foldable     as DF (toList)
-import Linear.Projection as LP (perspective, inversePerspective, frustum)
+import Linear.Projection as LP (perspective)
 
-import Debug.Trace as DT
+-- import Debug.Trace as DT
 
 resX = 800 :: Int
 resY = 600 :: Int
@@ -106,16 +106,16 @@ draw window game =
 
     SDL.glSwapWindow window
 
-realToFracT :: (Double, Double) -> (GLfloat, GLfloat)
-realToFracT = (\ (x,y) -> (realToFrac x, realToFrac y))
+-- realToFracT :: (Double, Double) -> (GLfloat, GLfloat)
+-- realToFracT = (\ (x,y) -> (realToFrac x, realToFrac y))
 
-loadTex :: FilePath -> IO TextureObject
-loadTex f =
-  do
-    t <- either error id <$> readTexture f
-    textureFilter Texture2D $= ((Linear', Nothing), Linear')
-    texture2DWrap $= (Repeated, ClampToEdge)
-    return t
+-- loadTex :: FilePath -> IO TextureObject
+-- loadTex f =
+--   do
+--     t <- either error id <$> readTexture f
+--     textureFilter Texture2D $= ((Linear', Nothing), Linear')
+--     texture2DWrap $= (Repeated, ClampToEdge)
+--     return t
 
 initVAO :: [Vertex4 Double] -> [TexCoord3 Double] -> [GLuint] -> IO [GLfloat]
 initVAO ps ts idx =
@@ -148,8 +148,8 @@ matchIndex loa indices@(i, iVal) = fmap (\la@(j, jVal) -> case () of
                                                 _ | iVal == jVal -> indices
                                                   | otherwise    -> la) loa
 
-fromIndex :: [(Int,[GLfloat])] -> [Int] -> IO [GLfloat]
-fromIndex ias is = return $ concat $ fmap (\i -> snd (ias!!i)) is
+-- fromIndex :: [(Int,[GLfloat])] -> [Int] -> IO [GLfloat]
+-- fromIndex ias is = return $ concat $ fmap (\i -> snd (ias!!i)) is
 
 initResources :: Game -> IO Descriptor
 initResources game =  
@@ -232,10 +232,10 @@ initResources game =
     --         $ fmap DF.toList . DF.toList
     --         $ (identity::M44 Double) :: [GLfloat]
 
-    let tr =
-            fmap realToFrac . concat
-          $ fmap DF.toList . DF.toList
-          $ (transform . object) game :: [GLfloat]
+    -- let tr =
+    --         fmap realToFrac . concat
+    --       $ fmap DF.toList . DF.toList
+    --       $ (transform . object) game :: [GLfloat]
 
     let persp = fmap realToFrac . concat $ fmap DF.toList . DF.toList $ LP.perspective (pi/2) (800/600) (0.35) 1.5 :: [GLfloat]
           

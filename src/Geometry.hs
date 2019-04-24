@@ -43,7 +43,7 @@ data Geo
 -- | TODO : replace Vec3 -> Vec4
 type Vec3     = (Double, Double, Double)
 
-type Colors    = [Vec3]
+-- type Colors    = [Vec3]
 type Positions = [Vec3]
 type UVs       = [Vec3] 
 

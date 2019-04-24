@@ -7,27 +7,27 @@
 module Main where 
 
 import Control.Concurrent
-import Control.Monad
+-- import Control.Monad
 import Data.Text                              (Text)
 import Foreign.C                              
-import Foreign.Marshal.Array                  (withArray)
-import Foreign.Ptr                            (plusPtr, nullPtr, Ptr)
-import Foreign.Storable                       (sizeOf)
+-- import Foreign.Marshal.Array                  (withArray)
+-- import Foreign.Ptr                            (plusPtr, nullPtr, Ptr)
+-- import Foreign.Storable                       (sizeOf)
 import FRP.Yampa                              hiding (identity)
-import Graphics.Rendering.OpenGL as GL        hiding (Size, Position, Point, position)
+-- import Graphics.Rendering.OpenGL as GL        hiding (Size, Position, Point, position)
 import Linear.Matrix
-import SDL                                    hiding (Point, Vec2, Vec3, Event)
-import SDL.Raw.Video
-import SDL.Raw.Enum
+import SDL                                    hiding (Point, Vec2, Vec3, Event, (^+^))
+-- import SDL.Raw.Video
+-- import SDL.Raw.Enum
 
-import NGL.LoadShaders
+-- import NGL.LoadShaders
 import Game
 import Geometry
 import Input
 import Rendering
-import Drawables
+-- import Drawables
 
-import Debug.Trace as DT
+-- import Debug.Trace as DT
 
 --        d8888888b    8888888888888b     d888       d8888888888888888888888888 
 --       d888888888b   888  888  8888b   d8888      d88888    888    888        
@@ -111,7 +111,7 @@ gamePlay game =
     switch sf (const (mainGame game))        
      where sf =
              proc input -> do
-               game <- updateGame game -< input
+               game      <- updateGame game -< input
                reset     <- key SDL.ScancodeSpace "Pressed" -< input
                returnA   -< (game, reset)
 
@@ -125,7 +125,32 @@ updateObject :: Object -> SF AppInput Object
 updateObject obj =
   proc input -> do
     sclr    <- updateScalar $ scalar obj -< input
-    returnA -< Object sclr (geometry obj) (transform obj) (velocity obj)
+    mtx     <- updateTransform (transform obj) (keys obj) -< input
+    --returnA -< Object sclr (geometry obj) (transform obj) (velocity obj) (keys obj)
+    returnA -< Object sclr (geometry obj) mtx (velocity obj) (keys obj)
+
+updateTransform :: M44 Double -> Keys -> SF AppInput (M44 Double)
+updateTransform mtx0 keys0 =
+  -- | foldrWith mtx0 keys - for every key apply a folding transform to mtx0
+  -- | in case of keypress event - update the set of keys and call new fold ^
+  switch sf cont
+    where
+      sf = proc input -> do
+        -- update transform according to Keys
+        trans <- mkTrans -< ()
+        let mtx = undefined --(mtx0 ^+^) ^<< integral -< trans
+        keysE <- key SDL.ScancodeSpace "Pressed" -< input -- updateKeys keys0 -< input
+        returnA -< (mtx, keysE `tag` mtx) :: (M44 Double, Event (M44 Double))
+      cont x = undefined --updateTransform x keys
+
+mkTrans :: SF () (M44 Double)
+mkTrans = undefined
+
+updateKeys :: Keys -> SF AppInput (Keys)
+updateKeys keys = undefined
+
+updateTransform' :: M44 Double -> Keys -> SF AppInput (M44 Double)
+updateTransform' mtx0 keys0 = undefined
 
 updateScalar :: Double -> SF AppInput Double
 updateScalar pp0 =
@@ -163,6 +188,110 @@ updateScalar' pp0 v0 =
                             , keyRight ] `tag` p) :: (Double, Event Double)
          cont = updateScalar
 
+-- updateKeys :: Keys -> SF AppInput (Keys)
+-- updateKeys keys = undefined
+--   switch sf cont
+--     where
+--       sf = proc input -> do
+--         keyW     <- key SDL.ScancodeW     "Pressed" -< input
+--         keyS     <- key SDL.ScancodeS     "Pressed" -< input
+--         keyA     <- key SDL.ScancodeA     "Pressed" -< input
+--         keyD     <- key SDL.ScancodeD     "Pressed" -< input
+
+--         keyQ     <- key SDL.ScancodeQ     "Pressed" -< input
+--         keyE     <- key SDL.ScancodeE     "Pressed" -< input
+--         keyZ     <- key SDL.ScancodeZ     "Pressed" -< input
+--         keyX     <- key SDL.ScancodeX     "Pressed" -< input
+        
+--         keyUp    <- key SDL.ScancodeUp    "Pressed" -< input
+--         keyDown  <- key SDL.ScancodeDown  "Pressed" -< input
+--         keyLeft  <- key SDL.ScancodeLeft  "Pressed" -< input
+--         keyRight <- key SDL.ScancodeRight "Pressed" -< input
+
+--         let pressed =
+--               ( mtx0
+--               , keyW
+--               , keyS
+--               , keyA
+--               , keyD
+--               , keyQ
+--               , keyE
+--               , keyZ
+--               , keyX
+--               , keyUp
+--               , keyDown
+--               , keyLeft
+--               , keyRight )
+--         returnA -< (keys, mergeEvents
+--                      [ keyW
+--                      , keyS
+--                      , keyA
+--                      , keyD
+--                      , keyQ
+--                      , keyE
+--                      , keyZ
+--                      , keyX
+--                      , keyUp
+--                      , keyDown
+--                      , keyLeft
+--                      , keyRight] `tag` pressed)
+--       cont (x, keyW, keyS, keyA, keyD, keyQ, keyE, keyZ, keyX, keyUp, keyDown, keyLeft, keyRight) =
+--         updateKeys pressed
+
+
+-- updateKeys :: Keys -> SF AppInput (Keys)
+-- updateKeys keys = --undefined
+--   switch sf cont
+--     where
+--       sf = proc input -> do
+--         keyW     <- key SDL.ScancodeW     "Pressed" -< input
+--         keyS     <- key SDL.ScancodeS     "Pressed" -< input
+--         keyA     <- key SDL.ScancodeA     "Pressed" -< input
+--         keyD     <- key SDL.ScancodeD     "Pressed" -< input
+
+--         keyQ     <- key SDL.ScancodeQ     "Pressed" -< input
+--         keyE     <- key SDL.ScancodeE     "Pressed" -< input
+--         keyZ     <- key SDL.ScancodeZ     "Pressed" -< input
+--         keyX     <- key SDL.ScancodeX     "Pressed" -< input
+        
+--         keyUp    <- key SDL.ScancodeUp    "Pressed" -< input
+--         keyDown  <- key SDL.ScancodeDown  "Pressed" -< input
+--         keyLeft  <- key SDL.ScancodeLeft  "Pressed" -< input
+--         keyRight <- key SDL.ScancodeRight "Pressed" -< input
+
+--         let pressed =
+--               ( mtx0
+--               , keyW
+--               , keyS
+--               , keyA
+--               , keyD
+--               , keyQ
+--               , keyE
+--               , keyZ
+--               , keyX
+--               , keyUp
+--               , keyDown
+--               , keyLeft
+--               , keyRight )
+--         returnA -< (keys, mergeEvents
+--                      [ keyW
+--                      , keyS
+--                      , keyA
+--                      , keyD
+--                      , keyQ
+--                      , keyE
+--                      , keyZ
+--                      , keyX
+--                      , keyUp
+--                      , keyDown
+--                      , keyLeft
+--                      , keyRight] `tag` pressed)
+--       cont (x, keyW, keyS, keyA, keyD, keyQ, keyE, keyZ, keyX, keyUp, keyDown, keyLeft, keyRight) =
+--         updateKeys pressed
+              
+
+        
+
 updateTransformMatrix :: M44 Double -> V4 Double -> SF AppInput (M44 Double)
 updateTransformMatrix mtx0 vel0 = undefined
   switch sf cont
@@ -175,7 +304,6 @@ updateTransformMatrix mtx0 vel0 = undefined
 
         keyQ     <- key SDL.ScancodeQ     "Pressed" -< input
         keyE     <- key SDL.ScancodeE     "Pressed" -< input
-
         keyZ     <- key SDL.ScancodeZ     "Pressed" -< input
         keyX     <- key SDL.ScancodeX     "Pressed" -< input
         
@@ -183,20 +311,7 @@ updateTransformMatrix mtx0 vel0 = undefined
         keyDown  <- key SDL.ScancodeDown  "Pressed" -< input
         keyLeft  <- key SDL.ScancodeLeft  "Pressed" -< input
         keyRight <- key SDL.ScancodeRight "Pressed" -< input
-        -- let pressed ::
-        --       ( M44 Double
-        --       , Event ()
-        --       , Event ()
-        --       , Event ()
-        --       , Event ()
-        --       , Event ()
-        --       , Event ()
-        --       , Event ()
-        --       , Event ()
-        --       , Event ()
-        --       , Event ()
-        --       , Event ()
-        --       , Event ())
+
         let pressed =
               ( mtx0
               , keyW
@@ -225,13 +340,20 @@ updateTransformMatrix mtx0 vel0 = undefined
                           , keyLeft
                           , keyRight] `tag` pressed)
 
-      cont (x, keyW, keyS, keyA, keyD) =
+      cont (x, keyW, keyS, keyA, keyD, keyQ, keyE, keyZ, keyX, keyUp, keyDown, keyLeft, keyRight) =
         if | isEvent keyW -> translateMatrix x (V4 ( 0.0) ( 0.0) ( 0.1) ( 0.0)) -- forwards
            | isEvent keyS -> translateMatrix x (V4 ( 0.0) ( 0.0) (-0.1) ( 0.0)) -- backwards
            | isEvent keyA -> translateMatrix x (V4 (-0.1) ( 0.0) ( 0.0) ( 0.0)) -- str.left
            | isEvent keyD -> translateMatrix x (V4 ( 0.1) ( 0.0) ( 0.0) ( 0.0)) -- str.right
+           | isEvent keyZ -> translateMatrix x (V4 ( 0.0) ( 0.1) ( 0.0) ( 0.0)) -- str.up
+           | isEvent keyX -> translateMatrix x (V4 ( 0.0) (-0.1) ( 0.0) ( 0.0)) -- str.down
+           | isEvent keyQ     -> rotateMatrix x (Quaternion ( 0.1) (V3 ( 0.0) ( 0.0) ( 1.0))) -- roll left
+           | isEvent keyE     -> rotateMatrix x (Quaternion (-0.1) (V3 ( 0.0) ( 0.0) ( 1.0))) -- roll right
+           | isEvent keyUp    -> rotateMatrix x (Quaternion (-0.1) (V3 ( 1.0) ( 0.0) ( 0.0))) -- pitch up
+           | isEvent keyDown  -> rotateMatrix x (Quaternion ( 0.1) (V3 ( 1.0) ( 0.0) ( 0.0))) -- pitch down
+           | isEvent keyLeft  -> rotateMatrix x (Quaternion ( 0.1) (V3 ( 0.0) ( 1.0) ( 0.0))) -- yaw left
+           | isEvent keyRight -> rotateMatrix x (Quaternion (-0.1) (V3 ( 0.0) ( 1.0) ( 0.0))) -- yaw right
            | otherwise    -> translateMatrix x (V4 ( 0.0) ( 0.0) ( 0.0) ( 0.0)) -- nothing
-
 
 translateMatrix :: M44 Double -> V4 Double -> SF AppInput (M44 Double)
 translateMatrix mtx0 vel0 = undefined
@@ -239,10 +361,15 @@ translateMatrix mtx0 vel0 = undefined
   --   where
   --        sf =
   --          proc input -> do
-             
-             
-             
+  --            -- M44 -> V4 tr0 -> Quaternion rot0 -> M44
+  --            -- M44 -> _m33 M44 + translation M44 -> (M33 + tr) -> M33 
+  --            --                                                 -> tr
+                
+  --            mtx <- (mtx0 +) ^<< integral -< (\(V4 x y z w) -> V3 x y z) vel0
 
+rotateMatrix :: M44 Double -> Quaternion Double -> SF AppInput (M44 Double)
+rotateMatrix = undefined             
+             
 handleExit :: SF AppInput Bool
 handleExit = quitEvent >>^ isEvent
 
@@ -266,7 +393,7 @@ initGame =
   do
     geo <- readPGeo jsonFile
     --_ <- DT.trace ("Game: " ++ show geo) $ return ()
-    let obj = Object 0.0 geo (identity::M44 Double) (V4 0 0 0 0)
+    let obj = Object 0.0 geo (identity::M44 Double) (V4 0 0 0 0) (Keys False False False False False False False False False False False False)
     let initGame = Game GamePlaying obj
     return initGame
 

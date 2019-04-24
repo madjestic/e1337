@@ -8,9 +8,10 @@
 --  "Y8888P88d88P     888888       8888888888888 
 
 module Game
-  ( Game(..)
-  , Stage(..)
+  ( Game  (..)
+  , Stage (..)
   , Object(..)
+  , Keys  (..)
   ) where
 
 import Geometry
@@ -25,12 +26,29 @@ data Stage =
    | GameMenu
    deriving Show
 
+data Keys =
+     Keys
+     { keyW  :: Bool
+     , keyS  :: Bool
+     , keyA  :: Bool
+     , keyD  :: Bool
+     , keyZ  :: Bool
+     , keyX  :: Bool
+     , keyQ  :: Bool
+     , keyE  :: Bool
+     , keyUp    :: Bool
+     , keyDown  :: Bool
+     , keyLeft  :: Bool
+     , keyRight :: Bool
+     } deriving Show
+
 data Object =
      Object
      { scalar    :: Double
      , geometry  :: Geo
      , transform :: M44 Double
      , velocity  :: V4 Double
+     , keys      :: Keys
      } deriving Show
 
 -- game state
