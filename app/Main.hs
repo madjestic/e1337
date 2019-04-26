@@ -17,7 +17,7 @@ import Foreign.C
 import FRP.Yampa                              hiding (identity)
 -- import Graphics.Rendering.OpenGL as GL        hiding (Size, Position, Point, position)
 import Linear.Matrix
-import SDL                                    hiding (Point, Vec2, Vec3, Event, (^+^))
+import SDL                                    hiding (Point, Vec2, Vec3, M44, Event, (^+^))
 -- import SDL.Raw.Video
 -- import SDL.Raw.Enum
 
@@ -138,17 +138,27 @@ updateTransform mtx0 keys0 =
     where
       sf = proc input -> do
         -- update transform according to Keys
-        trans <- mkTrans -< ()
-        -- mtx   <- (mtx0 ^+^) ^<< integral -< trans
-        let mtx = undefined
+        trans <- mkTrans mtx0 keys0 -< ()
+        --mtx   <- (^.^) ^<< integral -< (mtx0, keys0)
+        -- let mtx = undefined
         keysE <- key SDL.ScancodeSpace "Pressed" -< input -- updateKeys keys0 -< input
-        returnA -< (mtx, keysE `tag` mtx) :: (M44 Double, Event (M44 Double))
-      cont x = undefined --updateTransform x keys
+        let res = ( trans
+                  , isEvent $ keysE )
+        returnA -< (trans, keysE `tag` res) -- :: (M44 Double, Event (M44 Double))
+      cont (x, keys) = undefined
 
+mkTrans :: M44 Double -> Keys -> SF () (M44 Double)
+mkTrans = undefined
 
--- | TODO : complete the class instance
-instance VectorSpace (M44 Double) (M44 Double) where
-  zeroVector = identity :: M44 Double
+-- (^.^) :: M44 Double -> Keys -> M44 Double
+-- (^.^) m0 keys0 = undefined
+
+-- (^.^) :: (M44 Double, Keys) -> M44 Double
+-- (^.^) = undefined
+
+-- -- | TODO : complete the class instance
+-- instance VectorSpace (M44 Double) Keys where
+--   zeroVector = identity :: M44 Double
   -- | Vector with no magnitude (unit for addition).
 
 --   -- | Multiplication by a scalar.
@@ -161,6 +171,9 @@ instance VectorSpace (M44 Double) (M44 Double) where
 
 --   -- | Vector addition
 --   (^+^) :: v -> v -> v
+--  (^+^) m0 m1 = undefined
+
+  -- | TODO : add composition operator for matrix rotation and matrix adition (matrx/matrix, matrix/vector)
 
 --   -- | Vector subtraction
 --   (^-^) :: v -> v -> v
@@ -171,20 +184,18 @@ instance VectorSpace (M44 Double) (M44 Double) where
 --   negateVector :: v -> v
 --   negateVector v = (-1) *^ v
 
---   -- | Dot product (also known as scalar or inner product).
---   --
---   -- For two vectors, mathematically represented as @a = a1,a2,...,an@ and @b
---   -- = b1,b2,...,bn@, the dot product is @a . b = a1*b1 + a2*b2 + ... +
---   -- an*bn@.
---   --
---   -- Some properties are derived from this. The dot product of a vector with
---   -- itself is the square of its magnitude ('norm'), and the dot product of
---   -- two orthogonal vectors is zero.
---   dot :: v -> v -> a
-
-mkTrans :: SF () (M44 Double)
-mkTrans = undefined
-
+  -- -- | Dot product (also known as scalar or inner product).
+  -- --
+  -- -- For two vectors, mathematically represented as @a = a1,a2,...,an@ and @b
+  -- -- = b1,b2,...,bn@, the dot product is @a . b = a1*b1 + a2*b2 + ... +
+  -- -- an*bn@.
+  -- --
+  -- -- Some properties are derived from this. The dot product of a vector with
+  -- -- itself is the square of its magnitude ('norm'), and the dot product of
+  -- -- two orthogonal vectors is zero.
+  -- dot :: v -> v -> a
+  -- dot = undefined
+  
 updateKeys :: Keys -> SF AppInput (Keys)
 updateKeys keys = undefined
 
