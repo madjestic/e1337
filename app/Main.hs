@@ -63,7 +63,7 @@ animate title winWidth winHeight sf = do
           do
             --_ <- DT.trace "Hello!" $ return ()
             --_ <- DT.trace ("Game: " ++ show game) $ return ()
-            draw window game -- game => (game -> renderable
+            -- draw window game -- game => (game -> renderable
             return shouldExit 
 
     reactimate (return NoEvent)
@@ -138,17 +138,121 @@ updateTransform mtx0 keys0 =
     where
       sf = proc input -> do
         -- update transform according to Keys
-        trans <- mkTrans mtx0 keys0 -< ()
+        trans <- fromKeys mtx0 keys0 -< ()
         --mtx   <- (^.^) ^<< integral -< (mtx0, keys0)
         -- let mtx = undefined
-        keysE <- key SDL.ScancodeSpace "Pressed" -< input -- updateKeys keys0 -< input
+        keyWp     <- key SDL.ScancodeW     "Pressed"  -< input
+        keySp     <- key SDL.ScancodeS     "Pressed"  -< input
+        keyAp     <- key SDL.ScancodeA     "Pressed"  -< input
+        keyDp     <- key SDL.ScancodeD     "Pressed"  -< input
+        keyWr     <- key SDL.ScancodeW     "Released" -< input
+        keySr     <- key SDL.ScancodeS     "Released" -< input
+        keyAr     <- key SDL.ScancodeA     "Released" -< input
+        keyDr     <- key SDL.ScancodeD     "Released" -< input
+                                                      
+        keyQp     <- key SDL.ScancodeQ     "Pressed"  -< input
+        keyEp     <- key SDL.ScancodeE     "Pressed"  -< input
+        keyZp     <- key SDL.ScancodeZ     "Pressed"  -< input
+        keyXp     <- key SDL.ScancodeX     "Pressed"  -< input
+        keyQr     <- key SDL.ScancodeQ     "Released" -< input
+        keyEr     <- key SDL.ScancodeE     "Released" -< input
+        keyZr     <- key SDL.ScancodeZ     "Released" -< input
+        keyXr     <- key SDL.ScancodeX     "Released" -< input
+        
+        keyUpP    <- key SDL.ScancodeUp     "Pressed"  -< input
+        keyDownP  <- key SDL.ScancodeDown   "Pressed"  -< input
+        keyLeftP  <- key SDL.ScancodeLeft   "Pressed"  -< input
+        keyRightP <- key SDL.ScancodeRight  "Pressed"  -< input
+        keyUpR    <- key SDL.ScancodeUp     "Released" -< input
+        keyDownR  <- key SDL.ScancodeDown   "Released" -< input
+        keyLeftR  <- key SDL.ScancodeLeft   "Released" -< input
+        keyRightR <- key SDL.ScancodeRight  "Released" -< input
+        
+        -- | return key value
+        -- |              , unless a key was pressed
+        -- |                       , in which case set value to 1
+        -- |              , or a key was unpressed
+        -- |                       , in which case set value to 0
+        -- | TODO : replace with:
+        -- | isEvent keyWp || (not (isEvent keyWr) && (keyW keys0))?
+        -- | ..
+        
         let res = ( trans
-                  , isEvent $ keysE )
-        returnA -< (trans, keysE `tag` res) -- :: (M44 Double, Event (M44 Double))
+                  , [ keyEvent (keyW     keys0) keyWp      keyWr
+                    , keyEvent (keyS     keys0) keySp      keySr 
+                    , keyEvent (keyA     keys0) keyAp      keyAr 
+                    , keyEvent (keyD     keys0) keyDp      keyDr 
+                    , keyEvent (keyQ     keys0) keyQp      keyQr 
+                    , keyEvent (keyE     keys0) keyEp      keyEr 
+                    , keyEvent (keyZ     keys0) keyZp      keyZr 
+                    , keyEvent (keyX     keys0) keyXp      keyXr
+                    , keyEvent (keyUp    keys0) keyUpP     keyUpR 
+                    , keyEvent (keyDown  keys0) keyDownP   keyDownR
+                    , keyEvent (keyLeft  keys0) keyLeftP   keyLeftR
+                    , keyEvent (keyRight keys0) keyRightP  keyRightR
+                    ]
+                  )
+
+        returnA -< (trans, mergeEvents
+                           [ keyWp,     keyWr
+                           , keySp,     keySr
+                           , keyAp,     keyAr
+                           , keyDp,     keyDr
+                           , keyQp,     keyQr
+                           , keyEp,     keyEr 
+                           , keyZp,     keyZr 
+                           , keyXp,     keyXr
+                           , keyUpP,    keyUpR
+                           , keyDownP,  keyDownR
+                           , keyLeftP,  keyLeftR
+                           , keyRightP, keyRightR
+                           ] `tag` res) -- :: (M44 Double, Event (M44 Double))
       cont (x, keys) = undefined
 
-mkTrans :: M44 Double -> Keys -> SF () (M44 Double)
-mkTrans = undefined
+keyEvent :: Bool -> Event () -> Event () -> Bool
+keyEvent state pressed released
+  | isEvent pressed  = True
+  | isEvent released = False
+  | otherwise = state
+
+type Center   = V4 Double
+type Distance = Double
+type Angle    = Double
+
+rotateM44 :: M44 Double -> Center -> Angle -> M44 Double
+rotateM44 = undefined
+
+transM44  :: M44 Double -> Center -> Distance -> M44 Double
+transM44 = undefined
+
+--rotKey :: Key -> M44 Double
+-- transKey :: Key -> M44 Double
+-- transKey key
+--   | key = transM44 
+--   | otherwise = 0
+
+fromKeys :: M44 Double -> Keys -> SF () (M44 Double)
+fromKeys trans0 keys0 =
+  proc () -> do
+    -- ($ keys0) <$> [keyW, keyS, keyA, keyD]
+    -- let trans = (\x -> if x==True then 1 else 0) <$> ($ keys0) <$> [keyW, keyS, keyA, keyD]
+    let trans = translate <$> ($ keys0) <$> [keyW, keyS, keyA, keyD]
+    returnA -< trans0
+        where translate = undefined
+
+     --   keyW     -> translate
+     -- , keyS     -> translate
+     -- , keyA     -> translate
+     -- , keyD     -> translate
+     -- , keyZ     -> translate
+     -- , keyX     -> translate
+     -- , keyQ     -> rotate
+     -- , keyE     -> rotate
+     -- , keyUp    -> rotate
+     -- , keyDown  -> rotate
+     -- , keyLeft  -> rotate
+     -- , keyRight -> rotate
+
 
 -- (^.^) :: M44 Double -> Keys -> M44 Double
 -- (^.^) m0 keys0 = undefined
