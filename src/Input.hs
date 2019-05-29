@@ -57,9 +57,20 @@ rbDown = arr (isJust . inpMouseRight)
 
 key :: SDL.Scancode -> String -> SF AppInput (Event ())
 key code mode
-  | code == SDL.ScancodeLeft  ||
+  | code == SDL.ScancodeW ||
+    code == SDL.ScancodeS ||
+    code == SDL.ScancodeA ||
+    code == SDL.ScancodeD ||
+    code == SDL.ScancodeQ ||
+    code == SDL.ScancodeE ||
+    code == SDL.ScancodeX ||
+    code == SDL.ScancodeZ ||
+    code == SDL.ScancodeUp    ||
+    code == SDL.ScancodeDown  ||
+    code == SDL.ScancodeLeft  ||
     code == SDL.ScancodeRight ||
     code == SDL.ScancodeSpace
+    
     = (inpKeyMode ^>> edgeJust) >>^ filterE (code ==) >>^ tagWith ()
       where
        inpKeyMode

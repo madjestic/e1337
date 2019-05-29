@@ -12,7 +12,6 @@ module Game
   , Stage (..)
   , Object(..)
   , Keys  (..)
---  , fromKeys
   ) where
 
 import Geometry
@@ -43,34 +42,13 @@ data Keys =
      , keyRight :: Bool
      } deriving Show
 
-test :: Bool -> IO ()
-test x = do
-  if x then print "Hello"
-       else print "Bye!"
-
--- fromKeys :: Keys -> [Bool]
--- fromKeys keys0 = undefined
-
--- fromKeys :: Keys -> [Bool]
--- fromKeys keys0 = [ keyW     keys0
---                  , keyS     keys0
---                  , keyA     keys0
---                  , keyD     keys0
---                  , keyZ     keys0
---                  , keyX     keys0
---                  , keyQ     keys0
---                  , keyE     keys0
---                  , keyUp    keys0
---                  , keyDown  keys0
---                  , keyLeft  keys0
---                  , keyRight keys0 ]
-
 data Object =
      Object
      { scalar    :: Double
      , geometry  :: Geo
      , transform :: M44 Double
      , velocity  :: V4 Double
+--     , angular   :: V4 Double -- angular velocity
      , keys      :: Keys
      } deriving Show
 
