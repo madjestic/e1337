@@ -64,7 +64,7 @@ animate title winWidth winHeight sf = do
           do
             --_ <- DT.trace "Hello!" $ return ()
             --_ <- DT.trace ("Game: " ++ show game) $ return ()
-            -- draw window game -- game => (game -> renderable
+            draw window game -- game => (game -> renderable
             return shouldExit 
 
     reactimate (return NoEvent)
