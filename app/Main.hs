@@ -9,20 +9,12 @@ module Main where
 
 import Control.Concurrent
 import Control.Lens                           hiding (transform)
--- import Control.Monad
 import Data.Text                              (Text)
 import Foreign.C                              
--- import Foreign.Marshal.Array                  (withArray)
--- import Foreign.Ptr                            (plusPtr, nullPtr, Ptr)
--- import Foreign.Storable                       (sizeOf)
 import FRP.Yampa                              hiding (identity, (*^))
--- import Graphics.Rendering.OpenGL as GL        hiding (Size, Position, Point, position)
 import Linear.Matrix
 import SDL                                    hiding (Point, Vec2, Vec3, M44, Event, (^+^))
--- import SDL.Raw.Video
--- import SDL.Raw.Enum
 
--- import NGL.LoadShaders
 import Game
 import Geometry
 import Input
@@ -127,9 +119,8 @@ updateObject :: Object -> SF AppInput Object
 updateObject obj =
   proc input -> do
     sclr    <- updateScalar $ scalar obj -< input
-    mtx     <- returnA -< (identity::M44 Double) 
-    -- mtx     <- updateTransform (transform obj) (velocity obj) (keys obj) -< input
-    --returnA -< Object sclr (geometry obj) (transform obj) (velocity obj) (keys obj)
+    -- mtx     <- returnA -< (identity::M44 Double) 
+    mtx     <- updateTransform (transform obj) (velocity obj) (keys obj) -< input
     returnA -< Object sclr (geometry obj) mtx (velocity obj) (keys obj)
 
 updateTransform :: M44 Double -> V4 Double -> Keys -> SF AppInput (M44 Double)
@@ -140,6 +131,7 @@ updateTransform mtx0 vel0 keys0 =
     where
       sf = proc input -> do
         -- update transform according to Keys
+        _ <- DT.trace ("keys0 : " ++ show keys0) $ returnA -< ()
         mtx <- fromKeys mtx0 keys0 -< ()
         --mtx   <- (^.^) ^<< integral -< (mtx0, keys0)
         keyWp     <- key SDL.ScancodeW     "Pressed"  -< input
@@ -169,31 +161,6 @@ updateTransform mtx0 vel0 keys0 =
         keyLeftR  <- key SDL.ScancodeLeft  "Released" -< input
         keyRightR <- key SDL.ScancodeRight "Released" -< input
         
-        -- | return key value
-        -- |              , unless a key was pressed
-        -- |                       , in which case set value to 1
-        -- |              , or a key was unpressed
-        -- |                       , in which case set value to 0
-        -- | TODO : replace with:
-        -- | isEvent keyWp || (not (isEvent keyWr) && (keyW keys0))?
-        -- | ..
-        
-        -- let result = ( mtx
-        --           , [ keyEvent (keyW     keys0) keyWp      keyWr
-        --             , keyEvent (keyS     keys0) keySp      keySr 
-        --             , keyEvent (keyA     keys0) keyAp      keyAr 
-        --             , keyEvent (keyD     keys0) keyDp      keyDr 
-        --             , keyEvent (keyQ     keys0) keyQp      keyQr 
-        --             , keyEvent (keyE     keys0) keyEp      keyEr 
-        --             , keyEvent (keyZ     keys0) keyZp      keyZr 
-        --             , keyEvent (keyX     keys0) keyXp      keyXr
-        --             , keyEvent (keyUp    keys0) keyUpP     keyUpR 
-        --             , keyEvent (keyDown  keys0) keyDownP   keyDownR
-        --             , keyEvent (keyLeft  keys0) keyLeftP   keyLeftR
-        --             , keyEvent (keyRight keys0) keyRightP  keyRightR
-        --             ]
-        --           )
-
         let result = ( mtx
                   , Keys
                     ( keyEvent (keyW     keys0) keyWp      keyWr     )
@@ -209,6 +176,9 @@ updateTransform mtx0 vel0 keys0 =
                     ( keyEvent (keyLeft  keys0) keyLeftP   keyLeftR  )
                     ( keyEvent (keyRight keys0) keyRightP  keyRightR ) )
 
+        --_ <- DT.trace ("result: " ++ show result) $ returnA -< ()
+
+
         returnA -< ( mtx
                    , mergeEvents
                      [ keyWp,     keyWr
@@ -223,7 +193,7 @@ updateTransform mtx0 vel0 keys0 =
                      , keyDownP,  keyDownR
                      , keyLeftP,  keyLeftR
                      , keyRightP, keyRightR ]
-                     `tag` result) -- :: (M44 Double, Event (M44 Double))
+                     `tag` (DT.trace ("result: " ++ show result) $) result) -- :: (M44 Double, Event (M44 Double))
           
       cont (mtx, keys) = updateTransform mtx vel0 keys -- undefined --fromKeys mtx keys
 
@@ -233,10 +203,9 @@ keyEvent state pressed released
   | isEvent released = False
   | otherwise = state
 
--- type Center   = V4 Double
--- type Distance = Double
--- type Angle    = Double
-
+-- | type Center   = V4 Double
+-- | type Distance = Double
+-- | type Angle    = Double
 -- | translation should include qTree tile origin
 -- | Translation = Tile Center + M44 Double, but untill optimization structure
 -- | is in place - keep it simple, refactor later
@@ -246,7 +215,8 @@ keyEvent state pressed released
 fromKeys :: M44 Double -> Keys -> SF () (M44 Double)
 fromKeys mtx0 keys0 =
   proc () -> do
-    let translate =
+    --_ <- DT.trace ("Game: " ++ show geo) $ return ()
+    let translate = --DT.trace ("Hello!\n") $
           foldr (+) (view translation mtx0 ) $
             zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys0) <$> [keyW, keyS, keyA, keyD] )
                          ([fVel, bVel, lVel, rVel])
@@ -264,14 +234,15 @@ updateScalar pp0 =
   switch sf cont
     where
       sf = proc input -> do
+        --_ <- DT.trace ("updateScalar: " ++ show pp0) $ returnA -< ()
         keyLeft  <- key SDL.ScancodeLeft  "Pressed" -< input
         keyRight <- key SDL.ScancodeRight "Pressed" -< input
-        let result :: (  Double
-                    , Event ()
-                    , Event ())
+        let result :: ( Double
+                      , Event ()
+                      , Event ())
             result =  ( pp0
-                   , keyLeft
-                   , keyRight)
+                      , keyLeft
+                      , keyRight )
         returnA -< (pp0, mergeEvents
                          [ keyLeft
                          , keyRight ] `tag` result)

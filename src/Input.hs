@@ -128,7 +128,17 @@ nextAppInput inp (SDL.MouseMotionEvent ev) =
 nextAppInput inp (SDL.KeyboardEvent ev)
     | scancode ev == SDL.ScancodeEscape
       = inp { inpQuit = True }
-    | scancode ev == SDL.ScancodeLeft  || 
+    | scancode ev == SDL.ScancodeW ||
+      scancode ev == SDL.ScancodeS ||
+      scancode ev == SDL.ScancodeA ||
+      scancode ev == SDL.ScancodeD ||
+      scancode ev == SDL.ScancodeQ ||
+      scancode ev == SDL.ScancodeE ||
+      scancode ev == SDL.ScancodeX ||
+      scancode ev == SDL.ScancodeZ ||
+      scancode ev == SDL.ScancodeUp    ||
+      scancode ev == SDL.ScancodeDown  ||
+      scancode ev == SDL.ScancodeLeft  || 
       scancode ev == SDL.ScancodeRight ||
       scancode ev == SDL.ScancodeSpace
       = if | SDL.keyboardEventKeyMotion ev == SDL.Pressed

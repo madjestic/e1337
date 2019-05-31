@@ -237,7 +237,9 @@ initResources game =
     --       $ fmap DF.toList . DF.toList
     --       $ (transform . object) game :: [GLfloat]
 
-    let persp = fmap realToFrac . concat $ fmap DF.toList . DF.toList $ LP.perspective (pi/2) (800/600) (0.35) 1.5 :: [GLfloat]
+    let persp = fmap realToFrac . concat
+              $ fmap DF.toList . DF.toList
+              $ LP.perspective (pi/2) (800/600) (0.35) 1.5 :: [GLfloat]
           
     transform         <- GL.newMatrix ColumnMajor persp :: IO (GLmatrix GLfloat)
     location4         <- get (uniformLocation program "transform")
