@@ -52,9 +52,15 @@ data Object =
      , keys      :: Keys
      } deriving Show
 
+-- data Camera =
+--      Camera
+--      { 
+--      }
+
 -- game state
 data Game =
      Game
      { gStg     :: Stage
      , object   :: Object
+--     , camera   :: Camera
      } deriving Show

@@ -237,13 +237,27 @@ initResources game =
     --       $ fmap DF.toList . DF.toList
     --       $ (transform . object) game :: [GLfloat]
 
-    let persp = fmap realToFrac . concat
-              $ fmap DF.toList . DF.toList
-              $ LP.perspective (pi/2) (800/600) (0.35) 1.5 :: [GLfloat]
-          
-    transform         <- GL.newMatrix ColumnMajor persp :: IO (GLmatrix GLfloat)
-    location4         <- get (uniformLocation program "transform")
-    uniform location4 $= transform
+    -- TODO : add Camera Postiion, parms, Projection to Game
+
+    let persp =          
+          fmap realToFrac . concat $ fmap DF.toList . DF.toList -- convert to GLfloat
+          --               FOV    Aspect    Near   Far
+          $ LP.perspective (pi/2) (800/600) (0.35) 1.5 :: [GLfloat]
+                                                           
+    camera            <- GL.newMatrix ColumnMajor persp :: IO (GLmatrix GLfloat)
+    location4         <- get (uniformLocation program "camera")
+    uniform location4 $= camera
+
+    let mtx =
+          fmap realToFrac . concat $ fmap DF.toList . DF.toList $
+          (transform . object) game --(identity::M44 Double) :: [GLfloat]
+
+    -- let mtx = (transform . object) game
+    transform         <- GL.newMatrix ColumnMajor mtx :: IO (GLmatrix GLfloat)
+                                                
+    location5         <- get (uniformLocation program "transform")
+    uniform location5 $= transform
+
     
     -- | Unload buffers
     bindVertexArrayObject         $= Nothing
