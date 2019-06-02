@@ -21,18 +21,18 @@ in  vec3 fragCoord;
 // in  float time;
 out vec4 fragColor;
 
-uniform float fTime;
+uniform float u_time;
 
 void main()
 {
   vec3  iResolution = vec3(1024, 1024, 1.0);
-  float iGlobalTime = fTime;
+  float iGlobalTime = u_time;
   vec2  fragCoord2  = vec2(fragCoord.x, fragCoord.y);
   vec2  p           = -3.0 + 5000.0 * fragCoord2 / iResolution.xy;
   p.x              *= iResolution.x/iResolution.y;
 
   // animation	
-  float tz = 0.5 + 0.5*(0.225*iGlobalTime);
+  float tz = 0.0 + 0.00001*iGlobalTime;
   float zoo = pow( 0.5, 13.0*tz );
   vec2 c = vec2(-0.05,.6805) + p*zoo;
 

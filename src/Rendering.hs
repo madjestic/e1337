@@ -32,7 +32,8 @@ import Data.Set          as DS (fromList, toList)
 import Data.Foldable     as DF (toList)
 import Linear.Projection as LP (perspective)
 
--- import Debug.Trace as DT
+import Unsafe.Coerce
+import Debug.Trace as DT
 
 resX = 800 :: Int
 resY = 600 :: Int
@@ -216,34 +217,16 @@ initResources game =
     let u_res         = Vector2 (toEnum resX) (toEnum resY) :: Vector2 GLfloat
     uniform location2 $= u_res
 
-    currentTime       <- SDL.time
+    ticks             <- SDL.ticks
+    let currentTime = fromInteger (unsafeCoerce ticks :: Integer) :: Float
+    -- _ <- DT.trace ("u_time: " ++ show currentTime) $ return ()
     location3         <- get (uniformLocation program "u_time")
     uniform location3 $= (currentTime :: GLfloat)
     
-    -- -- | Set Transform Matrix
-    -- let tr' =
-    --       [ 1, 0, 0, 0
-    --       , 0, 1, 0, 0
-    --       , 0, 0, 1, 0
-    --       , 0, 0, 0, 0.5 ] :: [GLfloat]
-
-    -- TODO : replace NDC with ortho from http://hackage.haskell.org/package/linear-1.20.8/docs/Linear-Projection.html
-    -- let ndc = fmap realToFrac . concat
-    --         $ fmap DF.toList . DF.toList
-    --         $ (identity::M44 Double) :: [GLfloat]
-
-    -- let tr =
-    --         fmap realToFrac . concat
-    --       $ fmap DF.toList . DF.toList
-    --       $ (transform . object) game :: [GLfloat]
-
-    -- TODO : add Camera Postiion, parms, Projection to Game
-
     let persp =          
           fmap realToFrac . concat $ fmap DF.toList . DF.toList -- convert to GLfloat
           --               FOV    Aspect    Near   Far
           $ LP.perspective (pi/2) (800/600) (0.35) 1.5 :: [GLfloat]
-                                                           
     camera            <- GL.newMatrix ColumnMajor persp :: IO (GLmatrix GLfloat)
     location4         <- get (uniformLocation program "camera")
     uniform location4 $= camera
@@ -251,10 +234,7 @@ initResources game =
     let mtx =
           fmap realToFrac . concat $ fmap DF.toList . DF.toList $
           (transform . object) game --(identity::M44 Double) :: [GLfloat]
-
-    -- let mtx = (transform . object) game
     transform         <- GL.newMatrix ColumnMajor mtx :: IO (GLmatrix GLfloat)
-                                                
     location5         <- get (uniformLocation program "transform")
     uniform location5 $= transform
 
