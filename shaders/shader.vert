@@ -12,7 +12,7 @@ out float time;
 
 void main()
 {
-   gl_Position = transform * vPosition;
+   gl_Position = camera * transform * vPosition;
 
 // The color of each vertex will be interpolated
 // to produce the color of each fragment

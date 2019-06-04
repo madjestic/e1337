@@ -227,21 +227,22 @@ initResources game =
           fmap realToFrac . concat $ fmap DF.toList . DF.toList -- convert to GLfloat
           --               FOV    Aspect    Near   Far
           $ LP.perspective (pi/2) (800/600) (0.35) 1.5 :: [GLfloat]
-    camera            <- GL.newMatrix ColumnMajor persp :: IO (GLmatrix GLfloat)
+    -- _ <- DT.trace ("persp: " ++ show persp) $ return ()
+    camera            <- GL.newMatrix RowMajor persp :: IO (GLmatrix GLfloat)
     location4         <- get (uniformLocation program "camera")
     uniform location4 $= camera
 
     let mtx =
           fmap realToFrac . concat $ fmap DF.toList . DF.toList $
           (transform . object) game --(identity::M44 Double) :: [GLfloat]
-    transform         <- GL.newMatrix ColumnMajor mtx :: IO (GLmatrix GLfloat)
+    --_ <- DT.trace ("mtx: " ++ show mtx) $ return ()
+    transform         <- GL.newMatrix RowMajor mtx :: IO (GLmatrix GLfloat)
     location5         <- get (uniformLocation program "transform")
     uniform location5 $= transform
-
     
     -- | Unload buffers
-    bindVertexArrayObject         $= Nothing
-    bindBuffer ElementArrayBuffer $= Nothing
+    -- bindVertexArrayObject         $= Nothing
+    -- bindBuffer ElementArrayBuffer $= Nothing
 
     return $ Descriptor vao (fromIntegral numIndices)
 

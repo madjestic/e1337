@@ -134,8 +134,8 @@ nextAppInput inp (SDL.KeyboardEvent ev)
       scancode ev == SDL.ScancodeD ||
       scancode ev == SDL.ScancodeQ ||
       scancode ev == SDL.ScancodeE ||
-      scancode ev == SDL.ScancodeX ||
       scancode ev == SDL.ScancodeZ ||
+      scancode ev == SDL.ScancodeX ||
       scancode ev == SDL.ScancodeUp    ||
       scancode ev == SDL.ScancodeDown  ||
       scancode ev == SDL.ScancodeLeft  || 

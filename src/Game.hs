@@ -32,10 +32,10 @@ data Keys =
      , keyS     :: Bool
      , keyA     :: Bool
      , keyD     :: Bool
-     , keyZ     :: Bool
-     , keyX     :: Bool
      , keyQ     :: Bool
      , keyE     :: Bool
+     , keyZ     :: Bool
+     , keyX     :: Bool
      , keyUp    :: Bool
      , keyDown  :: Bool
      , keyLeft  :: Bool
