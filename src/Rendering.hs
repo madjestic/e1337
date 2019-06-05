@@ -4,6 +4,9 @@ module Rendering
   ( openWindow
   , closeWindow
   , draw
+  , initResources
+  , initBufferObjects
+  , initUniforms
   , Descriptor(..)
   , Drawable(..)
   ) where
@@ -89,11 +92,11 @@ data Descriptor =
      --Descriptor VertexArrayObject ArrayIndex NumArrayIndices
      Descriptor VertexArrayObject NumArrayIndices
 
-draw :: SDL.Window -> Game -> IO ()
-draw window game =
+draw :: SDL.Window -> Descriptor -> IO ()
+draw window (Descriptor vao numIndices) =
   do
     --(Descriptor vao firstIndex numVertices) <- initResources game
-    (Descriptor vao numIndices) <- initResources game
+    -- (Descriptor vao numIndices) <- initResources game
 
     GL.clearColor $= Color4 1 0 0 1
     GL.clear [ColorBuffer, DepthBuffer]
@@ -245,6 +248,113 @@ initResources game =
     -- bindBuffer ElementArrayBuffer $= Nothing
 
     return $ Descriptor vao (fromIntegral numIndices)
+
+initUniforms :: Game -> IO ()
+initUniforms game =  
+  do
+    -- | Shaders
+    program <- loadShaders [
+        ShaderInfo VertexShader   (FileSource "shaders/shader.vert"),
+        ShaderInfo FragmentShader (FileSource "shaders/shader.frag")]
+    currentProgram $= Just program
+
+    -- | Set Uniforms
+    -- location0         <- get (uniformLocation program "fPPos")
+    -- uniform location0 $= (realToFrac ppos :: GLfloat)
+
+    -- location1         <- get (uniformLocation program "vBPos")
+    -- uniform location1 $= (Vector2 (realToFrac $ fst bpos)
+    --                               (realToFrac $ snd bpos) :: Vector2 GLfloat)
+
+    location2         <- get (uniformLocation program "u_resolution")
+    let u_res         = Vector2 (toEnum resX) (toEnum resY) :: Vector2 GLfloat
+    uniform location2 $= u_res
+
+    ticks             <- SDL.ticks
+    let currentTime = fromInteger (unsafeCoerce ticks :: Integer) :: Float
+    -- _ <- DT.trace ("u_time: " ++ show currentTime) $ return ()
+    location3         <- get (uniformLocation program "u_time")
+    uniform location3 $= (currentTime :: GLfloat)
+    
+    let persp =          
+          fmap realToFrac . concat $ fmap DF.toList . DF.toList -- convert to GLfloat
+          --               FOV    Aspect    Near   Far
+          $ LP.perspective (pi/2) (800/600) (0.35) 1.5 :: [GLfloat]
+    -- _ <- DT.trace ("persp: " ++ show persp) $ return ()
+    camera            <- GL.newMatrix RowMajor persp :: IO (GLmatrix GLfloat)
+    location4         <- get (uniformLocation program "camera")
+    uniform location4 $= camera
+
+    let mtx =
+          fmap realToFrac . concat $ fmap DF.toList . DF.toList $
+          (transform . object) game --(identity::M44 Double) :: [GLfloat]
+    --_ <- DT.trace ("mtx: " ++ show mtx) $ return ()
+    transform         <- GL.newMatrix RowMajor mtx :: IO (GLmatrix GLfloat)
+    location5         <- get (uniformLocation program "transform")
+    uniform location5 $= transform
+    
+    -- | Unload buffers
+    -- bindVertexArrayObject         $= Nothing
+    -- bindBuffer ElementArrayBuffer $= Nothing
+
+    return () -- $ Descriptor vao (fromIntegral numIndices)
+    
+
+initBufferObjects :: Game -> IO Descriptor
+initBufferObjects game =  
+  do
+    drw <- toDrawable $ (geometry . object) game
+  
+    let stride = 7 -- TODO : stride <- attr sizes
+    (vs, idx) <- indexedVAO (verts drw) (uvs drw) (ids drw) stride
+
+    -- | VAO
+    vao <- genObjectName
+    bindVertexArrayObject $= Just vao 
+
+    -- | VBO
+    vertexBuffer <- genObjectName
+    bindBuffer ArrayBuffer $= Just vertexBuffer
+    withArray vs $ \ptr ->
+      do
+        let sizev = fromIntegral ((length vs) * sizeOf (head vs))
+        bufferData ArrayBuffer $= (sizev, ptr, StaticDraw)
+
+    -- | EBO
+    elementBuffer <- genObjectName
+    bindBuffer ElementArrayBuffer $= Just elementBuffer
+    let numIndices = length idx
+    withArray idx $ \ptr ->
+      do
+        let indicesSize = fromIntegral (numIndices * sizeOf (head idx))
+        bufferData ElementArrayBuffer $= (indicesSize, ptr, StaticDraw)
+        
+    -- | Bind the pointer to the vertex attribute data
+    let floatSize  = (fromIntegral $ sizeOf (0.0::GLfloat)) :: GLsizei
+        stride     =  7 * floatSize
+
+    -- | Positions
+    let vPosition  = AttribLocation 0
+        posOffset  = 0 * floatSize
+    vertexAttribPointer vPosition $=
+        (ToFloat, VertexArrayDescriptor 4 Float stride (bufferOffset posOffset))
+    vertexAttribArray vPosition   $= Enabled
+
+    -- | UV
+    let uvCoords   = AttribLocation 1
+        uvOffset   = 4 * floatSize
+    vertexAttribPointer uvCoords  $=
+        (ToFloat, VertexArrayDescriptor 3 Float stride (bufferOffset uvOffset))
+    vertexAttribArray uvCoords    $= Enabled
+
+    -- -- | Shaders
+    -- program <- loadShaders [
+    --     ShaderInfo VertexShader   (FileSource "shaders/shader.vert"),
+    --     ShaderInfo FragmentShader (FileSource "shaders/shader.frag")]
+    -- currentProgram $= Just program
+
+    return $ Descriptor vao (fromIntegral numIndices)
+    
 
 bufferOffset :: Integral a => a -> Ptr b
 bufferOffset = plusPtr nullPtr . fromIntegral

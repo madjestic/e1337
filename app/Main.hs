@@ -40,12 +40,17 @@ type WinOutput = (Game, Bool)
 animate :: Text                   -- ^ window title
         -> CInt                   -- ^ window width in pixels
         -> CInt                   -- ^ window height in pixels
+--        -> Descriptor
+        -> Game
         -> SF WinInput WinOutput  -- ^ signal function to animate
         -> IO ()
-animate title winWidth winHeight sf = do
+animate title winWidth winHeight game sf = do
     window <- openWindow title (winWidth, winHeight)
 
-    lastInteraction <- newMVar =<< SDL.time   
+    lastInteraction <- newMVar =<< SDL.time
+    
+    _ <- DT.trace "Init Buffers..." $ return ()
+    resources <- initBufferObjects game
       
     let senseInput _ = do
             currentTime <- SDL.time                          
@@ -57,7 +62,10 @@ animate title winWidth winHeight sf = do
           do
             --_ <- DT.trace "Hello!" $ return ()
             --_ <- DT.trace ("Game: " ++ show game) $ return ()
-            draw window game -- game => (game -> renderable
+            _ <- initUniforms game
+            -- resources <- initBufferObjects game
+            -- resources <- initResources game
+            draw window resources -- game => (game -> renderable
             return shouldExit 
 
     reactimate (return NoEvent)
@@ -121,7 +129,8 @@ updateObject obj =
   proc input -> do
     sclr    <- updateScalar $ scalar obj -< input
     -- mtx     <- returnA -< (identity::M44 Double) 
-    mtx     <- (DT.trace ("mtx: ") $) updateTransform (transform obj) (velocity obj) (keys obj) -< input
+    -- mtx     <- (DT.trace ("mtx: ") $) updateTransform (transform obj) (velocity obj) (keys obj) -< input
+    mtx     <- updateTransform (transform obj) (velocity obj) (keys obj) -< input
     --_ <- DT.trace ("mtx: " ++ show mtx) $ returnA -< ()
 
     returnA -< Object sclr (geometry obj) mtx (velocity obj) (keys obj)
@@ -134,7 +143,7 @@ updateTransform mtx0 vel0 keys0 =
     where
       sf = proc input -> do
         -- update transform according to Keys
-        _ <- DT.trace ("keys0 : " ++ show keys0) $ returnA -< ()
+        -- _ <- DT.trace ("keys0 : " ++ show keys0) $ returnA -< ()
         mtx <- fromKeys mtx0 keys0 -< ()
         --mtx   <- (^.^) ^<< integral -< (mtx0, keys0)
         keyWp     <- key SDL.ScancodeW     "Pressed"  -< input
@@ -193,7 +202,8 @@ updateTransform mtx0 vel0 keys0 =
                      , keyDownP,  keyDownR
                      , keyLeftP,  keyLeftR
                      , keyRightP, keyRightR ]
-                     `tag` (DT.trace ("result: " ++ show result) $ DT.trace ("sukanah: " ++ show result)) result) -- :: (M44 Double, Event (M44 Double))
+                     `tag` result) -- :: (M44 Double, Event (M44 Double))
+                     --`tag` (DT.trace ("result: " ++ show result) $ DT.trace ("sukanah: " ++ show result)) result) -- :: (M44 Double, Event (M44 Double))
           
       cont (mtx, keys) = updateTransform mtx vel0 keys -- undefined --fromKeys mtx keys
 
@@ -302,8 +312,13 @@ initGame =
 main :: IO ()
 main = do
   initState <- initGame
+  resources <- initBufferObjects initState
+  --game <- 
+  -- let resources = Descriptor [] []
   animate
     "e1337"
     resX
     resY
+    initState
+--    resources
     (parseWinInput >>> ((mainGame initState) &&& handleExit))

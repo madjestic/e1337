@@ -5,8 +5,8 @@
 	"vertexcount",972,
 	"primitivecount",324,
 	"info",{
-		"date":"2019-06-04 19:49:15",
-		"timetocook":0.000155999999999999997,
+		"date":"2019-06-04 22:18:10",
+		"timetocook":0.00136499999999999989,
 		"software":"Houdini 17.5.228",
 		"artist":"madjestic",
 		"hostname":"nu",
