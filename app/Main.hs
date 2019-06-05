@@ -8,21 +8,20 @@
 module Main where 
 
 import Control.Concurrent
-import Control.Lens                           hiding (transform)
-import Data.Text                              (Text)
-import Foreign.C                              
-import FRP.Yampa                              hiding (identity, (*^))
+import Control.Lens       hiding (transform)
+import Data.Text          (Text)
+import Foreign.C          
+import FRP.Yampa          hiding (identity, (*^))
 import Linear.Matrix
-import SDL                                    hiding (Point, Vec2, Vec3, M44, Event, (^+^))
+import SDL                hiding (Point, Vec2, Vec3, M44, Event, (^+^))
 
 import Game
 import Geometry
 import Input
 import Rendering
--- import Drawables
-import Data.Foldable     as DF (toList)
+import Data.Foldable as DF (toList)
 
-import Debug.Trace as DT
+import Debug.Trace   as DT
 
 --        d8888888b    8888888888888b     d888       d8888888888888888888888888 
 --       d888888888b   888  888  8888b   d8888      d88888    888    888        
@@ -37,22 +36,22 @@ import Debug.Trace as DT
 type WinInput = Event SDL.EventPayload
 type WinOutput = (Game, Bool)
 
-animate :: Text                   -- ^ window title
-        -> CInt                   -- ^ window width in pixels
-        -> CInt                   -- ^ window height in pixels
---        -> Descriptor
-        -> Game
+animate :: SDL.Window
+        -> Descriptor
         -> SF WinInput WinOutput  -- ^ signal function to animate
         -> IO ()
-animate title winWidth winHeight game sf = do
-    window <- openWindow title (winWidth, winHeight)
-
-    lastInteraction <- newMVar =<< SDL.time
+animate window resources sf =
+  do
+    reactimate (return NoEvent)
+               senseInput
+               renderOutput
+               sf
+    closeWindow window
     
-    _ <- DT.trace "Init Buffers..." $ return ()
-    resources <- initBufferObjects game
-      
-    let senseInput _ = do
+      where
+        senseInput _ =
+          do
+            lastInteraction <- newMVar =<< SDL.time
             currentTime <- SDL.time                          
             dt <- (currentTime -) <$> swapMVar lastInteraction currentTime
             mEvent <- SDL.pollEvent                          
@@ -60,20 +59,9 @@ animate title winWidth winHeight game sf = do
 
         renderOutput _ (game, shouldExit) =
           do
-            --_ <- DT.trace "Hello!" $ return ()
-            --_ <- DT.trace ("Game: " ++ show game) $ return ()
-            _ <- initUniforms game
-            -- resources <- initBufferObjects game
-            -- resources <- initResources game
-            draw window resources -- game => (game -> renderable
+            uniforms <- initUniforms game
+            draw window resources
             return shouldExit 
-
-    reactimate (return NoEvent)
-               senseInput
-               renderOutput
-               sf
-
-    closeWindow window
 
 
 --  .d8888b.88888888888    d8888888888888888888888888888b     d888       d8888 .d8888b. 888    8888888888888b    8888888888888 
@@ -128,11 +116,7 @@ updateObject :: Object -> SF AppInput Object
 updateObject obj =
   proc input -> do
     sclr    <- updateScalar $ scalar obj -< input
-    -- mtx     <- returnA -< (identity::M44 Double) 
-    -- mtx     <- (DT.trace ("mtx: ") $) updateTransform (transform obj) (velocity obj) (keys obj) -< input
     mtx     <- updateTransform (transform obj) (velocity obj) (keys obj) -< input
-    --_ <- DT.trace ("mtx: " ++ show mtx) $ returnA -< ()
-
     returnA -< Object sclr (geometry obj) mtx (velocity obj) (keys obj)
 
 updateTransform :: M44 Double -> V4 Double -> Keys -> SF AppInput (M44 Double)
@@ -142,10 +126,7 @@ updateTransform mtx0 vel0 keys0 =
   switch sf cont
     where
       sf = proc input -> do
-        -- update transform according to Keys
-        -- _ <- DT.trace ("keys0 : " ++ show keys0) $ returnA -< ()
         mtx <- fromKeys mtx0 keys0 -< ()
-        --mtx   <- (^.^) ^<< integral -< (mtx0, keys0)
         keyWp     <- key SDL.ScancodeW     "Pressed"  -< input
         keyWr     <- key SDL.ScancodeW     "Released" -< input
         keySp     <- key SDL.ScancodeS     "Pressed"  -< input
@@ -293,7 +274,6 @@ initGame :: IO Game
 initGame =
   do
     geo <- readPGeo jsonFile
-    --_ <- DT.trace ("Game: " ++ show geo) $ return ()
     let obj = Object 0.0 geo (identity::M44 Double) (V4 0 0 0 0) (Keys False False False False False False False False False False False False)
     let initGame = Game GamePlaying obj
     return initGame
@@ -311,14 +291,11 @@ initGame =
 -- < Main Function > -----------------------------------------------------------
 main :: IO ()
 main = do
-  initState <- initGame
-  resources <- initBufferObjects initState
-  --game <- 
-  -- let resources = Descriptor [] []
+  game            <- initGame
+  window          <- openWindow "e1337" (resX, resY)
+  resources       <- initBufferObjects game
+  
   animate
-    "e1337"
-    resX
-    resY
-    initState
---    resources
-    (parseWinInput >>> ((mainGame initState) &&& handleExit))
+    window
+    resources
+    (parseWinInput >>> ((mainGame game) &&& handleExit))
