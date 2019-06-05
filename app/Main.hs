@@ -29,7 +29,7 @@ import Debug.Trace   as DT
 --     d88P 888888Y88b 888  888  888Y88888P888    d88P 888    888    8888888    
 --    d88P  888888 Y88b888  888  888 Y888P 888   d88P  888    888    888        
 --   d88P   888888  Y88888  888  888  Y8P  888  d88P   888    888    888        
---  d8888888888888   Y8888  888  888   "   888 d8888888888    888    888        
+       --  d8888888888888   Y8888  888  888   "   888 d8888888888    888    888        
 -- d88P     888888    Y8888888888888       888d88P     888    888    8888888888 
 
 -- < Animate > ------------------------------------------------------------
@@ -94,8 +94,7 @@ gameIntro =
                waitE      <- after loadDelay () -< ()
                returnA    -< (introState, (skipE `lMerge` waitE) `tag` playState)
            cont game  = 
-             proc input -> do
-               returnA  -< game
+             proc input -> returnA -< game
 
 gamePlay :: Game -> SF AppInput Game
 gamePlay game =
@@ -126,7 +125,9 @@ updateTransform mtx0 vel0 keys0 =
   switch sf cont
     where
       sf = proc input -> do
+        -- TODO : make integral matrix as in Pong, Main.hs, 114
         mtx <- fromKeys mtx0 keys0 -< ()
+        
         keyWp     <- key SDL.ScancodeW     "Pressed"  -< input
         keyWr     <- key SDL.ScancodeW     "Released" -< input
         keySp     <- key SDL.ScancodeS     "Pressed"  -< input
@@ -156,18 +157,18 @@ updateTransform mtx0 vel0 keys0 =
         
         let result = ( mtx
                   , Keys
-                    ( keyEvent (keyW     keys0) keyWp      keyWr     )
-                    ( keyEvent (keyS     keys0) keySp      keySr     )
-                    ( keyEvent (keyA     keys0) keyAp      keyAr     )
-                    ( keyEvent (keyD     keys0) keyDp      keyDr     )
-                    ( keyEvent (keyQ     keys0) keyQp      keyQr     )
-                    ( keyEvent (keyE     keys0) keyEp      keyEr     )
-                    ( keyEvent (keyZ     keys0) keyZp      keyZr     )
-                    ( keyEvent (keyX     keys0) keyXp      keyXr     )
-                    ( keyEvent (keyUp    keys0) keyUpP     keyUpR    )
-                    ( keyEvent (keyDown  keys0) keyDownP   keyDownR  )
-                    ( keyEvent (keyLeft  keys0) keyLeftP   keyLeftR  )
-                    ( keyEvent (keyRight keys0) keyRightP  keyRightR ) )
+                    ( keyEvent keyWp      keyWr     )
+                    ( keyEvent keySp      keySr     )
+                    ( keyEvent keyAp      keyAr     )
+                    ( keyEvent keyDp      keyDr     )
+                    ( keyEvent keyQp      keyQr     )
+                    ( keyEvent keyEp      keyEr     )
+                    ( keyEvent keyZp      keyZr     )
+                    ( keyEvent keyXp      keyXr     )
+                    ( keyEvent keyUpP     keyUpR    )
+                    ( keyEvent keyDownP   keyDownR  )
+                    ( keyEvent keyLeftP   keyLeftR  )
+                    ( keyEvent keyRightP  keyRightR ) )
 
         returnA -< ( mtx
                    , mergeEvents
@@ -184,15 +185,14 @@ updateTransform mtx0 vel0 keys0 =
                      , keyLeftP,  keyLeftR
                      , keyRightP, keyRightR ]
                      `tag` result) -- :: (M44 Double, Event (M44 Double))
-                     --`tag` (DT.trace ("result: " ++ show result) $ DT.trace ("sukanah: " ++ show result)) result) -- :: (M44 Double, Event (M44 Double))
+
           
       cont (mtx, keys) = updateTransform mtx vel0 keys -- undefined --fromKeys mtx keys
 
-keyEvent :: Bool -> Event () -> Event () -> Bool
-keyEvent state pressed released
+keyEvent :: Event () -> Event () -> Bool
+keyEvent pressed released
   | isEvent pressed  = True
-  | isEvent released = False
-  | otherwise = state
+  | otherwise        = False
 
 fromKeys :: M44 Double -> Keys -> SF () (M44 Double)
 fromKeys mtx0 keys0 =
@@ -201,19 +201,19 @@ fromKeys mtx0 keys0 =
           foldr (+) (view translation mtx0 ) $
           zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys0) <$>
                         [keyW, keyS, keyA, keyD, keyZ, keyX])
-                       ([fVel, bVel, lVel, rVel, uVel, dVel])
+                        [fVel, bVel, lVel, rVel, uVel, dVel]
 
         rotate    = view _m33 mtx0
 
         mtx       = mkTransformationMat rotate translate
 
     returnA -< mtx
-        where fVel   = V3 ( 0)  ( 0) (-0.1) -- forwards  velocity
-              bVel   = V3 ( 0)  ( 0) ( 0.1) -- backwards velocity
-              lVel   = V3 (-0.1)( 0) ( 0)   -- left      velocity
-              rVel   = V3 ( 0.1)( 0) ( 0)   -- right     velocity
-              uVel   = V3 ( 0)( 0.1) ( 0)   -- right     velocity
-              dVel   = V3 ( 0)(-0.1) ( 0)   -- right     velocity
+        where fVel   = V3   0    0   (-0.1) -- forwards  velocity
+              bVel   = V3   0    0     0.1 -- backwards velocity
+              lVel   = V3 (-0.1) 0     0   -- left      velocity
+              rVel   = V3   0.1  0     0   -- right     velocity
+              uVel   = V3   0    0.1   0   -- right     velocity
+              dVel   = V3   0  (-0.1)  0   -- right     velocity
               
 updateScalar :: Double -> SF AppInput Double
 updateScalar pp0 =
@@ -298,4 +298,4 @@ main = do
   animate
     window
     resources
-    (parseWinInput >>> ((mainGame game) &&& handleExit))
+    (parseWinInput >>> (mainGame game &&& handleExit))
