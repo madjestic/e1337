@@ -11,9 +11,16 @@ import Control.Concurrent
 import Control.Lens       hiding (transform)
 import Data.Text          (Text)
 import Foreign.C          
-import FRP.Yampa          hiding (identity, (*^))
-import Linear.Matrix
-import SDL                hiding (Point, Vec2, Vec3, M44, Event, (^+^))
+import FRP.Yampa          hiding (identity) 
+
+import Linear.Matrix      (M44, M33, identity)
+import SDL                hiding ( Point
+                                 , M44
+                                 , M33
+                                 , Event
+                                 , (^+^)
+                                 , (*^))
+
 
 import Game
 import Geometry
@@ -118,6 +125,15 @@ updateObject obj =
     mtx     <- updateTransform (transform obj) (velocity obj) (keys obj) -< input
     returnA -< Object sclr (geometry obj) mtx (velocity obj) (keys obj)
 
+instance VectorSpace (V3 Double) Double where
+    zeroVector = V3 0 0 0
+
+    s *^ (V3 x y z) = (V3 (s*x) (s*y) (s*z))
+
+    (V3 x y z) ^+^ (V3 k l m) = (V3 (x+k) (y+l) (z+m))
+
+    dot (V3 x y z)  (V3 k l m) = (x*k) + (y*l) + (z*m)
+
 updateTransform :: M44 Double -> V4 Double -> Keys -> SF AppInput (M44 Double)
 updateTransform mtx0 vel0 keys0 =
   -- | foldrWith mtx0 keys - for every key apply a folding transform to mtx0
@@ -125,8 +141,15 @@ updateTransform mtx0 vel0 keys0 =
   switch sf cont
     where
       sf = proc input -> do
-        -- TODO : make integral matrix as in Pong, Main.hs, 114
-        mtx <- fromKeys mtx0 keys0 -< ()
+        -- TODO : make integral translation component of the matrix as in Pong, Main.hs, 114
+        mtx' <- fromKeys mtx0 keys0 -< ()
+        tr  <- DT.trace ("tr :" ++ show (view translation (mtx0)) ++ "\n") $
+               ((view translation mtx0) ^+^) ^<< integral -< (view translation mtx')
+
+        let mtx = -- DT.trace ("mtx :" ++ show (transpose $ mkTransformationMat (identity::M33 Double) tr)) $
+                  mkTransformationMat (identity::M33 Double) (999 *^ tr) --(V3 0 0.5 0) --(view translation mtx')
+        -- mtx <- DT.trace ("mtx :" ++ show (transpose mtx0))
+        --     $ fromKeys mtx0 keys0 -< ()
         
         keyWp     <- key SDL.ScancodeW     "Pressed"  -< input
         keyWr     <- key SDL.ScancodeW     "Released" -< input
@@ -274,7 +297,26 @@ initGame :: IO Game
 initGame =
   do
     geo <- readPGeo jsonFile
-    let obj = Object 0.0 geo (identity::M44 Double) (V4 0 0 0 0) (Keys False False False False False False False False False False False False)
+    let obj =
+          Object
+          0.0
+          geo
+          (identity::M44 Double)
+          (V4 0 0 0 0)
+          (Keys
+            False
+            False
+            False
+            False
+            False
+            False
+            False
+            False
+            False
+            False
+            False
+            False)
+              
     let initGame = Game GamePlaying obj
     return initGame
 
