@@ -141,15 +141,12 @@ updateTransform mtx0 vel0 keys0 =
   switch sf cont
     where
       sf = proc input -> do
-        -- TODO : make integral translation component of the matrix as in Pong, Main.hs, 114
-        mtx' <- fromKeys mtx0 keys0 -< ()
-        tr  <- DT.trace ("tr :" ++ show (view translation (mtx0)) ++ "\n") $
+        mtx'<- fromKeys mtx0 keys0 -< ()
+        tr  <- DT.trace ("tr   :" ++ show (view translation (mtx0)) ++ "\n") $
+               DT.trace ("mtx0 :" ++ show (transpose mtx0) ++ "\n") $
                ((view translation mtx0) ^+^) ^<< integral -< (view translation mtx')
 
-        let mtx = -- DT.trace ("mtx :" ++ show (transpose $ mkTransformationMat (identity::M33 Double) tr)) $
-                  mkTransformationMat (identity::M33 Double) (999 *^ tr) --(V3 0 0.5 0) --(view translation mtx')
-        -- mtx <- DT.trace ("mtx :" ++ show (transpose mtx0))
-        --     $ fromKeys mtx0 keys0 -< ()
+        let mtx = mkTransformationMat (identity::M33 Double) (tr) --(V3 0 0.5 0) --(view translation mtx')
         
         keyWp     <- key SDL.ScancodeW     "Pressed"  -< input
         keyWr     <- key SDL.ScancodeW     "Released" -< input
@@ -221,22 +218,25 @@ fromKeys :: M44 Double -> Keys -> SF () (M44 Double)
 fromKeys mtx0 keys0 =
   proc () -> do
     let translate = --DT.trace ("Hello!\n") $
-          foldr (+) (view translation mtx0 ) $
+          --foldr (+) (view translation mtx0 ) $
+          foldr (+) (V3 0 0 0) $
           zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys0) <$>
                         [keyW, keyS, keyA, keyD, keyZ, keyX])
                         [fVel, bVel, lVel, rVel, uVel, dVel]
 
         rotate    = view _m33 mtx0
 
-        mtx       = mkTransformationMat rotate translate
+        mtx       = mkTransformationMat
+                    rotate
+                    (DT.trace ("translate :" ++ show translate ) $ translate)
 
     returnA -< mtx
-        where fVel   = V3   0    0   (-0.1) -- forwards  velocity
-              bVel   = V3   0    0     0.1 -- backwards velocity
-              lVel   = V3 (-0.1) 0     0   -- left      velocity
-              rVel   = V3   0.1  0     0   -- right     velocity
-              uVel   = V3   0    0.1   0   -- right     velocity
-              dVel   = V3   0  (-0.1)  0   -- right     velocity
+        where fVel   = V3   0    0   (-999) -- forwards  velocity
+              bVel   = V3   0    0     999 -- backwards velocity
+              lVel   = V3 (-999) 0     0   -- left      velocity
+              rVel   = V3   999  0     0   -- right     velocity
+              uVel   = V3   0    999   0   -- right     velocity
+              dVel   = V3   0  (-999)  0   -- right     velocity
               
 updateScalar :: Double -> SF AppInput Double
 updateScalar pp0 =
