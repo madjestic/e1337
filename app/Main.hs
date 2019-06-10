@@ -11,7 +11,8 @@ import Control.Concurrent
 import Control.Lens       hiding (transform)
 import Data.Text          (Text)
 import Foreign.C          
-import FRP.Yampa          hiding (identity) 
+import FRP.Yampa          hiding (identity)
+import Data.Functor       (($>))
 
 import Linear.Matrix      (M44, M33, identity)
 import SDL                hiding ( Point
@@ -20,8 +21,6 @@ import SDL                hiding ( Point
                                  , Event
                                  , (^+^)
                                  , (*^))
-
-
 import Game
 import Geometry
 import Input
@@ -99,7 +98,7 @@ gameIntro =
                playState  <- returnA -< game { gStg =  GamePlaying }
                skipE      <- key SDL.ScancodeSpace "Pressed" -< input
                waitE      <- after loadDelay () -< ()
-               returnA    -< (introState, (skipE `lMerge` waitE) `tag` playState)
+               returnA    -< (introState, (skipE `lMerge` waitE) $> playState)
            cont game  = 
              proc input -> returnA -< game
 
@@ -126,13 +125,10 @@ updateObject obj =
     returnA -< Object sclr (geometry obj) mtx (velocity obj) (keys obj)
 
 instance VectorSpace (V3 Double) Double where
-    zeroVector = V3 0 0 0
-
-    s *^ (V3 x y z) = (V3 (s*x) (s*y) (s*z))
-
-    (V3 x y z) ^+^ (V3 k l m) = (V3 (x+k) (y+l) (z+m))
-
-    dot (V3 x y z)  (V3 k l m) = (x*k) + (y*l) + (z*m)
+    zeroVector                   = (V3 0 0 0)
+    (*^) s (V3 x y z)            = (V3 (s*x) (s*y) (s*z))
+    (^+^)  (V3 x y z) (V3 k l m) = (V3 (x+k) (y+l) (z+m))
+    dot    (V3 x y z) (V3 k l m) = (x*k) + (y*l) + (z*m)
 
 updateTransform :: M44 Double -> V4 Double -> Keys -> SF AppInput (M44 Double)
 updateTransform mtx0 vel0 keys0 =
@@ -142,12 +138,14 @@ updateTransform mtx0 vel0 keys0 =
     where
       sf = proc input -> do
         mtx'<- fromKeys mtx0 keys0 -< ()
-        tr  <- DT.trace ("tr   :" ++ show (view translation (mtx0)) ++ "\n") $
-               DT.trace ("mtx0 :" ++ show (transpose mtx0) ++ "\n") $
+        tr  <- --DT.trace ("tr   :" ++ show (view translation (mtx0)) ++ "\n") $
+               --DT.trace ("mtx0 :" ++ show (transpose mtx0) ++ "\n") $
                ((view translation mtx0) ^+^) ^<< integral -< (view translation mtx')
 
-        let mtx = mkTransformationMat (identity::M33 Double) (tr) --(V3 0 0.5 0) --(view translation mtx')
-        
+        mtx <-
+          returnA -<
+          mkTransformationMat (identity::M33 Double) (tr) --(V3 0 0.5 0) --(view translation mtx')
+
         keyWp     <- key SDL.ScancodeW     "Pressed"  -< input
         keyWr     <- key SDL.ScancodeW     "Released" -< input
         keySp     <- key SDL.ScancodeS     "Pressed"  -< input
@@ -175,51 +173,59 @@ updateTransform mtx0 vel0 keys0 =
         keyRightP <- key SDL.ScancodeRight "Pressed"  -< input
         keyRightR <- key SDL.ScancodeRight "Released" -< input
         
-        let result = ( mtx
-                  , Keys
-                    ( keyEvent keyWp      keyWr     )
-                    ( keyEvent keySp      keySr     )
-                    ( keyEvent keyAp      keyAr     )
-                    ( keyEvent keyDp      keyDr     )
-                    ( keyEvent keyQp      keyQr     )
-                    ( keyEvent keyEp      keyEr     )
-                    ( keyEvent keyZp      keyZr     )
-                    ( keyEvent keyXp      keyXr     )
-                    ( keyEvent keyUpP     keyUpR    )
-                    ( keyEvent keyDownP   keyDownR  )
-                    ( keyEvent keyLeftP   keyLeftR  )
-                    ( keyEvent keyRightP  keyRightR ) )
+        result <-
+          returnA -<
+          ( mtx
+          , Keys
+            ( keyEvent (keyW     keys0) keyWp      keyWr     )
+            ( keyEvent (keyS     keys0) keySp      keySr     )
+            ( keyEvent (keyA     keys0) keyAp      keyAr     )
+            ( keyEvent (keyD     keys0) keyDp      keyDr     )
+            ( keyEvent (keyQ     keys0) keyQp      keyQr     )
+            ( keyEvent (keyE     keys0) keyEp      keyEr     )
+            ( keyEvent (keyZ     keys0) keyZp      keyZr     )
+            ( keyEvent (keyX     keys0) keyXp      keyXr     )
+            ( keyEvent (keyUp    keys0) keyUpP     keyUpR    )
+            ( keyEvent (keyDown  keys0) keyDownP   keyDownR  )
+            ( keyEvent (keyLeft  keys0) keyLeftP   keyLeftR  )
+            ( keyEvent (keyRight keys0) keyRightP  keyRightR ))
 
-        returnA -< ( mtx
-                   , mergeEvents
-                     [ keyWp,     keyWr
-                     , keySp,     keySr
-                     , keyAp,     keyAr
-                     , keyDp,     keyDr
-                     , keyQp,     keyQr
-                     , keyEp,     keyEr 
-                     , keyZp,     keyZr 
-                     , keyXp,     keyXr
-                     , keyUpP,    keyUpR
-                     , keyDownP,  keyDownR
-                     , keyLeftP,  keyLeftR
-                     , keyRightP, keyRightR ]
-                     `tag` result) -- :: (M44 Double, Event (M44 Double))
+        returnA -<
+          ( mtx
+          , catEvents
+            [ keyWp,     keyWr
+            , keySp,     keySr
+            , keyAp,     keyAr
+            , keyDp,     keyDr
+            , keyQp,     keyQr
+            , keyEp,     keyEr 
+            , keyZp,     keyZr 
+            , keyXp,     keyXr
+            , keyUpP,    keyUpR
+            , keyDownP,  keyDownR
+            , keyLeftP,  keyLeftR
+            , keyRightP, keyRightR ]
+            $> result) -- :: (M44 Double, Event (M44 Double))
+            -- $> (DT.trace ("result: " ++ show result)) result) -- :: (M44 Double, Event (M44 Double))
 
-          
       cont (mtx, keys) = updateTransform mtx vel0 keys -- undefined --fromKeys mtx keys
 
-keyEvent :: Event () -> Event () -> Bool
-keyEvent pressed released
+keyEvent :: Bool -> Event () -> Event () -> Bool
+keyEvent state pressed released
   | isEvent pressed  = True
-  | otherwise        = False
+  | isEvent released = False
+  | otherwise = state
+
+-- keyEvent :: Event () -> Event () -> Bool
+-- keyEvent pressed released
+--   | isEvent pressed  = True
+--   | otherwise        = False
 
 fromKeys :: M44 Double -> Keys -> SF () (M44 Double)
 fromKeys mtx0 keys0 =
   proc () -> do
     let translate = --DT.trace ("Hello!\n") $
-          --foldr (+) (view translation mtx0 ) $
-          foldr (+) (V3 0 0 0) $
+          foldr (+) (view translation mtx0 ) $
           zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys0) <$>
                         [keyW, keyS, keyA, keyD, keyZ, keyX])
                         [fVel, bVel, lVel, rVel, uVel, dVel]
@@ -228,7 +234,7 @@ fromKeys mtx0 keys0 =
 
         mtx       = mkTransformationMat
                     rotate
-                    (DT.trace ("translate :" ++ show translate ) $ translate)
+                    translate
 
     returnA -< mtx
         where fVel   = V3   0    0   (-999) -- forwards  velocity
@@ -254,7 +260,7 @@ updateScalar pp0 =
                       , keyRight )
         returnA -< (pp0, mergeEvents
                          [ keyLeft
-                         , keyRight ] `tag` result)
+                         , keyRight ] $> result)
 
       cont (x, keyLeft, keyRight) =
         if | isEvent keyLeft -> updateScalar' x (-0.5)
@@ -272,7 +278,7 @@ updateScalar' pp0 v0 =
              keyRight<- key SDL.ScancodeRight "Released" -< input
              returnA -< (p, mergeEvents
                             [ keyLeft  
-                            , keyRight ] `tag` p) :: (Double, Event Double)
+                            , keyRight ] $> p) :: (Double, Event Double)
          cont = updateScalar
 
 handleExit :: SF AppInput Bool
