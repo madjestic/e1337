@@ -27,6 +27,8 @@ import Data.List.Index
 
 import LoadShaders
 import Game
+import Object    as Object
+import Camera    as Camera
 import Geometry
 import Drawables
 import Shape2D
@@ -216,28 +218,28 @@ initResources game =
     -- uniform location1 $= (Vector2 (realToFrac $ fst bpos)
     --                               (realToFrac $ snd bpos) :: Vector2 GLfloat)
 
-    location2         <- get (uniformLocation program "u_resolution")
+    location1         <- get (uniformLocation program "u_resolution")
     let u_res         = Vector2 (toEnum resX) (toEnum resY) :: Vector2 GLfloat
-    uniform location2 $= u_res
+    uniform location1 $= u_res
 
     ticks             <- SDL.ticks
     let currentTime = fromInteger (unsafeCoerce ticks :: Integer) :: Float
     -- _ <- DT.trace ("u_time: " ++ show currentTime) $ return ()
-    location3         <- get (uniformLocation program "u_time")
-    uniform location3 $= (currentTime :: GLfloat)
+    location2         <- get (uniformLocation program "u_time")
+    uniform location2 $= (currentTime :: GLfloat)
     
-    let persp =          
+    let proj =          
           fmap realToFrac . concat $ fmap DF.toList . DF.toList -- convert to GLfloat
           --               FOV    Aspect    Near   Far
           $ LP.perspective (pi/2) (800/600) (0.35) 1.5 :: [GLfloat]
-    -- _ <- DT.trace ("persp: " ++ show persp) $ return ()
-    camera            <- GL.newMatrix RowMajor persp :: IO (GLmatrix GLfloat)
+    -- _ <- DT.trace ("proj: " ++ show proj) $ return ()
+    camera            <- GL.newMatrix RowMajor proj :: IO (GLmatrix GLfloat)
     location4         <- get (uniformLocation program "camera")
     uniform location4 $= camera
 
     let mtx =
           fmap realToFrac . concat $ fmap DF.toList . DF.toList $
-          (transform . object) game --(identity::M44 Double) :: [GLfloat]
+          (Object.transform . object) game --(identity::M44 Double) :: [GLfloat]
     --_ <- DT.trace ("mtx: " ++ show mtx) $ return ()
     transform         <- GL.newMatrix RowMajor mtx :: IO (GLmatrix GLfloat)
     location5         <- get (uniformLocation program "transform")
@@ -266,28 +268,33 @@ initUniforms game =
     -- uniform location1 $= (Vector2 (realToFrac $ fst bpos)
     --                               (realToFrac $ snd bpos) :: Vector2 GLfloat)
 
-    location2         <- get (uniformLocation program "u_resolution")
+    location1         <- get (uniformLocation program "u_resolution")
     let u_res         = Vector2 (toEnum resX) (toEnum resY) :: Vector2 GLfloat
-    uniform location2 $= u_res
+    uniform location1 $= u_res
 
     ticks             <- SDL.ticks
     let currentTime = fromInteger (unsafeCoerce ticks :: Integer) :: Float
-    -- _ <- DT.trace ("u_time: " ++ show currentTime) $ return ()
-    location3         <- get (uniformLocation program "u_time")
-    uniform location3 $= (currentTime :: GLfloat)
+    location2         <- get (uniformLocation program "u_time")
+    uniform location2 $= (currentTime :: GLfloat)
     
-    let persp =          
+    let proj =          
           fmap realToFrac . concat $ fmap DF.toList . DF.toList -- convert to GLfloat
           --               FOV    Aspect    Near   Far
           $ LP.perspective (pi/2) (800/600) (0.35) 1.5 :: [GLfloat]
-    -- _ <- DT.trace ("persp: " ++ show persp) $ return ()
-    camera            <- GL.newMatrix RowMajor persp :: IO (GLmatrix GLfloat)
+    persp             <- GL.newMatrix RowMajor proj :: IO (GLmatrix GLfloat)
+    location3         <- get (uniformLocation program "persp")
+    uniform location3 $= persp
+    
+    let cam =
+          fmap realToFrac . concat $ fmap DF.toList . DF.toList $
+          (Camera.transform . camera) game --(identity::M44 Double) :: [GLfloat]
+    camera            <- GL.newMatrix RowMajor cam :: IO (GLmatrix GLfloat)
     location4         <- get (uniformLocation program "camera")
     uniform location4 $= camera
 
     let mtx =
           fmap realToFrac . concat $ fmap DF.toList . DF.toList $
-          (transform . object) game --(identity::M44 Double) :: [GLfloat]
+          (Object.transform . object) game --(identity::M44 Double) :: [GLfloat]
     --_ <- DT.trace ("mtx: " ++ show mtx) $ return ()
     transform         <- GL.newMatrix RowMajor mtx :: IO (GLmatrix GLfloat)
     location5         <- get (uniformLocation program "transform")

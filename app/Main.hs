@@ -21,7 +21,10 @@ import SDL                hiding ( Point
                                  , Event
                                  , (^+^)
                                  , (*^))
-import Game
+import Camera as Camera
+import Game   as Game
+import Keys   as Keys
+import Object as Object
 import Geometry
 import Input
 import Rendering
@@ -35,7 +38,7 @@ import Debug.Trace   as DT
 --     d88P 888888Y88b 888  888  888Y88888P888    d88P 888    888    8888888    
 --    d88P  888888 Y88b888  888  888 Y888P 888   d88P  888    888    888        
 --   d88P   888888  Y88888  888  888  Y8P  888  d88P   888    888    888        
-       --  d8888888888888   Y8888  888  888   "   888 d8888888888    888    888        
+--  d8888888888888   Y8888  888  888   "   888 d8888888888    888    888        
 -- d88P     888888    Y8888888888888       888d88P     888    888    8888888888 
 
 -- < Animate > ------------------------------------------------------------
@@ -114,15 +117,24 @@ gamePlay game =
 updateGame :: Game -> SF AppInput Game
 updateGame game = 
   proc input -> do
-       obj <- updateObject $ object game -< input
-       returnA -< Game GamePlaying obj
+    --obj <- updateObject $ object game -< input
+    let obj = object game
+    cam <- updateCamera $ camera game -< input
+    returnA -< Game GamePlaying obj cam
+
+updateCamera :: Camera -> SF AppInput Camera
+updateCamera cam =
+  proc input -> do
+    mtx     <- controller (Camera.transform cam) (Camera.keys cam) -< input
+    returnA -< Camera mtx (Camera.keys cam)
 
 updateObject :: Object -> SF AppInput Object
 updateObject obj =
   proc input -> do
     sclr    <- updateScalar $ scalar obj -< input
-    mtx     <- updateTransform (transform obj) (velocity obj) (keys obj) -< input
-    returnA -< Object sclr (geometry obj) mtx (velocity obj) (keys obj)
+    --mtx     <- controller (Object.transform obj) (velocity obj) (keys obj) -< input
+    --returnA -< Object sclr (geometry obj) mtx (velocity obj) (keys obj)
+    returnA -< Object sclr (geometry obj) (Object.transform obj) (velocity obj) (Object.keys obj)
 
 instance VectorSpace (V3 Double) Double where
     zeroVector                   = (V3 0 0 0)
@@ -130,21 +142,18 @@ instance VectorSpace (V3 Double) Double where
     (^+^)  (V3 x y z) (V3 k l m) = (V3 (x+k) (y+l) (z+m))
     dot    (V3 x y z) (V3 k l m) = (x*k) + (y*l) + (z*m)
 
-updateTransform :: M44 Double -> V4 Double -> Keys -> SF AppInput (M44 Double)
-updateTransform mtx0 vel0 keys0 =
+controller :: M44 Double -> Keys -> SF AppInput (M44 Double)
+controller mtx0 keys0 =
   -- | foldrWith mtx0 keys - for every key apply a folding transform to mtx0
   -- | in case of keypress event - update the set of keys and call new fold ^
   switch sf cont
     where
       sf = proc input -> do
         mtx'<- fromKeys mtx0 keys0 -< ()
-        tr  <- --DT.trace ("tr   :" ++ show (view translation (mtx0)) ++ "\n") $
-               --DT.trace ("mtx0 :" ++ show (transpose mtx0) ++ "\n") $
-               ((view translation mtx0) ^+^) ^<< integral -< (view translation mtx')
+        tr  <- ((view translation mtx0) ^+^) ^<< integral -< (view translation mtx')
+        rot <- returnA -< (view _m33 mtx')
 
-        mtx <-
-          returnA -<
-          mkTransformationMat (identity::M33 Double) (tr) --(V3 0 0.5 0) --(view translation mtx')
+        mtx <- returnA -< mkTransformationMat rot tr
 
         keyWp     <- key SDL.ScancodeW     "Pressed"  -< input
         keyWr     <- key SDL.ScancodeW     "Released" -< input
@@ -208,7 +217,7 @@ updateTransform mtx0 vel0 keys0 =
             $> result) -- :: (M44 Double, Event (M44 Double))
             -- $> (DT.trace ("result: " ++ show result)) result) -- :: (M44 Double, Event (M44 Double))
 
-      cont (mtx, keys) = updateTransform mtx vel0 keys -- undefined --fromKeys mtx keys
+      cont (mtx, keys) = controller mtx  keys -- undefined --fromKeys mtx keys
 
 keyEvent :: Bool -> Event () -> Event () -> Bool
 keyEvent state pressed released
@@ -216,33 +225,50 @@ keyEvent state pressed released
   | isEvent released = False
   | otherwise = state
 
--- keyEvent :: Event () -> Event () -> Bool
--- keyEvent pressed released
---   | isEvent pressed  = True
---   | otherwise        = False
-
 fromKeys :: M44 Double -> Keys -> SF () (M44 Double)
 fromKeys mtx0 keys0 =
   proc () -> do
-    let translate = --DT.trace ("Hello!\n") $
+    let tr = --DT.trace ("Hello!\n") $
           foldr (+) (view translation mtx0 ) $
           zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys0) <$>
                         [keyW, keyS, keyA, keyD, keyZ, keyX])
                         [fVel, bVel, lVel, rVel, uVel, dVel]
 
-        rotate    = view _m33 mtx0
+        -- TODO: add rot logic as tr above^
+        -- rotations: 3 axis, 3 quaternions, +/- angle
+        -- check in houdini hou quaternion->m33 compose (m33*m33*m33)...
+        -- mkTransformation :: Num a => Quaternion a -> V3 a -> M44 a
+        -- data Quaternion a Source#
+        -- Quaternion !a !(V3 a)
+        -- slerp :: RealFloat a => Quaternion a -> Quaternion a -> a -> Quaternion a
+        -- rotate :: (Conjugate a, RealFloat a) => Quaternion a -> V3 a -> V3 a Source#
+        -- axisAngle :: (Epsilon a, Floating a) => V3 a -> a -> Quaternion a
 
-        mtx       = mkTransformationMat
-                    rotate
-                    translate
+        -- TODO :
+        -- view _y (identity::M44 Double)
+        -- extract each of 3 axis of the basis and compute rotation (tilt, yaw, pitch)
+        -- fromQuaternion :: Num a => Quaternion a -> M33 a
+        
+        --rot = view _m33 mtx0
+        -- Quat -> M33 -> compose M33s -> Quat
+        rot = fromQuaternion (axisAngle (view _x $ view _m33 mtx0) 0)
+          !*! fromQuaternion (axisAngle (view _y $ view _m33 mtx0) 0)
+          !*! fromQuaternion (axisAngle (view _z $ view _m33 mtx0) 30)
+        ry  = axisAngle (view _y rot) 0
+        rz  = axisAngle (view _z rot) 0
+        
+
+        mtx = mkTransformationMat
+                    rot
+                    tr
 
     returnA -< mtx
-        where fVel   = V3   0    0   (-999) -- forwards  velocity
-              bVel   = V3   0    0     999 -- backwards velocity
-              lVel   = V3 (-999) 0     0   -- left      velocity
-              rVel   = V3   999  0     0   -- right     velocity
-              uVel   = V3   0    999   0   -- right     velocity
-              dVel   = V3   0  (-999)  0   -- right     velocity
+        where fVel   = V3   0    0   ( 999) -- forwards  velocity
+              bVel   = V3   0    0   (-999) -- backwards velocity
+              lVel   = V3 ( 999) 0     0    -- left      velocity
+              rVel   = V3 (-999) 0     0    -- right     velocity
+              uVel   = V3   0  (-999)  0    -- right     velocity
+              dVel   = V3   0  ( 999)  0    -- right     velocity
               
 updateScalar :: Double -> SF AppInput Double
 updateScalar pp0 =
@@ -322,8 +348,25 @@ initGame =
             False
             False
             False)
-              
-    let initGame = Game GamePlaying obj
+
+        cam =
+          Camera
+          (identity :: M44 Double)
+          (Keys
+            False
+            False
+            False
+            False
+            False
+            False
+            False
+            False
+            False
+            False
+            False
+            False)
+
+        initGame = Game GamePlaying obj cam
     return initGame
 
 
@@ -339,9 +382,9 @@ initGame =
 -- < Main Function > -----------------------------------------------------------
 main :: IO ()
 main = do
-  game            <- initGame
-  window          <- openWindow "e1337" (resX, resY)
-  resources       <- initBufferObjects game
+  game      <- initGame
+  window    <- openWindow "e1337" (resX, resY)
+  resources <- initBufferObjects game
   
   animate
     window

@@ -128,14 +128,14 @@ nextAppInput inp (SDL.MouseMotionEvent ev) =
 nextAppInput inp (SDL.KeyboardEvent ev)
     | scancode ev == SDL.ScancodeEscape
       = inp { inpQuit = True }
-    | scancode ev == SDL.ScancodeW ||
-      scancode ev == SDL.ScancodeS ||
-      scancode ev == SDL.ScancodeA ||
-      scancode ev == SDL.ScancodeD ||
-      scancode ev == SDL.ScancodeQ ||
-      scancode ev == SDL.ScancodeE ||
-      scancode ev == SDL.ScancodeZ ||
-      scancode ev == SDL.ScancodeX ||
+    | scancode ev == SDL.ScancodeW     ||
+      scancode ev == SDL.ScancodeS     ||
+      scancode ev == SDL.ScancodeA     ||
+      scancode ev == SDL.ScancodeD     ||
+      scancode ev == SDL.ScancodeQ     ||
+      scancode ev == SDL.ScancodeE     ||
+      scancode ev == SDL.ScancodeZ     ||
+      scancode ev == SDL.ScancodeX     ||
       scancode ev == SDL.ScancodeUp    ||
       scancode ev == SDL.ScancodeDown  ||
       scancode ev == SDL.ScancodeLeft  || 
@@ -154,11 +154,11 @@ nextAppInput inp (SDL.MouseButtonEvent ev) = inp { inpMouseLeft  = lmb
           button = SDL.mouseButtonEventButton ev
           pos    = inpMousePos inp
           inpMod = case (motion,button) of
-              (SDL.Released, SDL.ButtonLeft)  -> first (const Nothing)
-              (SDL.Pressed, SDL.ButtonLeft)   -> first (const (Just pos))
+              (SDL.Released, SDL.ButtonLeft)  -> first  (const Nothing)
+              (SDL.Pressed,  SDL.ButtonLeft)  -> first  (const (Just pos))
               (SDL.Released, SDL.ButtonRight) -> second (const Nothing)
-              (SDL.Pressed, SDL.ButtonRight)  -> second (const (Just pos))
-              _                                      -> id
+              (SDL.Pressed,  SDL.ButtonRight) -> second (const (Just pos))
+              _                               -> id
           (lmb,rmb) = inpMod $ (inpMouseLeft &&& inpMouseRight) inp
 
 nextAppInput inp _ = inp

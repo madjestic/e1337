@@ -10,13 +10,17 @@
 module Game
   ( Game  (..)
   , Stage (..)
-  , Object(..)
-  , Keys  (..)
+--  , Object(..)
+--  , Keys  (..)
   ) where
 
+--import Linear.Matrix
+--import Linear.V4
+
+import Camera
 import Geometry
-import Linear.Matrix
-import Linear.V4
+--import Keys
+import Object
 
 -- meta game state
 data Stage =
@@ -26,41 +30,10 @@ data Stage =
    | GameMenu
    deriving Show
 
-data Keys =
-     Keys
-     { keyW     :: Bool
-     , keyS     :: Bool
-     , keyA     :: Bool
-     , keyD     :: Bool
-     , keyQ     :: Bool
-     , keyE     :: Bool
-     , keyZ     :: Bool
-     , keyX     :: Bool
-     , keyUp    :: Bool
-     , keyDown  :: Bool
-     , keyLeft  :: Bool
-     , keyRight :: Bool
-     } deriving Show
-
-data Object =
-     Object
-     { scalar    :: Double
-     , geometry  :: Geo
-     , transform :: M44 Double
-     , velocity  :: V4 Double
---     , angular   :: V4 Double -- angular velocity
-     , keys      :: Keys
-     } deriving Show
-
--- data Camera =
---      Camera
---      { 
---      }
-
 -- game state
 data Game =
      Game
      { gStg     :: Stage
      , object   :: Object
---     , camera   :: Camera
+     , camera   :: Camera
      } deriving Show
