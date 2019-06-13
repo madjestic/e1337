@@ -126,7 +126,7 @@ updateCamera :: Camera -> SF AppInput Camera
 updateCamera cam =
   proc input -> do
     mtx     <- controller (Camera.transform cam) (Camera.keys cam) -< input
-    returnA -< Camera mtx (Camera.keys cam)
+    returnA -< Camera mtx (Camera.ypr cam)       (Camera.keys cam)
 
 updateObject :: Object -> SF AppInput Object
 updateObject obj =
@@ -137,10 +137,13 @@ updateObject obj =
     returnA -< Object sclr (geometry obj) (Object.transform obj) (velocity obj) (Object.keys obj)
 
 instance VectorSpace (V3 Double) Double where
-    zeroVector                   = (V3 0 0 0)
-    (*^) s (V3 x y z)            = (V3 (s*x) (s*y) (s*z))
-    (^+^)  (V3 x y z) (V3 k l m) = (V3 (x+k) (y+l) (z+m))
-    dot    (V3 x y z) (V3 k l m) = (x*k) + (y*l) + (z*m)
+  zeroVector                   = (V3 0 0 0)
+  (*^) s (V3 x y z)            = (V3 (s*x) (s*y) (s*z))
+  (^+^)  (V3 x y z) (V3 k l m) = (V3 (x+k) (y+l) (z+m))
+  dot    (V3 x y z) (V3 k l m) = (x*k) + (y*l) + (z*m)
+
+-- instance VectorSpace (V3 (V3 Double)) Double where
+--   (!*!) x y = undefined
 
 controller :: M44 Double -> Keys -> SF AppInput (M44 Double)
 controller mtx0 keys0 =
@@ -151,6 +154,8 @@ controller mtx0 keys0 =
       sf = proc input -> do
         mtx'<- fromKeys mtx0 keys0 -< ()
         tr  <- ((view translation mtx0) ^+^) ^<< integral -< (view translation mtx')
+        --rot'<- ((view _m33 mtx0)        !*!) ^<< integral -< (view _m33 mtx')
+        --let foo = (view _m33 mtx0) !*! (view _m33 mtx')
         rot <- returnA -< (view _m33 mtx')
 
         mtx <- returnA -< mkTransformationMat rot tr
@@ -251,25 +256,30 @@ fromKeys mtx0 keys0 =
         
         --rot = view _m33 mtx0
         -- Quat -> M33 -> compose M33s -> Quat
+--        foldr (+)
         rot = fromQuaternion (axisAngle (view _x $ view _m33 mtx0) 0)
           !*! fromQuaternion (axisAngle (view _y $ view _m33 mtx0) 0)
           !*! fromQuaternion (axisAngle (view _z $ view _m33 mtx0) 30)
-        ry  = axisAngle (view _y rot) 0
-        rz  = axisAngle (view _z rot) 0
-        
 
         mtx = mkTransformationMat
                     rot
                     tr
 
     returnA -< mtx
-        where fVel   = V3   0    0   ( 999) -- forwards  velocity
-              bVel   = V3   0    0   (-999) -- backwards velocity
-              lVel   = V3 ( 999) 0     0    -- left      velocity
-              rVel   = V3 (-999) 0     0    -- right     velocity
-              uVel   = V3   0  (-999)  0    -- right     velocity
-              dVel   = V3   0  ( 999)  0    -- right     velocity
-              
+        where fVel   = V3 ( 0  )( 0  )( 999) -- forwards  velocity
+              bVel   = V3 ( 0  )( 0  )(-999) -- backwards velocity
+              lVel   = V3 ( 999)( 0  )( 0  ) -- left      velocity
+              rVel   = V3 (-999)( 0  )( 0  ) -- right     velocity
+              uVel   = V3 ( 0  )(-999)( 0  ) -- right     velocity
+              dVel   = V3 ( 0  )( 999)( 0  ) -- right     velocity
+              pPitch = V3 ( 10 )( 0  )( 0  ) -- positive  pitch
+              nPitch = V3 (-10 )( 0  )( 0  ) -- negative  pitch
+              pYaw   = V3 ( 0  )( 10 )( 0  ) -- positive  yaw
+              nYaw   = V3 ( 0  )(-10 )( 0  ) -- negative  yaw
+              pRoll  = V3 ( 0  )(  0 )( 10 ) -- positive  roll
+              nRoll  = V3 ( 0  )(  0 )(-10 ) -- negative  roll
+                
+                
 updateScalar :: Double -> SF AppInput Double
 updateScalar pp0 =
   switch sf cont
@@ -352,6 +362,7 @@ initGame =
         cam =
           Camera
           (identity :: M44 Double)
+          (V3 0 0 0)
           (Keys
             False
             False
