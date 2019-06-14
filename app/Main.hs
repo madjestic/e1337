@@ -21,10 +21,11 @@ import SDL                hiding ( Point
                                  , Event
                                  , (^+^)
                                  , (*^))
-import Camera as Camera
-import Game   as Game
-import Keys   as Keys
-import Object as Object
+import Camera       as Cam
+import Game  
+import Keys  
+import Object       as Obj
+import Controllable
 import Geometry
 import Input
 import Rendering
@@ -125,8 +126,17 @@ updateGame game =
 updateCamera :: Camera -> SF AppInput Camera
 updateCamera cam =
   proc input -> do
-    mtx     <- controller (Camera.transform cam) (Camera.keys cam) -< input
-    returnA -< Camera mtx (Camera.ypr cam)       (Camera.keys cam)
+    mtx <-
+      control
+      ((transform . Cam.controller) cam)
+      ((keys . Cam.controller) cam)
+      -< input
+    returnA -<
+      Camera
+      (Controllable
+        mtx
+        ((ypr . Cam.controller) cam)
+        ((keys . Cam.controller) cam))
 
 updateObject :: Object -> SF AppInput Object
 updateObject obj =
@@ -134,7 +144,15 @@ updateObject obj =
     sclr    <- updateScalar $ scalar obj -< input
     --mtx     <- controller (Object.transform obj) (velocity obj) (keys obj) -< input
     --returnA -< Object sclr (geometry obj) mtx (velocity obj) (keys obj)
-    returnA -< Object sclr (geometry obj) (Object.transform obj) (velocity obj) (Object.keys obj)
+    returnA -<
+      Object
+      sclr
+      (geometry obj)
+      (velocity obj)
+      ( Controllable
+        ((transform . Obj.controller) obj)
+        ((ypr       . Obj.controller) obj)
+        ((keys      . Obj.controller) obj))
 
 instance VectorSpace (V3 Double) Double where
   zeroVector                   = (V3 0 0 0)
@@ -145,18 +163,105 @@ instance VectorSpace (V3 Double) Double where
 -- instance VectorSpace (V3 (V3 Double)) Double where
 --   (!*!) x y = undefined
 
-controller :: M44 Double -> Keys -> SF AppInput (M44 Double)
-controller mtx0 keys0 =
+
+-- TODO: Controller -> Controller
+-- update mtx, ypr in responce to keys
+control' :: Controllable -> SF AppInput Controllable
+control' ctl0 =
   -- | foldrWith mtx0 keys - for every key apply a folding transform to mtx0
   -- | in case of keypress event - update the set of keys and call new fold ^
   switch sf cont
     where
       sf = proc input -> do
-        mtx'<- fromKeys mtx0 keys0 -< ()
-        tr  <- ((view translation mtx0) ^+^) ^<< integral -< (view translation mtx')
-        --rot'<- ((view _m33 mtx0)        !*!) ^<< integral -< (view _m33 mtx')
-        --let foo = (view _m33 mtx0) !*! (view _m33 mtx')
-        rot <- returnA -< (view _m33 mtx')
+        mtx0  <- fromKeys (transform ctl0) (keys ctl0) -< ()
+        keys0 <- returnA -< (keys ctl0)
+        tr    <- ((view translation (transform ctl0)) ^+^) ^<< integral -< (view translation mtx0)
+        --rot'<- ((view _m33 mtx0)        !*!) ^<< integral -< (view _m33 mtx0)
+        --let foo = (view _m33 mtx0) !*! (view _m33 mtx0)
+        rot <- returnA -< (view _m33 mtx0)
+
+        mtx <- returnA -< mkTransformationMat rot tr
+
+        ctl <- returnA -< undefined :: Controllable
+
+        keyWp     <- key SDL.ScancodeW     "Pressed"  -< input
+        keyWr     <- key SDL.ScancodeW     "Released" -< input
+        keySp     <- key SDL.ScancodeS     "Pressed"  -< input
+        keySr     <- key SDL.ScancodeS     "Released" -< input
+        keyAp     <- key SDL.ScancodeA     "Pressed"  -< input
+        keyAr     <- key SDL.ScancodeA     "Released" -< input
+        keyDp     <- key SDL.ScancodeD     "Pressed"  -< input
+        keyDr     <- key SDL.ScancodeD     "Released" -< input
+                                                      
+        keyQp     <- key SDL.ScancodeQ     "Pressed"  -< input
+        keyQr     <- key SDL.ScancodeQ     "Released" -< input
+        keyEp     <- key SDL.ScancodeE     "Pressed"  -< input
+        keyEr     <- key SDL.ScancodeE     "Released" -< input
+        keyZp     <- key SDL.ScancodeZ     "Pressed"  -< input
+        keyZr     <- key SDL.ScancodeZ     "Released" -< input
+        keyXp     <- key SDL.ScancodeX     "Pressed"  -< input
+        keyXr     <- key SDL.ScancodeX     "Released" -< input
+        
+        keyUpP    <- key SDL.ScancodeUp    "Pressed"  -< input
+        keyUpR    <- key SDL.ScancodeUp    "Released" -< input
+        keyDownP  <- key SDL.ScancodeDown  "Pressed"  -< input
+        keyDownR  <- key SDL.ScancodeDown  "Released" -< input
+        keyLeftP  <- key SDL.ScancodeLeft  "Pressed"  -< input
+        keyLeftR  <- key SDL.ScancodeLeft  "Released" -< input
+        keyRightP <- key SDL.ScancodeRight "Pressed"  -< input
+        keyRightR <- key SDL.ScancodeRight "Released" -< input
+        
+        result <-
+          returnA -<
+          ( Controllable
+            mtx
+          , (V3 0 0 0)
+          , Keys
+            ( keyEvent (keyW     keys0) keyWp      keyWr     )
+            ( keyEvent (keyS     keys0) keySp      keySr     )
+            ( keyEvent (keyA     keys0) keyAp      keyAr     )
+            ( keyEvent (keyD     keys0) keyDp      keyDr     )
+            ( keyEvent (keyQ     keys0) keyQp      keyQr     )
+            ( keyEvent (keyE     keys0) keyEp      keyEr     )
+            ( keyEvent (keyZ     keys0) keyZp      keyZr     )
+            ( keyEvent (keyX     keys0) keyXp      keyXr     )
+            ( keyEvent (keyUp    keys0) keyUpP     keyUpR    )
+            ( keyEvent (keyDown  keys0) keyDownP   keyDownR  )
+            ( keyEvent (keyLeft  keys0) keyLeftP   keyLeftR  )
+            ( keyEvent (keyRight keys0) keyRightP  keyRightR ))
+
+        returnA -<
+          ( ctl
+          , catEvents
+            [ keyWp,     keyWr
+            , keySp,     keySr
+            , keyAp,     keyAr
+            , keyDp,     keyDr
+            , keyQp,     keyQr
+            , keyEp,     keyEr 
+            , keyZp,     keyZr 
+            , keyXp,     keyXr
+            , keyUpP,    keyUpR
+            , keyDownP,  keyDownR
+            , keyLeftP,  keyLeftR
+            , keyRightP, keyRightR ]
+            $> result) -- :: (Controllable, Event Controllable)
+            -- $> (DT.trace ("result: " ++ show result)) result) -- :: (M44 Double, Event (M44 Double))
+
+      cont ctl = undefined --control ctl -- undefined --fromKeys mtx keys
+
+control :: M44 Double -> Keys -> SF AppInput (M44 Double)
+control mtx0 keys0 =
+  -- | foldrWith mtx0 keys - for every key apply a folding transform to mtx0
+  -- | in case of keypress event - update the set of keys and call new fold ^
+  switch sf cont
+    where
+      sf = proc input -> do
+        mtx0<- fromKeys mtx0 keys0 -< ()
+        tr  <- ((view translation mtx0) ^+^) ^<< integral -< (view translation mtx0)
+        --rot'<- ((view _m33 mtx0)        !*!) ^<< integral -< (view _m33 mtx0)
+        --let foo = (view _m33 mtx0) !*! (view _m33 mtx0)
+        rot <- returnA -< (view _m33 mtx0)
 
         mtx <- returnA -< mkTransformationMat rot tr
 
@@ -222,7 +327,7 @@ controller mtx0 keys0 =
             $> result) -- :: (M44 Double, Event (M44 Double))
             -- $> (DT.trace ("result: " ++ show result)) result) -- :: (M44 Double, Event (M44 Double))
 
-      cont (mtx, keys) = controller mtx  keys -- undefined --fromKeys mtx keys
+      cont (mtx, keys) = control mtx  keys -- undefined --fromKeys mtx keys
 
 keyEvent :: Bool -> Event () -> Event () -> Bool
 keyEvent state pressed released
@@ -343,39 +448,42 @@ initGame =
           Object
           0.0
           geo
-          (identity::M44 Double)
           (V4 0 0 0 0)
-          (Keys
-            False
-            False
-            False
-            False
-            False
-            False
-            False
-            False
-            False
-            False
-            False
-            False)
+          ( Controllable
+            (identity :: M44 Double)
+            (V3 0 0 0)
+            (Keys
+             False
+             False
+             False
+             False
+             False
+             False
+             False
+             False
+             False
+             False
+             False
+             False))
 
         cam =
           Camera
-          (identity :: M44 Double)
-          (V3 0 0 0)
-          (Keys
-            False
-            False
-            False
-            False
-            False
-            False
-            False
-            False
-            False
-            False
-            False
-            False)
+          ( Controllable
+            (identity :: M44 Double)
+            (V3 0 0 0)
+            (Keys
+             False
+             False
+             False
+             False
+             False
+             False
+             False
+             False
+             False
+             False
+             False
+             False))
 
         initGame = Game GamePlaying obj cam
     return initGame

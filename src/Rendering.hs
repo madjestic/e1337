@@ -27,8 +27,9 @@ import Data.List.Index
 
 import LoadShaders
 import Game
-import Object    as Object
-import Camera    as Camera
+import Object    as Obj
+import Camera    as Cam
+import Controllable
 import Geometry
 import Drawables
 import Shape2D
@@ -239,7 +240,7 @@ initResources game =
 
     let mtx =
           fmap realToFrac . concat $ fmap DF.toList . DF.toList $
-          (Object.transform . object) game --(identity::M44 Double) :: [GLfloat]
+          transform . Obj.controller . object $ game --(identity::M44 Double) :: [GLfloat]
     --_ <- DT.trace ("mtx: " ++ show mtx) $ return ()
     transform         <- GL.newMatrix RowMajor mtx :: IO (GLmatrix GLfloat)
     location5         <- get (uniformLocation program "transform")
@@ -287,14 +288,14 @@ initUniforms game =
     
     let cam =
           fmap realToFrac . concat $ fmap DF.toList . DF.toList $
-          (Camera.transform . camera) game --(identity::M44 Double) :: [GLfloat]
+          transform . Cam.controller . camera $ game --(identity::M44 Double) :: [GLfloat]
     camera            <- GL.newMatrix RowMajor cam :: IO (GLmatrix GLfloat)
     location4         <- get (uniformLocation program "camera")
     uniform location4 $= camera
 
     let mtx =
           fmap realToFrac . concat $ fmap DF.toList . DF.toList $
-          (Object.transform . object) game --(identity::M44 Double) :: [GLfloat]
+          transform . Obj.controller . object $ game --(identity::M44 Double) :: [GLfloat]
     --_ <- DT.trace ("mtx: " ++ show mtx) $ return ()
     transform         <- GL.newMatrix RowMajor mtx :: IO (GLmatrix GLfloat)
     location5         <- get (uniformLocation program "transform")

@@ -47,7 +47,11 @@ library
               , LoadShaders
               , Shape2D
               , FromVector
-              , Drawables                                                    
+              , Drawables
+              , Object
+              , Camera
+              , Keys
+              , Controllable
   default-language:                   Haskell2010
                                         
 executable e1337
@@ -84,5 +88,9 @@ executable e1337
               , FromVector
               , LoadShaders
               , Shape2D
+              , Object
+              , Camera
+              , Keys
+              , Controllable
   default-language:    Haskell2010
 
