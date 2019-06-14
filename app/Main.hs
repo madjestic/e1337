@@ -126,18 +126,14 @@ updateGame game =
 updateCamera :: Camera -> SF AppInput Camera
 updateCamera cam =
   proc input -> do
-    mtx <-
-      control
-      ((transform . Cam.controller) cam)
-      ((keys . Cam.controller) cam)
-      -< input
-    returnA -<
-      Camera
-      (Controllable
-        mtx
-        ((ypr . Cam.controller) cam)
-        ((keys . Cam.controller) cam))
-
+    ctl <- control
+           ( Controllable
+             ((transform . Cam.controller) cam)
+             ((ypr       . Cam.controller) cam)
+             ((keys      . Cam.controller) cam)) -< input
+      
+    returnA -< Camera ctl
+    
 updateObject :: Object -> SF AppInput Object
 updateObject obj =
   proc input -> do
@@ -163,11 +159,8 @@ instance VectorSpace (V3 Double) Double where
 -- instance VectorSpace (V3 (V3 Double)) Double where
 --   (!*!) x y = undefined
 
-
--- TODO: Controller -> Controller
--- update mtx, ypr in responce to keys
-control' :: Controllable -> SF AppInput Controllable
-control' ctl0 =
+control :: Controllable -> SF AppInput Controllable
+control ctl0 =
   -- | foldrWith mtx0 keys - for every key apply a folding transform to mtx0
   -- | in case of keypress event - update the set of keys and call new fold ^
   switch sf cont
@@ -182,7 +175,11 @@ control' ctl0 =
 
         mtx <- returnA -< mkTransformationMat rot tr
 
-        ctl <- returnA -< undefined :: Controllable
+        ctl <- returnA -< --undefined :: Controllable
+               Controllable
+               mtx
+               (V3 0 0 0)
+               keys0
 
         keyWp     <- key SDL.ScancodeW     "Pressed"  -< input
         keyWr     <- key SDL.ScancodeW     "Released" -< input
@@ -215,20 +212,20 @@ control' ctl0 =
           returnA -<
           ( Controllable
             mtx
-          , (V3 0 0 0)
-          , Keys
-            ( keyEvent (keyW     keys0) keyWp      keyWr     )
-            ( keyEvent (keyS     keys0) keySp      keySr     )
-            ( keyEvent (keyA     keys0) keyAp      keyAr     )
-            ( keyEvent (keyD     keys0) keyDp      keyDr     )
-            ( keyEvent (keyQ     keys0) keyQp      keyQr     )
-            ( keyEvent (keyE     keys0) keyEp      keyEr     )
-            ( keyEvent (keyZ     keys0) keyZp      keyZr     )
-            ( keyEvent (keyX     keys0) keyXp      keyXr     )
-            ( keyEvent (keyUp    keys0) keyUpP     keyUpR    )
-            ( keyEvent (keyDown  keys0) keyDownP   keyDownR  )
-            ( keyEvent (keyLeft  keys0) keyLeftP   keyLeftR  )
-            ( keyEvent (keyRight keys0) keyRightP  keyRightR ))
+            (V3 0 0 0)
+            (Keys
+             ( keyEvent (keyW     keys0) keyWp      keyWr     )
+             ( keyEvent (keyS     keys0) keySp      keySr     )
+             ( keyEvent (keyA     keys0) keyAp      keyAr     )
+             ( keyEvent (keyD     keys0) keyDp      keyDr     )
+             ( keyEvent (keyQ     keys0) keyQp      keyQr     )
+             ( keyEvent (keyE     keys0) keyEp      keyEr     )
+             ( keyEvent (keyZ     keys0) keyZp      keyZr     )
+             ( keyEvent (keyX     keys0) keyXp      keyXr     )
+             ( keyEvent (keyUp    keys0) keyUpP     keyUpR    )
+             ( keyEvent (keyDown  keys0) keyDownP   keyDownR  )
+             ( keyEvent (keyLeft  keys0) keyLeftP   keyLeftR  )
+             ( keyEvent (keyRight keys0) keyRightP  keyRightR )))
 
         returnA -<
           ( ctl
@@ -248,86 +245,7 @@ control' ctl0 =
             $> result) -- :: (Controllable, Event Controllable)
             -- $> (DT.trace ("result: " ++ show result)) result) -- :: (M44 Double, Event (M44 Double))
 
-      cont ctl = undefined --control ctl -- undefined --fromKeys mtx keys
-
-control :: M44 Double -> Keys -> SF AppInput (M44 Double)
-control mtx0 keys0 =
-  -- | foldrWith mtx0 keys - for every key apply a folding transform to mtx0
-  -- | in case of keypress event - update the set of keys and call new fold ^
-  switch sf cont
-    where
-      sf = proc input -> do
-        mtx0<- fromKeys mtx0 keys0 -< ()
-        tr  <- ((view translation mtx0) ^+^) ^<< integral -< (view translation mtx0)
-        --rot'<- ((view _m33 mtx0)        !*!) ^<< integral -< (view _m33 mtx0)
-        --let foo = (view _m33 mtx0) !*! (view _m33 mtx0)
-        rot <- returnA -< (view _m33 mtx0)
-
-        mtx <- returnA -< mkTransformationMat rot tr
-
-        keyWp     <- key SDL.ScancodeW     "Pressed"  -< input
-        keyWr     <- key SDL.ScancodeW     "Released" -< input
-        keySp     <- key SDL.ScancodeS     "Pressed"  -< input
-        keySr     <- key SDL.ScancodeS     "Released" -< input
-        keyAp     <- key SDL.ScancodeA     "Pressed"  -< input
-        keyAr     <- key SDL.ScancodeA     "Released" -< input
-        keyDp     <- key SDL.ScancodeD     "Pressed"  -< input
-        keyDr     <- key SDL.ScancodeD     "Released" -< input
-                                                      
-        keyQp     <- key SDL.ScancodeQ     "Pressed"  -< input
-        keyQr     <- key SDL.ScancodeQ     "Released" -< input
-        keyEp     <- key SDL.ScancodeE     "Pressed"  -< input
-        keyEr     <- key SDL.ScancodeE     "Released" -< input
-        keyZp     <- key SDL.ScancodeZ     "Pressed"  -< input
-        keyZr     <- key SDL.ScancodeZ     "Released" -< input
-        keyXp     <- key SDL.ScancodeX     "Pressed"  -< input
-        keyXr     <- key SDL.ScancodeX     "Released" -< input
-        
-        keyUpP    <- key SDL.ScancodeUp    "Pressed"  -< input
-        keyUpR    <- key SDL.ScancodeUp    "Released" -< input
-        keyDownP  <- key SDL.ScancodeDown  "Pressed"  -< input
-        keyDownR  <- key SDL.ScancodeDown  "Released" -< input
-        keyLeftP  <- key SDL.ScancodeLeft  "Pressed"  -< input
-        keyLeftR  <- key SDL.ScancodeLeft  "Released" -< input
-        keyRightP <- key SDL.ScancodeRight "Pressed"  -< input
-        keyRightR <- key SDL.ScancodeRight "Released" -< input
-        
-        result <-
-          returnA -<
-          ( mtx
-          , Keys
-            ( keyEvent (keyW     keys0) keyWp      keyWr     )
-            ( keyEvent (keyS     keys0) keySp      keySr     )
-            ( keyEvent (keyA     keys0) keyAp      keyAr     )
-            ( keyEvent (keyD     keys0) keyDp      keyDr     )
-            ( keyEvent (keyQ     keys0) keyQp      keyQr     )
-            ( keyEvent (keyE     keys0) keyEp      keyEr     )
-            ( keyEvent (keyZ     keys0) keyZp      keyZr     )
-            ( keyEvent (keyX     keys0) keyXp      keyXr     )
-            ( keyEvent (keyUp    keys0) keyUpP     keyUpR    )
-            ( keyEvent (keyDown  keys0) keyDownP   keyDownR  )
-            ( keyEvent (keyLeft  keys0) keyLeftP   keyLeftR  )
-            ( keyEvent (keyRight keys0) keyRightP  keyRightR ))
-
-        returnA -<
-          ( mtx
-          , catEvents
-            [ keyWp,     keyWr
-            , keySp,     keySr
-            , keyAp,     keyAr
-            , keyDp,     keyDr
-            , keyQp,     keyQr
-            , keyEp,     keyEr 
-            , keyZp,     keyZr 
-            , keyXp,     keyXr
-            , keyUpP,    keyUpR
-            , keyDownP,  keyDownR
-            , keyLeftP,  keyLeftR
-            , keyRightP, keyRightR ]
-            $> result) -- :: (M44 Double, Event (M44 Double))
-            -- $> (DT.trace ("result: " ++ show result)) result) -- :: (M44 Double, Event (M44 Double))
-
-      cont (mtx, keys) = control mtx  keys -- undefined --fromKeys mtx keys
+      cont ctl = control ctl  --control ctl -- undefined --fromKeys mtx keys
 
 keyEvent :: Bool -> Event () -> Event () -> Bool
 keyEvent state pressed released
@@ -344,24 +262,6 @@ fromKeys mtx0 keys0 =
                         [keyW, keyS, keyA, keyD, keyZ, keyX])
                         [fVel, bVel, lVel, rVel, uVel, dVel]
 
-        -- TODO: add rot logic as tr above^
-        -- rotations: 3 axis, 3 quaternions, +/- angle
-        -- check in houdini hou quaternion->m33 compose (m33*m33*m33)...
-        -- mkTransformation :: Num a => Quaternion a -> V3 a -> M44 a
-        -- data Quaternion a Source#
-        -- Quaternion !a !(V3 a)
-        -- slerp :: RealFloat a => Quaternion a -> Quaternion a -> a -> Quaternion a
-        -- rotate :: (Conjugate a, RealFloat a) => Quaternion a -> V3 a -> V3 a Source#
-        -- axisAngle :: (Epsilon a, Floating a) => V3 a -> a -> Quaternion a
-
-        -- TODO :
-        -- view _y (identity::M44 Double)
-        -- extract each of 3 axis of the basis and compute rotation (tilt, yaw, pitch)
-        -- fromQuaternion :: Num a => Quaternion a -> M33 a
-        
-        --rot = view _m33 mtx0
-        -- Quat -> M33 -> compose M33s -> Quat
---        foldr (+)
         rot = fromQuaternion (axisAngle (view _x $ view _m33 mtx0) 0)
           !*! fromQuaternion (axisAngle (view _y $ view _m33 mtx0) 0)
           !*! fromQuaternion (axisAngle (view _z $ view _m33 mtx0) 30)

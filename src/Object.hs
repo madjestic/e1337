@@ -2,7 +2,6 @@ module Object
   ( Object (..)
   ) where
 
-import Linear.Matrix
 import Linear.V4
 
 import Keys
@@ -15,7 +14,4 @@ data Object =
      , geometry   :: Geo
      , velocity   :: V4 Double
      , controller :: Controllable
-     -- , transform :: M44 Double
-     -- , keys      :: Keys
---     , angular   :: V4 Double -- angular velocity
      } deriving Show

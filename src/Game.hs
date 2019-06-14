@@ -10,16 +10,10 @@
 module Game
   ( Game  (..)
   , Stage (..)
---  , Object(..)
---  , Keys  (..)
   ) where
-
---import Linear.Matrix
---import Linear.V4
 
 import Camera
 import Geometry
---import Keys
 import Object
 
 -- meta game state
