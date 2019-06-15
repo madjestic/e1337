@@ -130,7 +130,8 @@ updateCamera cam =
            ( Controllable
              ((transform . Cam.controller) cam)
              ((ypr       . Cam.controller) cam)
-             ((keys      . Cam.controller) cam)) -< input
+             ((keys      . Cam.controller) cam)
+             ((keyVecs   . Cam.controller) cam)) -< input
       
     returnA -< Camera ctl
     
@@ -148,7 +149,8 @@ updateObject obj =
       ( Controllable
         ((transform . Obj.controller) obj)
         ((ypr       . Obj.controller) obj)
-        ((keys      . Obj.controller) obj))
+        ((keys      . Obj.controller) obj)
+        ((keyVecs   . Obj.controller) obj))
 
 instance VectorSpace (V3 Double) Double where
   zeroVector                   = (V3 0 0 0)
@@ -181,7 +183,7 @@ control ctl0 =
 
         keys0 <- returnA -< (keys ctl')
 
-        ctl   <- returnA -< Controllable mtx ypr keys0
+        ctl   <- returnA -< Controllable mtx ypr keys0 (keyVecs ctl0)
 
         keyWp     <- key SDL.ScancodeW     "Pressed"  -< input
         keyWr     <- key SDL.ScancodeW     "Released" -< input
@@ -227,7 +229,8 @@ control ctl0 =
              ( keyEvent (keyUp    keys0) keyUpP     keyUpR    )
              ( keyEvent (keyDown  keys0) keyDownP   keyDownR  )
              ( keyEvent (keyLeft  keys0) keyLeftP   keyLeftR  )
-             ( keyEvent (keyRight keys0) keyRightP  keyRightR )))
+             ( keyEvent (keyRight keys0) keyRightP  keyRightR ))
+            (keyVecs ctl0) )
 
         returnA -<
           ( ctl
@@ -281,21 +284,21 @@ update ctl0 =
               (identity :: M33 Double)
               tr
 
-    result <- returnA -< (Controllable mtx ypr keys0)
+    result <- returnA -< (Controllable mtx ypr keys0 (keyVecs ctl0))
 
     returnA -< result
-        where fVel   = V3 ( 0  )( 0  )( 999)   -- forwards  velocity
-              bVel   = V3 ( 0  )( 0  )(-999)   -- backwards velocity
-              lVel   = V3 ( 999)( 0  )( 0  )   -- left      velocity
-              rVel   = V3 (-999)( 0  )( 0  )   -- right     velocity
-              uVel   = V3 ( 0  )(-999)( 0  )   -- right     velocity
-              dVel   = V3 ( 0  )( 999)( 0  )   -- right     velocity
-              pPitch = V3 ( 999)( 0  )( 0  )   -- positive  pitch
-              nPitch = V3 (-999)( 0  )( 0  )   -- negative  pitch
-              pYaw   = V3 ( 0  )( 999)( 0  )   -- positive  yaw
-              nYaw   = V3 ( 0  )(-999)( 0  )   -- negative  yaw
-              pRoll  = V3 ( 0  )(  0 )( 999)   -- positive  roll
-              nRoll  = V3 ( 0  )(  0 )(-999)   -- negative  roll
+        where fVel   = (keyVecs ctl0)!!0  -- forwards  velocity
+              bVel   = (keyVecs ctl0)!!1  -- backwards velocity
+              lVel   = (keyVecs ctl0)!!2  -- left      velocity
+              rVel   = (keyVecs ctl0)!!3  -- right     velocity
+              uVel   = (keyVecs ctl0)!!4  -- right     velocity
+              dVel   = (keyVecs ctl0)!!5  -- right     velocity
+              pPitch = (keyVecs ctl0)!!6  -- positive  pitch
+              nPitch = (keyVecs ctl0)!!7  -- negative  pitch
+              pYaw   = (keyVecs ctl0)!!8  -- positive  yaw
+              nYaw   = (keyVecs ctl0)!!9  -- negative  yaw
+              pRoll  = (keyVecs ctl0)!!10 -- positive  roll
+              nRoll  = (keyVecs ctl0)!!11 -- negative  roll
 
 updateScalar :: Double -> SF AppInput Double
 updateScalar pp0 =
@@ -376,8 +379,33 @@ initGame =
              False
              False
              False
-             False))
-
+             False)
+            [ fVel 
+            , bVel 
+            , lVel 
+            , rVel 
+            , uVel 
+            , dVel 
+            , pPitch
+            , nPitch
+            , pYaw 
+            , nYaw 
+            , pRoll
+            , nRoll ])
+          where
+            fVel   = V3 ( 0  )( 0  )( 999)   -- forwards  velocity
+            bVel   = V3 ( 0  )( 0  )(-999)   -- backwards velocity
+            lVel   = V3 ( 999)( 0  )( 0  )   -- left      velocity
+            rVel   = V3 (-999)( 0  )( 0  )   -- right     velocity
+            uVel   = V3 ( 0  )(-999)( 0  )   -- right     velocity
+            dVel   = V3 ( 0  )( 999)( 0  )   -- right     velocity
+            pPitch = V3 ( 999)( 0  )( 0  )   -- positive  pitch
+            nPitch = V3 (-999)( 0  )( 0  )   -- negative  pitch
+            pYaw   = V3 ( 0  )( 999)( 0  )   -- positive  yaw
+            nYaw   = V3 ( 0  )(-999)( 0  )   -- negative  yaw
+            pRoll  = V3 ( 0  )(  0 )( 999)   -- positive  roll
+            nRoll  = V3 ( 0  )(  0 )(-999)   -- negative  roll
+            
         cam =
           Camera
           ( Controllable
@@ -395,7 +423,32 @@ initGame =
              False
              False
              False
-             False))
+             False )
+            [ fVel 
+            , bVel 
+            , lVel 
+            , rVel 
+            , uVel 
+            , dVel 
+            , pPitch
+            , nPitch
+            , pYaw 
+            , nYaw 
+            , pRoll
+            , nRoll ])
+          where
+            fVel   = V3 ( 0  )( 0  )( 999)   -- forwards  velocity
+            bVel   = V3 ( 0  )( 0  )(-999)   -- backwards velocity
+            lVel   = V3 ( 999)( 0  )( 0  )   -- left      velocity
+            rVel   = V3 (-999)( 0  )( 0  )   -- right     velocity
+            uVel   = V3 ( 0  )(-999)( 0  )   -- right     velocity
+            dVel   = V3 ( 0  )( 999)( 0  )   -- right     velocity
+            pPitch = V3 ( 999)( 0  )( 0  )   -- positive  pitch
+            nPitch = V3 (-999)( 0  )( 0  )   -- negative  pitch
+            pYaw   = V3 ( 0  )( 999)( 0  )   -- positive  yaw
+            nYaw   = V3 ( 0  )(-999)( 0  )   -- negative  yaw
+            pRoll  = V3 ( 0  )(  0 )( 999)   -- positive  roll
+            nRoll  = V3 ( 0  )(  0 )(-999)   -- negative  roll
 
         initGame = Game GamePlaying obj cam
     return initGame
