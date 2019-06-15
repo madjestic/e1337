@@ -39,7 +39,7 @@ import Debug.Trace   as DT
 --     d88P 888888Y88b 888  888  888Y88888P888    d88P 888    888    8888888    
 --    d88P  888888 Y88b888  888  888 Y888P 888   d88P  888    888    888        
 --   d88P   888888  Y88888  888  888  Y8P  888  d88P   888    888    888        
---  d8888888888888   Y8888  888  888   "   888 d8888888888    888    888        
+       --  d8888888888888   Y8888  888  888   "   888 d8888888888    888    888        
 -- d88P     888888    Y8888888888888       888d88P     888    888    8888888888 
 
 -- < Animate > ------------------------------------------------------------
@@ -156,9 +156,6 @@ instance VectorSpace (V3 Double) Double where
   (^+^)  (V3 x y z) (V3 k l m) = (V3 (x+k) (y+l) (z+m))
   dot    (V3 x y z) (V3 k l m) = (x*k) + (y*l) + (z*m)
 
--- instance VectorSpace (V3 (V3 Double)) Double where
---   (!*!) x y = undefined
-
 control :: Controllable -> SF AppInput Controllable
 control ctl0 =
   -- | foldrWith mtx0 keys - for every key apply a folding transform to mtx0
@@ -166,20 +163,25 @@ control ctl0 =
   switch sf cont
     where
       sf = proc input -> do
-        mtx0  <- fromKeys (transform ctl0) (keys ctl0) -< ()
-        keys0 <- returnA -< (keys ctl0)
+
+
+        ctl'  <- update ctl0 -< ()
+        mtx0  <- returnA -< (transform ctl')
+
         tr    <- ((view translation (transform ctl0)) ^+^) ^<< integral -< (view translation mtx0)
-        --rot'<- ((view _m33 mtx0)        !*!) ^<< integral -< (view _m33 mtx0)
-        --let foo = (view _m33 mtx0) !*! (view _m33 mtx0)
-        rot <- returnA -< (view _m33 mtx0)
 
-        mtx <- returnA -< mkTransformationMat rot tr
+        ypr  <- ((ypr ctl0) ^+^) ^<< integral -< (ypr ctl')
 
-        ctl <- returnA -< --undefined :: Controllable
-               Controllable
-               mtx
-               (V3 0 0 0)
-               keys0
+        let rot = fromQuaternion (axisAngle (view _x $ view _m33 mtx0) (view _x ypr)) -- yaw
+              !*! fromQuaternion (axisAngle (view _y $ view _m33 mtx0) (view _y ypr)) -- pitch
+              !*! fromQuaternion (axisAngle (view _z $ view _m33 mtx0) (view _z ypr)) -- roll
+
+        
+        mtx   <- returnA -< mkTransformationMat rot tr
+
+        keys0 <- returnA -< (keys ctl')
+
+        ctl   <- returnA -< Controllable mtx ypr keys0
 
         keyWp     <- key SDL.ScancodeW     "Pressed"  -< input
         keyWr     <- key SDL.ScancodeW     "Released" -< input
@@ -212,7 +214,7 @@ control ctl0 =
           returnA -<
           ( Controllable
             mtx
-            (V3 0 0 0)
+            ypr
             (Keys
              ( keyEvent (keyW     keys0) keyWp      keyWr     )
              ( keyEvent (keyS     keys0) keySp      keySr     )
@@ -253,38 +255,48 @@ keyEvent state pressed released
   | isEvent released = False
   | otherwise = state
 
-fromKeys :: M44 Double -> Keys -> SF () (M44 Double)
-fromKeys mtx0 keys0 =
+-- TODO:
+-- fromKeys :: Controllable -> SF AppInput Controllable
+-- update   :: Controllable -> SF AppInput Controllable
+
+update :: Controllable -> SF () Controllable
+update ctl0 =
   proc () -> do
+    mtx0  <- returnA -< (transform ctl0)
+    ypr0  <- returnA -< (ypr       ctl0)
+    keys0 <- returnA -< (keys      ctl0)
+
     let tr = --DT.trace ("Hello!\n") $
           foldr (+) (view translation mtx0 ) $
           zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys0) <$>
                         [keyW, keyS, keyA, keyD, keyZ, keyX])
                         [fVel, bVel, lVel, rVel, uVel, dVel]
-
-        rot = fromQuaternion (axisAngle (view _x $ view _m33 mtx0) 0)
-          !*! fromQuaternion (axisAngle (view _y $ view _m33 mtx0) 0)
-          !*! fromQuaternion (axisAngle (view _z $ view _m33 mtx0) 30)
+        ypr =
+          foldr (+) ypr0 $
+          zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys0) <$>
+                        [ keyUp,  keyDown, keyLeft, keyRight, keyQ,  keyE ])
+                        [ pPitch, nPitch,  pYaw,    nYaw,     pRoll, nRoll ]
 
         mtx = mkTransformationMat
-                    rot
-                    tr
+              (identity :: M33 Double)
+              tr
 
-    returnA -< mtx
-        where fVel   = V3 ( 0  )( 0  )( 999) -- forwards  velocity
-              bVel   = V3 ( 0  )( 0  )(-999) -- backwards velocity
-              lVel   = V3 ( 999)( 0  )( 0  ) -- left      velocity
-              rVel   = V3 (-999)( 0  )( 0  ) -- right     velocity
-              uVel   = V3 ( 0  )(-999)( 0  ) -- right     velocity
-              dVel   = V3 ( 0  )( 999)( 0  ) -- right     velocity
-              pPitch = V3 ( 10 )( 0  )( 0  ) -- positive  pitch
-              nPitch = V3 (-10 )( 0  )( 0  ) -- negative  pitch
-              pYaw   = V3 ( 0  )( 10 )( 0  ) -- positive  yaw
-              nYaw   = V3 ( 0  )(-10 )( 0  ) -- negative  yaw
-              pRoll  = V3 ( 0  )(  0 )( 10 ) -- positive  roll
-              nRoll  = V3 ( 0  )(  0 )(-10 ) -- negative  roll
-                
-                
+    result <- returnA -< (Controllable mtx ypr keys0)
+
+    returnA -< result
+        where fVel   = V3 ( 0  )( 0  )( 999)   -- forwards  velocity
+              bVel   = V3 ( 0  )( 0  )(-999)   -- backwards velocity
+              lVel   = V3 ( 999)( 0  )( 0  )   -- left      velocity
+              rVel   = V3 (-999)( 0  )( 0  )   -- right     velocity
+              uVel   = V3 ( 0  )(-999)( 0  )   -- right     velocity
+              dVel   = V3 ( 0  )( 999)( 0  )   -- right     velocity
+              pPitch = V3 ( 999)( 0  )( 0  )   -- positive  pitch
+              nPitch = V3 (-999)( 0  )( 0  )   -- negative  pitch
+              pYaw   = V3 ( 0  )( 999)( 0  )   -- positive  yaw
+              nYaw   = V3 ( 0  )(-999)( 0  )   -- negative  yaw
+              pRoll  = V3 ( 0  )(  0 )( 999)   -- positive  roll
+              nRoll  = V3 ( 0  )(  0 )(-999)   -- negative  roll
+
 updateScalar :: Double -> SF AppInput Double
 updateScalar pp0 =
   switch sf cont
