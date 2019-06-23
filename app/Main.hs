@@ -160,11 +160,12 @@ instance VectorSpace (V3 Double) Double where
 
 control :: Controllable -> SF AppInput Controllable
 control ctl0 =
+  proc input -> do
   -- | foldrWith mtx0 keys - for every key apply a folding transform to mtx0
   -- | in case of keypress event - update the set of keys and call new fold ^
-  switch sf cont
-    where
-      sf = proc input -> do
+  -- switch sf cont
+  --   where
+  --     sf = proc input -> do
 
         ctl  <- update ctl0 -< ()
 
@@ -196,8 +197,8 @@ control ctl0 =
         keyRightR <- key SDL.ScancodeRight "Released" -< input
 
         mtx   <- returnA -< transform ctl
-        ypr   <- returnA -< ypr ctl
-        keys0 <- returnA -< keys ctl
+        ypr   <- returnA -< ypr       ctl
+        keys0 <- returnA -< keys      ctl
         
         result <-
           returnA -<
@@ -235,19 +236,14 @@ control ctl0 =
             , keyLeftP,  keyLeftR
             , keyRightP, keyRightR ]
             $> result) -- :: (Controllable, Event Controllable)
-            -- $> (DT.trace ("result: " ++ show result)) result) -- :: (M44 Double, Event (M44 Double))
 
-      cont result = control result  --control ctl -- undefined --fromKeys mtx keys
+--      cont ctl0 = control ctl0
 
 keyEvent :: Bool -> Event () -> Event () -> Bool
 keyEvent state pressed released
   | isEvent pressed  = True
   | isEvent released = False
   | otherwise = state
-
--- TODO:
--- fromKeys :: Controllable -> SF AppInput Controllable
--- update   :: Controllable -> SF AppInput Controllable
 
 update :: Controllable -> SF () Controllable
 update ctl0 =
@@ -256,25 +252,31 @@ update ctl0 =
     ypr0  <- returnA -< (ypr       ctl0)
     keys0 <- returnA -< (keys      ctl0)
 
-    let tr = --DT.trace ("Hello!\n") $
-          foldr (+) (view translation mtx0 ) $
-          zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys0) <$>
-                        [keyW, keyS, keyA, keyD, keyZ, keyX])
-                        [fVel, bVel, lVel, rVel, uVel, dVel]
-        ypr =
+    let
+      ypr =
           foldr (+) (V3 0 0 0) $
           zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys0) <$>
                         [ keyUp,  keyDown, keyLeft, keyRight, keyQ,  keyE ])
                         [ pPitch, nPitch,  pYaw,    nYaw,     pRoll, nRoll ]
 
-        rot = (view _m33 mtx0)
+      rot =
+          (view _m33 mtx0)
               !*! fromQuaternion     (axisAngle (view _x (view _m33 mtx0)) (view _x ypr)) -- yaw
               !*! fromQuaternion (axisAngle (view _y (view _m33 mtx0)) (view _y ypr)) -- pitch
               !*! fromQuaternion (axisAngle (view _z (view _m33 mtx0)) (view _z ypr)) -- roll
 
-        mtx = mkTransformationMat
-              rot
-              tr
+      tr = 
+          foldr (+) (view translation mtx0 ) $
+          fmap ((transpose rot) !*) $
+          zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys0) <$>
+                        [keyW, keyS, keyA, keyD, keyZ, keyX])
+                        [fVel, bVel, lVel, rVel, uVel, dVel]
+
+
+      mtx =
+        mkTransformationMat
+        rot
+        tr
 
     result <- returnA -< (Controllable mtx ypr keys0 (keyVecs ctl0))
 
