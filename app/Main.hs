@@ -166,24 +166,7 @@ control ctl0 =
     where
       sf = proc input -> do
 
-
-        ctl'  <- update ctl0 -< ()
-        mtx0  <- returnA -< (transform ctl')
-
-        tr    <- ((view translation (transform ctl0)) ^+^) ^<< integral -< (view translation mtx0)
-
-        ypr  <- ((ypr ctl0) ^+^) ^<< integral -< (ypr ctl')
-
-        let rot = fromQuaternion (axisAngle (view _x $ view _m33 mtx0) (view _x ypr)) -- yaw
-              !*! fromQuaternion (axisAngle (view _y $ view _m33 mtx0) (view _y ypr)) -- pitch
-              !*! fromQuaternion (axisAngle (view _z $ view _m33 mtx0) (view _z ypr)) -- roll
-
-        
-        mtx   <- returnA -< mkTransformationMat rot tr
-
-        keys0 <- returnA -< (keys ctl')
-
-        ctl   <- returnA -< Controllable mtx ypr keys0 (keyVecs ctl0)
+        ctl  <- update ctl0 -< ()
 
         keyWp     <- key SDL.ScancodeW     "Pressed"  -< input
         keyWr     <- key SDL.ScancodeW     "Released" -< input
@@ -211,6 +194,10 @@ control ctl0 =
         keyLeftR  <- key SDL.ScancodeLeft  "Released" -< input
         keyRightP <- key SDL.ScancodeRight "Pressed"  -< input
         keyRightR <- key SDL.ScancodeRight "Released" -< input
+
+        mtx   <- returnA -< transform ctl
+        ypr   <- returnA -< ypr ctl
+        keys0 <- returnA -< keys ctl
         
         result <-
           returnA -<
@@ -230,7 +217,7 @@ control ctl0 =
              ( keyEvent (keyDown  keys0) keyDownP   keyDownR  )
              ( keyEvent (keyLeft  keys0) keyLeftP   keyLeftR  )
              ( keyEvent (keyRight keys0) keyRightP  keyRightR ))
-            (keyVecs ctl0) )
+            (keyVecs ctl) )
 
         returnA -<
           ( ctl
@@ -250,7 +237,7 @@ control ctl0 =
             $> result) -- :: (Controllable, Event Controllable)
             -- $> (DT.trace ("result: " ++ show result)) result) -- :: (M44 Double, Event (M44 Double))
 
-      cont ctl = control ctl  --control ctl -- undefined --fromKeys mtx keys
+      cont result = control result  --control ctl -- undefined --fromKeys mtx keys
 
 keyEvent :: Bool -> Event () -> Event () -> Bool
 keyEvent state pressed released
@@ -275,13 +262,18 @@ update ctl0 =
                         [keyW, keyS, keyA, keyD, keyZ, keyX])
                         [fVel, bVel, lVel, rVel, uVel, dVel]
         ypr =
-          foldr (+) ypr0 $
+          foldr (+) (V3 0 0 0) $
           zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys0) <$>
                         [ keyUp,  keyDown, keyLeft, keyRight, keyQ,  keyE ])
                         [ pPitch, nPitch,  pYaw,    nYaw,     pRoll, nRoll ]
 
+        rot = (view _m33 mtx0)
+              !*! fromQuaternion     (axisAngle (view _x (view _m33 mtx0)) (view _x ypr)) -- yaw
+              !*! fromQuaternion (axisAngle (view _y (view _m33 mtx0)) (view _y ypr)) -- pitch
+              !*! fromQuaternion (axisAngle (view _z (view _m33 mtx0)) (view _z ypr)) -- roll
+
         mtx = mkTransformationMat
-              (identity :: M33 Double)
+              rot
               tr
 
     result <- returnA -< (Controllable mtx ypr keys0 (keyVecs ctl0))
@@ -437,18 +429,18 @@ initGame =
             , pRoll
             , nRoll ])
           where
-            fVel   = V3 ( 0  )( 0  )( 999)   -- forwards  velocity
-            bVel   = V3 ( 0  )( 0  )(-999)   -- backwards velocity
-            lVel   = V3 ( 999)( 0  )( 0  )   -- left      velocity
-            rVel   = V3 (-999)( 0  )( 0  )   -- right     velocity
-            uVel   = V3 ( 0  )(-999)( 0  )   -- right     velocity
-            dVel   = V3 ( 0  )( 999)( 0  )   -- right     velocity
-            pPitch = V3 ( 999)( 0  )( 0  )   -- positive  pitch
-            nPitch = V3 (-999)( 0  )( 0  )   -- negative  pitch
-            pYaw   = V3 ( 0  )( 999)( 0  )   -- positive  yaw
-            nYaw   = V3 ( 0  )(-999)( 0  )   -- negative  yaw
-            pRoll  = V3 ( 0  )(  0 )( 999)   -- positive  roll
-            nRoll  = V3 ( 0  )(  0 )(-999)   -- negative  roll
+            fVel   = V3 ( 0  )( 0  )( 0.1)   -- forwards  velocity
+            bVel   = V3 ( 0  )( 0  )(-0.1)   -- backwards velocity
+            lVel   = V3 ( 0.1)( 0  )( 0  )   -- left      velocity
+            rVel   = V3 (-0.1)( 0  )( 0  )   -- right     velocity
+            uVel   = V3 ( 0  )(-0.1)( 0  )   -- right     velocity
+            dVel   = V3 ( 0  )( 0.1)( 0  )   -- right     velocity
+            pPitch = V3 ( 0.1)( 0  )( 0  )   -- positive  pitch
+            nPitch = V3 (-0.1)( 0  )( 0  )   -- negative  pitch
+            pYaw   = V3 ( 0  )(-0.1)( 0  )   -- positive  yaw
+            nYaw   = V3 ( 0  )( 0.1)( 0  )   -- negative  yaw
+            pRoll  = V3 ( 0  )(  0 )(-0.1)   -- positive  roll
+            nRoll  = V3 ( 0  )(  0 )( 0.1)   -- negative  roll
 
         initGame = Game GamePlaying obj cam
     return initGame

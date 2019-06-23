@@ -13,7 +13,14 @@ out float time;
 
 void main()
 {
-	gl_Position = persp * (camera * transform) * vPosition;
+	mat4 viewM44 =
+		mat4( camera[0]
+			, camera[1]
+			, camera[2]
+			, vec4(0,0,0,1));
+	
+	gl_Position = //camera * persp * transform * vPosition;
+		persp * viewM44 * (vPosition + camera[3]);
 	fragCoord   = uvCoords;
 	time        = u_time;
 }

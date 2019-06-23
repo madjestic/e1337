@@ -281,7 +281,7 @@ initUniforms game =
     let proj =          
           fmap realToFrac . concat $ fmap DF.toList . DF.toList -- convert to GLfloat
           --               FOV    Aspect    Near   Far
-          $ LP.perspective (pi/2) (800/600) (0.35) 1.5 :: [GLfloat]
+          $ LP.perspective (pi/2) (800/600) (0.01) 1.5 :: [GLfloat]
     persp             <- GL.newMatrix RowMajor proj :: IO (GLmatrix GLfloat)
     location3         <- get (uniformLocation program "persp")
     uniform location3 $= persp
@@ -295,7 +295,8 @@ initUniforms game =
 
     let mtx =
           fmap realToFrac . concat $ fmap DF.toList . DF.toList $
-          transform . Obj.controller . object $ game --(identity::M44 Double) :: [GLfloat]
+          --transform . Obj.controller . object $ game --(identity::M44 Double) :: [GLfloat]
+          (identity::M44 Double) :: [GLfloat]
     --_ <- DT.trace ("mtx: " ++ show mtx) $ return ()
     transform         <- GL.newMatrix RowMajor mtx :: IO (GLmatrix GLfloat)
     location5         <- get (uniformLocation program "transform")
