@@ -39,7 +39,7 @@ import Debug.Trace   as DT
 --     d88P 888888Y88b 888  888  888Y88888P888    d88P 888    888    8888888    
 --    d88P  888888 Y88b888  888  888 Y888P 888   d88P  888    888    888        
 --   d88P   888888  Y88888  888  888  Y8P  888  d88P   888    888    888        
-       --  d8888888888888   Y8888  888  888   "   888 d8888888888    888    888        
+--  d8888888888888   Y8888  888  888   "   888 d8888888888    888    888        
 -- d88P     888888    Y8888888888888       888d88P     888    888    8888888888 
 
 -- < Animate > ------------------------------------------------------------
@@ -160,14 +160,22 @@ instance VectorSpace (V3 Double) Double where
 
 control :: Controllable -> SF AppInput Controllable
 control ctl0 =
-  proc input -> do
+  -- proc input -> do
   -- | foldrWith mtx0 keys - for every key apply a folding transform to mtx0
   -- | in case of keypress event - update the set of keys and call new fold ^
-  -- switch sf cont
-  --   where
-  --     sf = proc input -> do
+  switch sf cont
+    where
+      sf = proc input -> do
 
-        ctl  <- update ctl0 -< ()
+        -- ctl'<- update ctl0 -< ()
+        -- ctl <- (ctl0 suka) ^<< integral -< ctl'
+        --ctl <- iterFrom (\_ c1 dt _ -> update' c1) ctl0 -< ctl0
+        --ctl <- returnA -< update' ctl0
+
+-- TODO:        
+        --ctl <- update ctl0 -< ()
+        --ctl <- iterFrom (\_ c1 dt _ -> c1) ctl0 -< ctl0
+        ctl <- update' ctl0 -< ctl0
 
         keyWp     <- key SDL.ScancodeW     "Pressed"  -< input
         keyWr     <- key SDL.ScancodeW     "Released" -< input
@@ -220,7 +228,7 @@ control ctl0 =
              ( keyEvent (keyRight keys0) keyRightP  keyRightR ))
             (keyVecs ctl) )
 
-        returnA -<
+        returnA -< --result
           ( ctl
           , catEvents
             [ keyWp,     keyWr
@@ -237,13 +245,72 @@ control ctl0 =
             , keyRightP, keyRightR ]
             $> result) -- :: (Controllable, Event Controllable)
 
---      cont ctl0 = control ctl0
+      cont result = control result
 
 keyEvent :: Bool -> Event () -> Event () -> Bool
 keyEvent state pressed released
   | isEvent pressed  = True
   | isEvent released = False
   | otherwise = state
+
+-- pos' :: SF MotionState MotionState
+-- pos' = iterFrom f defaultMotionState
+--   where
+--     f :: MotionState -> MotionState -> DTime -> MotionState -> MotionState
+--     f ms@(unVelocity . view velocity -> curr) _ dt (unPosition . view position -> lasto)
+--       = set position (Position $ (curr * (V2 dt dt)) + lasto) ms
+
+test :: Controllable -> Controllable
+test c0 = undefined
+
+update' :: Controllable -> SF Controllable Controllable
+update' c1 = iterFrom update1 c1
+  where
+    update1 :: Controllable -> Controllable -> DTime -> Controllable -> Controllable
+    update1 ctl0 _ _ _ = ctl
+      where
+        ctl = (Controllable mtx ypr keys0 (keyVecs ctl0))
+          where
+            mtx0  = (transform ctl0)
+            keys0 = (keys      ctl0)
+
+            ypr   = 
+              foldr (+) (V3 0 0 0) $
+              zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys0) <$>
+                            [ keyUp,  keyDown, keyLeft, keyRight, keyQ,  keyE ])
+                            [ pPitch, nPitch,  pYaw,    nYaw,     pRoll, nRoll ]
+              where
+                pPitch = (keyVecs ctl0)!!6  -- positive  pitch
+                nPitch = (keyVecs ctl0)!!7  -- negative  pitch
+                pYaw   = (keyVecs ctl0)!!8  -- positive  yaw
+                nYaw   = (keyVecs ctl0)!!9  -- negative  yaw
+                pRoll  = (keyVecs ctl0)!!10 -- positive  roll
+                nRoll  = (keyVecs ctl0)!!11 -- negative  roll
+            
+            mtx =
+              mkTransformationMat
+              rot
+              tr
+              where
+                rot =
+                  (view _m33 mtx0)
+                  !*! fromQuaternion (axisAngle (view _x (view _m33 mtx0)) (view _x ypr)) -- yaw
+                  !*! fromQuaternion (axisAngle (view _y (view _m33 mtx0)) (view _y ypr)) -- pitch
+                  !*! fromQuaternion (axisAngle (view _z (view _m33 mtx0)) (view _z ypr)) -- roll
+
+                tr  = 
+                  foldr (+) (view translation mtx0 ) $
+                  fmap ((transpose rot) !*) $
+                  zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys0) <$>
+                                [keyW, keyS, keyA, keyD, keyZ, keyX])
+                                [fVel, bVel, lVel, rVel, uVel, dVel]
+
+                  where fVel   = (keyVecs ctl0)!!0  -- forwards  velocity
+                        bVel   = (keyVecs ctl0)!!1  -- backwards velocity
+                        lVel   = (keyVecs ctl0)!!2  -- left      velocity
+                        rVel   = (keyVecs ctl0)!!3  -- right     velocity
+                        uVel   = (keyVecs ctl0)!!4  -- right     velocity
+                        dVel   = (keyVecs ctl0)!!5  -- right     velocity
 
 update :: Controllable -> SF () Controllable
 update ctl0 =
@@ -261,17 +328,16 @@ update ctl0 =
 
       rot =
           (view _m33 mtx0)
-              !*! fromQuaternion     (axisAngle (view _x (view _m33 mtx0)) (view _x ypr)) -- yaw
+              !*! fromQuaternion (axisAngle (view _x (view _m33 mtx0)) (view _x ypr)) -- yaw
               !*! fromQuaternion (axisAngle (view _y (view _m33 mtx0)) (view _y ypr)) -- pitch
               !*! fromQuaternion (axisAngle (view _z (view _m33 mtx0)) (view _z ypr)) -- roll
 
-      tr = 
+      tr  = 
           foldr (+) (view translation mtx0 ) $
           fmap ((transpose rot) !*) $
           zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys0) <$>
                         [keyW, keyS, keyA, keyD, keyZ, keyX])
                         [fVel, bVel, lVel, rVel, uVel, dVel]
-
 
       mtx =
         mkTransformationMat
