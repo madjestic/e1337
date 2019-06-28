@@ -5,6 +5,8 @@
 {-# LANGUAGE OverloadedStrings, Arrows #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TemplateHaskell #-}
+-- {-# LANGUAGE DeriveGeneric #-}
 module Main where 
 
 import Control.Concurrent
@@ -30,6 +32,7 @@ import Geometry
 import Input
 import Rendering
 import Data.Foldable as DF (toList)
+import GHC.Generics
 
 import Debug.Trace   as DT
 
@@ -128,6 +131,7 @@ updateCamera cam =
   proc input -> do
     ctl <- control
            ( Controllable
+             ((debug     . Cam.controller) cam)
              ((transform . Cam.controller) cam)
              ((ypr       . Cam.controller) cam)
              ((keys      . Cam.controller) cam)
@@ -147,6 +151,7 @@ updateObject obj =
       (geometry obj)
       (velocity obj)
       ( Controllable
+        ((debug     . Obj.controller) obj)
         ((transform . Obj.controller) obj)
         ((ypr       . Obj.controller) obj)
         ((keys      . Obj.controller) obj)
@@ -166,16 +171,7 @@ control ctl0 =
   switch sf cont
     where
       sf = proc input -> do
-
-        -- ctl'<- update ctl0 -< ()
-        -- ctl <- (ctl0 suka) ^<< integral -< ctl'
-        --ctl <- iterFrom (\_ c1 dt _ -> update' c1) ctl0 -< ctl0
-        --ctl <- returnA -< update' ctl0
-
--- TODO:        
-        --ctl <- update ctl0 -< ()
-        --ctl <- iterFrom (\_ c1 dt _ -> c1) ctl0 -< ctl0
-        ctl <- update' ctl0 -< ctl0
+        ctl <- update ctl0 -< ctl0
 
         keyWp     <- key SDL.ScancodeW     "Pressed"  -< input
         keyWr     <- key SDL.ScancodeW     "Released" -< input
@@ -207,10 +203,12 @@ control ctl0 =
         mtx   <- returnA -< transform ctl
         ypr   <- returnA -< ypr       ctl
         keys0 <- returnA -< keys      ctl
+        db0   <- returnA -< debug     ctl
         
         result <-
           returnA -<
           ( Controllable
+            db0
             mtx
             ypr
             (Keys
@@ -253,33 +251,33 @@ keyEvent state pressed released
   | isEvent released = False
   | otherwise = state
 
--- pos' :: SF MotionState MotionState
--- pos' = iterFrom f defaultMotionState
---   where
---     f :: MotionState -> MotionState -> DTime -> MotionState -> MotionState
---     f ms@(unVelocity . view velocity -> curr) _ dt (unPosition . view position -> lasto)
---       = set position (Position $ (curr * (V2 dt dt)) + lasto) ms
-
-test :: Controllable -> Controllable
-test c0 = undefined
-
-update' :: Controllable -> SF Controllable Controllable
-update' c1 = iterFrom update1 c1
+update :: Controllable -> SF Controllable Controllable
+update ctl0 = iterFrom update1 ctl0
   where
+    -- dt0 = 0 :: Time
     update1 :: Controllable -> Controllable -> DTime -> Controllable -> Controllable
-    update1 ctl0 _ _ _ = ctl
+    update1 ctl0 ctl1 dt ctl2 = ctl
       where
-        ctl = (Controllable mtx ypr keys0 (keyVecs ctl0))
+        ctl = (Controllable s' mtx ypr keys0 (keyVecs ctl0))
           where
             mtx0  = (transform ctl0)
             keys0 = (keys      ctl0)
+            s0    = (debug     ctl2) -- YESSSSSSSSSSSSSSSSSS
+            s'    = s0 + 0.1
+            -- = (DT.trace ("suka") $ ())
+            
 
-            ypr   = 
+            ypr :: V3 Double
+            ypr   =
+              (99999 * ) $
+              ((V3 (DT.trace ("s': " ++ show s') $
+                    DT.trace ("dt: " ++ show dt) dt) dt dt) * ) $
               foldr (+) (V3 0 0 0) $
               zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys0) <$>
                             [ keyUp,  keyDown, keyLeft, keyRight, keyQ,  keyE ])
                             [ pPitch, nPitch,  pYaw,    nYaw,     pRoll, nRoll ]
               where
+                dt'    = dt :: Double
                 pPitch = (keyVecs ctl0)!!6  -- positive  pitch
                 nPitch = (keyVecs ctl0)!!7  -- negative  pitch
                 pYaw   = (keyVecs ctl0)!!8  -- positive  yaw
@@ -298,7 +296,9 @@ update' c1 = iterFrom update1 c1
                   !*! fromQuaternion (axisAngle (view _y (view _m33 mtx0)) (view _y ypr)) -- pitch
                   !*! fromQuaternion (axisAngle (view _z (view _m33 mtx0)) (view _z ypr)) -- roll
 
-                tr  = 
+                tr  =
+                  (99999 * ) $
+                  ((V3 dt dt dt) * ) $
                   foldr (+) (view translation mtx0 ) $
                   fmap ((transpose rot) !*) $
                   zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys0) <$>
@@ -311,54 +311,6 @@ update' c1 = iterFrom update1 c1
                         rVel   = (keyVecs ctl0)!!3  -- right     velocity
                         uVel   = (keyVecs ctl0)!!4  -- right     velocity
                         dVel   = (keyVecs ctl0)!!5  -- right     velocity
-
-update :: Controllable -> SF () Controllable
-update ctl0 =
-  proc () -> do
-    mtx0  <- returnA -< (transform ctl0)
-    ypr0  <- returnA -< (ypr       ctl0)
-    keys0 <- returnA -< (keys      ctl0)
-
-    let
-      ypr =
-          foldr (+) (V3 0 0 0) $
-          zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys0) <$>
-                        [ keyUp,  keyDown, keyLeft, keyRight, keyQ,  keyE ])
-                        [ pPitch, nPitch,  pYaw,    nYaw,     pRoll, nRoll ]
-
-      rot =
-          (view _m33 mtx0)
-              !*! fromQuaternion (axisAngle (view _x (view _m33 mtx0)) (view _x ypr)) -- yaw
-              !*! fromQuaternion (axisAngle (view _y (view _m33 mtx0)) (view _y ypr)) -- pitch
-              !*! fromQuaternion (axisAngle (view _z (view _m33 mtx0)) (view _z ypr)) -- roll
-
-      tr  = 
-          foldr (+) (view translation mtx0 ) $
-          fmap ((transpose rot) !*) $
-          zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys0) <$>
-                        [keyW, keyS, keyA, keyD, keyZ, keyX])
-                        [fVel, bVel, lVel, rVel, uVel, dVel]
-
-      mtx =
-        mkTransformationMat
-        rot
-        tr
-
-    result <- returnA -< (Controllable mtx ypr keys0 (keyVecs ctl0))
-
-    returnA -< result
-        where fVel   = (keyVecs ctl0)!!0  -- forwards  velocity
-              bVel   = (keyVecs ctl0)!!1  -- backwards velocity
-              lVel   = (keyVecs ctl0)!!2  -- left      velocity
-              rVel   = (keyVecs ctl0)!!3  -- right     velocity
-              uVel   = (keyVecs ctl0)!!4  -- right     velocity
-              dVel   = (keyVecs ctl0)!!5  -- right     velocity
-              pPitch = (keyVecs ctl0)!!6  -- positive  pitch
-              nPitch = (keyVecs ctl0)!!7  -- negative  pitch
-              pYaw   = (keyVecs ctl0)!!8  -- positive  yaw
-              nYaw   = (keyVecs ctl0)!!9  -- negative  yaw
-              pRoll  = (keyVecs ctl0)!!10 -- positive  roll
-              nRoll  = (keyVecs ctl0)!!11 -- negative  roll
 
 updateScalar :: Double -> SF AppInput Double
 updateScalar pp0 =
@@ -425,6 +377,7 @@ initGame =
           geo
           (V4 0 0 0 0)
           ( Controllable
+            (0.0 :: Double)
             (identity :: M44 Double)
             (V3 0 0 0)
             (Keys
@@ -469,6 +422,7 @@ initGame =
         cam =
           Camera
           ( Controllable
+            (0.0 :: Double)
             (identity :: M44 Double)
             (V3 0 0 0)
             (Keys

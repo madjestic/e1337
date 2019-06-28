@@ -10,7 +10,8 @@ import Keys
 data Controllable =
      Controllable
      {
-       transform :: M44 Double
+       debug     :: Double
+     , transform :: M44 Double
      , ypr       :: V3 Double  -- yaw/pitch/roll
      , keys      :: Keys
      , keyVecs   :: [V3 Double]
