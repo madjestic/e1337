@@ -56,28 +56,29 @@ rbDown :: SF AppInput Bool
 rbDown = arr (isJust . inpMouseRight)
 
 key :: SDL.Scancode -> String -> SF AppInput (Event ())
-key code mode
-  | code == SDL.ScancodeW     ||
-    code == SDL.ScancodeS     ||
-    code == SDL.ScancodeA     ||
-    code == SDL.ScancodeD     ||
-    code == SDL.ScancodeQ     ||
-    code == SDL.ScancodeE     ||
-    code == SDL.ScancodeX     ||
-    code == SDL.ScancodeZ     ||
-    code == SDL.ScancodeUp    ||
-    code == SDL.ScancodeDown  ||
-    code == SDL.ScancodeLeft  ||
-    code == SDL.ScancodeRight ||
-    code == SDL.ScancodeSpace
-    
-    = (inpKeyMode ^>> edgeJust) >>^ filterE (code ==) >>^ tagWith ()
-      where
-       inpKeyMode
-         = if | mode == "Pressed"
-                -> inpKeyPressed
-              | otherwise
-                -> inpKeyReleased
+key code mode 
+  | code `elem`
+    [ SDL.ScancodeW     
+    , SDL.ScancodeS     
+    , SDL.ScancodeA     
+    , SDL.ScancodeD     
+    , SDL.ScancodeQ     
+    , SDL.ScancodeE     
+    , SDL.ScancodeX     
+    , SDL.ScancodeZ     
+    , SDL.ScancodeUp    
+    , SDL.ScancodeDown  
+    , SDL.ScancodeLeft  
+    , SDL.ScancodeRight 
+    , SDL.ScancodeSpace ]
+  = (inpKeyMode ^>> edgeJust) >>^ filterE (code ==) >>^ tagWith ()
+  where
+    inpKeyMode
+      = if | mode == "Pressed"
+             -> inpKeyPressed
+           | otherwise
+             -> inpKeyReleased
+
 
 quitEvent :: SF AppInput (Event ())
 quitEvent = arr inpQuit >>> edge
