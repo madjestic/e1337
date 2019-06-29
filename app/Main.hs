@@ -42,7 +42,7 @@ import Debug.Trace   as DT
 --     d88P 888888Y88b 888  888  888Y88888P888    d88P 888    888    8888888    
 --    d88P  888888 Y88b888  888  888 Y888P 888   d88P  888    888    888        
 --   d88P   888888  Y88888  888  888  Y8P  888  d88P   888    888    888        
---  d8888888888888   Y8888  888  888   "   888 d8888888888    888    888        
+  --  d8888888888888   Y8888  888  888   "   888 d8888888888    888    888        
 -- d88P     888888    Y8888888888888       888d88P     888    888    8888888888 
 
 -- < Animate > ------------------------------------------------------------
@@ -131,7 +131,6 @@ updateCamera cam =
   proc input -> do
     ctl <- control
            ( Controllable
-             ((debug     . Cam.controller) cam)
              ((transform . Cam.controller) cam)
              ((ypr       . Cam.controller) cam)
              ((keys      . Cam.controller) cam)
@@ -151,7 +150,6 @@ updateObject obj =
       (geometry obj)
       (velocity obj)
       ( Controllable
-        ((debug     . Obj.controller) obj)
         ((transform . Obj.controller) obj)
         ((ypr       . Obj.controller) obj)
         ((keys      . Obj.controller) obj)
@@ -165,13 +163,15 @@ instance VectorSpace (V3 Double) Double where
 
 control :: Controllable -> SF AppInput Controllable
 control ctl0 =
-  -- proc input -> do
   -- | foldrWith mtx0 keys - for every key apply a folding transform to mtx0
   -- | in case of keypress event - update the set of keys and call new fold ^
   switch sf cont
     where
       sf = proc input -> do
-        ctl <- update ctl0 -< ctl0
+        ctl   <- update ctl0 -< ctl0
+        mtx   <- returnA -< transform ctl
+        ypr   <- returnA -< ypr       ctl
+        keys0 <- returnA -< keys      ctl
 
         keyWp     <- key SDL.ScancodeW     "Pressed"  -< input
         keyWr     <- key SDL.ScancodeW     "Released" -< input
@@ -200,15 +200,9 @@ control ctl0 =
         keyRightP <- key SDL.ScancodeRight "Pressed"  -< input
         keyRightR <- key SDL.ScancodeRight "Released" -< input
 
-        mtx   <- returnA -< transform ctl
-        ypr   <- returnA -< ypr       ctl
-        keys0 <- returnA -< keys      ctl
-        db0   <- returnA -< debug     ctl
-        
         result <-
           returnA -<
           ( Controllable
-            db0
             mtx
             ypr
             (Keys
@@ -225,10 +219,15 @@ control ctl0 =
              ( keyEvent (keyLeft  keys0) keyLeftP   keyLeftR  )
              ( keyEvent (keyRight keys0) keyRightP  keyRightR ))
             (keyVecs ctl) )
-
-        returnA -< --result
+        
+        returnA -< 
           ( ctl
           , catEvents
+          -- TODO : a list of controller events i.e. events which effect the controller
+          -- should be a type property (property of the class)
+          --  ...
+          -- , catEvents ctlEvents
+          -- ...
             [ keyWp,     keyWr
             , keySp,     keySr
             , keyAp,     keyAr
@@ -254,24 +253,18 @@ keyEvent state pressed released
 update :: Controllable -> SF Controllable Controllable
 update ctl0 = iterFrom update1 ctl0
   where
-    -- dt0 = 0 :: Time
     update1 :: Controllable -> Controllable -> DTime -> Controllable -> Controllable
     update1 ctl0 ctl1 dt ctl2 = ctl
       where
-        ctl = (Controllable s' mtx ypr keys0 (keyVecs ctl0))
+        ctl = (Controllable mtx ypr keys0 (keyVecs ctl0))
           where
             mtx0  = (transform ctl2)
             keys0 = (keys      ctl0)
-            s0    = (debug     ctl2) -- YESSSSSSSSSSSSSSSSSS
-            s'    = s0 + 0.1
-            -- = (DT.trace ("suka") $ ())
-            
 
             ypr :: V3 Double
             ypr   =
               (99999 * ) $
-              ((V3 (DT.trace ("s': " ++ show s') $
-                    DT.trace ("dt: " ++ show dt) dt) dt dt) * ) $
+              ((V3 dt dt dt) * ) $
               foldr (+) (V3 0 0 0) $
               zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys0) <$>
                             [ keyUp,  keyDown, keyLeft, keyRight, keyQ,  keyE ])
@@ -297,8 +290,7 @@ update ctl0 = iterFrom update1 ctl0
                   !*! fromQuaternion (axisAngle (view _z (view _m33 mtx0)) (view _z ypr)) -- roll
 
                 tr  =
-                  --((view translation (transform ctl2)) + ) $
-                  foldr (+) ((DT.trace ("translation: " ++ show (view translation mtx0))) view translation mtx0) $
+                  foldr (+) (view translation mtx0) $
                   fmap (0.1 *) $
                   fmap (transpose (rot) !*) $
                   zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys0) <$>
@@ -377,7 +369,6 @@ initGame =
           geo
           (V4 0 0 0 0)
           ( Controllable
-            (0.0 :: Double)
             (identity :: M44 Double)
             (V3 0 0 0)
             (Keys
@@ -422,7 +413,6 @@ initGame =
         cam =
           Camera
           ( Controllable
-            (0.0 :: Double)
             (identity :: M44 Double)
             (V3 0 0 0)
             (Keys
