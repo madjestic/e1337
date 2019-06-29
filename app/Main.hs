@@ -270,7 +270,6 @@ update ctl0 = iterFrom update1 ctl0
                             [ keyUp,  keyDown, keyLeft, keyRight, keyQ,  keyE ])
                             [ pPitch, nPitch,  pYaw,    nYaw,     pRoll, nRoll ]
               where
-                dt'    = dt :: Double
                 pPitch = (keyVecs ctl0)!!6  -- positive  pitch
                 nPitch = (keyVecs ctl0)!!7  -- negative  pitch
                 pYaw   = (keyVecs ctl0)!!8  -- positive  yaw
