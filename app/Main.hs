@@ -260,7 +260,7 @@ update ctl0 = iterFrom update1 ctl0
       where
         ctl = (Controllable s' mtx ypr keys0 (keyVecs ctl0))
           where
-            mtx0  = (transform ctl0)
+            mtx0  = (transform ctl2)
             keys0 = (keys      ctl0)
             s0    = (debug     ctl2) -- YESSSSSSSSSSSSSSSSSS
             s'    = s0 + 0.1
@@ -297,10 +297,10 @@ update ctl0 = iterFrom update1 ctl0
                   !*! fromQuaternion (axisAngle (view _z (view _m33 mtx0)) (view _z ypr)) -- roll
 
                 tr  =
-                  (99999 * ) $
-                  ((V3 dt dt dt) * ) $
-                  foldr (+) (view translation mtx0 ) $
-                  fmap ((transpose rot) !*) $
+                  --((view translation (transform ctl2)) + ) $
+                  foldr (+) ((DT.trace ("translation: " ++ show (view translation mtx0))) view translation mtx0) $
+                  fmap (0.1 *) $
+                  fmap (transpose (rot) !*) $
                   zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys0) <$>
                                 [keyW, keyS, keyA, keyD, keyZ, keyX])
                                 [fVel, bVel, lVel, rVel, uVel, dVel]
