@@ -42,7 +42,7 @@ import Debug.Trace   as DT
 --     d88P 888888Y88b 888  888  888Y88888P888    d88P 888    888    8888888    
 --    d88P  888888 Y88b888  888  888 Y888P 888   d88P  888    888    888        
 --   d88P   888888  Y88888  888  888  Y8P  888  d88P   888    888    888        
---  d8888888888888   Y8888  888  888   "   888 d8888888888    888    888        
+       --  d8888888888888   Y8888  888  888   "   888 d8888888888    888    888        
 -- d88P     888888    Y8888888888888       888d88P     888    888    8888888888 
 
 -- < Animate > ------------------------------------------------------------
@@ -126,70 +126,6 @@ updateGame game =
     cam <- updateCamera $ camera game -< input
     returnA -< Game GamePlaying obj cam
 
-updateKeys :: Keys -> SF AppInput (Keys, [Event ()])
-updateKeys keys0 =
-  proc input -> do
-
-    keyWp     <- key' SDL.ScancodeW     "Pressed"  -< input
-    keyWr     <- key' SDL.ScancodeW     "Released" -< input
-    keySp     <- key' SDL.ScancodeS     "Pressed"  -< input
-    keySr     <- key' SDL.ScancodeS     "Released" -< input
-    keyAp     <- key' SDL.ScancodeA     "Pressed"  -< input
-    keyAr     <- key' SDL.ScancodeA     "Released" -< input
-    keyDp     <- key' SDL.ScancodeD     "Pressed"  -< input
-    keyDr     <- key' SDL.ScancodeD     "Released" -< input
-                                                  
-    keyQp     <- key SDL.ScancodeQ     "Pressed"  -< input
-    keyQr     <- key SDL.ScancodeQ     "Released" -< input
-    keyEp     <- key SDL.ScancodeE     "Pressed"  -< input
-    keyEr     <- key SDL.ScancodeE     "Released" -< input
-    keyZp     <- key SDL.ScancodeZ     "Pressed"  -< input
-    keyZr     <- key SDL.ScancodeZ     "Released" -< input
-    keyXp     <- key SDL.ScancodeX     "Pressed"  -< input
-    keyXr     <- key SDL.ScancodeX     "Released" -< input
-    
-    keyUpP    <- key SDL.ScancodeUp    "Pressed"  -< input
-    keyUpR    <- key SDL.ScancodeUp    "Released" -< input
-    keyDownP  <- key SDL.ScancodeDown  "Pressed"  -< input
-    keyDownR  <- key SDL.ScancodeDown  "Released" -< input
-    keyLeftP  <- key SDL.ScancodeLeft  "Pressed"  -< input
-    keyLeftR  <- key SDL.ScancodeLeft  "Released" -< input
-    keyRightP <- key SDL.ScancodeRight "Pressed"  -< input
-    keyRightR <- key SDL.ScancodeRight "Released" -< input
-
-    events <-
-      returnA -<
-      [ keyWp,     keyWr
-      , keySp,     keySr
-      , keyAp,     keyAr
-      , keyDp,     keyDr
-      , keyQp,     keyQr
-      , keyEp,     keyEr 
-      , keyZp,     keyZr 
-      , keyXp,     keyXr
-      , keyUpP,    keyUpR
-      , keyDownP,  keyDownR
-      , keyLeftP,  keyLeftR
-      , keyRightP, keyRightR ]
-      
-    keys <-
-      returnA -<
-      (Keys
-        ( keyEvent (keyW     keys0) keyWp      keyWr     )
-        ( keyEvent (keyS     keys0) keySp      keySr     )
-        ( keyEvent (keyA     keys0) keyAp      keyAr     )
-        ( keyEvent (keyD     keys0) keyDp      keyDr     )
-        ( keyEvent (keyQ     keys0) keyQp      keyQr     )
-        ( keyEvent (keyE     keys0) keyEp      keyEr     )
-        ( keyEvent (keyZ     keys0) keyZp      keyZr     )
-        ( keyEvent (keyX     keys0) keyXp      keyXr     )
-        ( keyEvent (keyUp    keys0) keyUpP     keyUpR    )
-        ( keyEvent (keyDown  keys0) keyDownP   keyDownR  )
-        ( keyEvent (keyLeft  keys0) keyLeftP   keyLeftR  )
-        ( keyEvent (keyRight keys0) keyRightP  keyRightR ))
-
-    returnA -< (keys, events)
-
 updateCamera :: Camera -> SF AppInput Camera
 updateCamera cam =
   proc input -> do
@@ -219,6 +155,86 @@ updateObject obj =
         ((keys      . Obj.controller) obj)
         ((keyVecs   . Obj.controller) obj))
 
+auxF :: SDL.Scancode -> (Keys -> Bool) -> Controllable -> SF AppInput (Bool, Event ())
+auxF code key ctl =
+  proc input -> do
+    keyPressed     <- key' SDL.ScancodeW     "Pressed"  -< input
+    keyReleased    <- key' SDL.ScancodeW     "Released" -< input
+    let result = keyEvent (key (keys ctl)) keyPressed keyReleased
+        event  = lMerge keyPressed keyReleased
+    returnA -< (result, event)
+
+updateKeys :: Controllable -> SF AppInput (Keys, [Event ()])
+updateKeys ctl0 =
+  proc input -> do
+
+    keyWp     <- key' SDL.ScancodeW     "Pressed"  -< input
+    keyWr     <- key' SDL.ScancodeW     "Released" -< input
+    -- let keyW_ = keyEvent (keyW     keys0) keyWp      keyWr
+    let keys0 = keys ctl0
+    
+    (keyW_, event) <- auxF SDL.ScancodeW keyW ctl0 -< input
+    -- keyW_ <- auxF SDL.ScancodeW keyW ctl0 -< input
+    
+    keySp     <- key' SDL.ScancodeS     "Pressed"  -< input
+    keySr     <- key' SDL.ScancodeS     "Released" -< input
+    keyAp     <- key' SDL.ScancodeA     "Pressed"  -< input
+    keyAr     <- key' SDL.ScancodeA     "Released" -< input
+    keyDp     <- key' SDL.ScancodeD     "Pressed"  -< input
+    keyDr     <- key' SDL.ScancodeD     "Released" -< input
+                                                  
+    keyQp     <- key' SDL.ScancodeQ     "Pressed"  -< input
+    keyQr     <- key' SDL.ScancodeQ     "Released" -< input
+    keyEp     <- key' SDL.ScancodeE     "Pressed"  -< input
+    keyEr     <- key' SDL.ScancodeE     "Released" -< input
+    keyZp     <- key' SDL.ScancodeZ     "Pressed"  -< input
+    keyZr     <- key' SDL.ScancodeZ     "Released" -< input
+    keyXp     <- key' SDL.ScancodeX     "Pressed"  -< input
+    keyXr     <- key' SDL.ScancodeX     "Released" -< input
+                     
+    keyUpP    <- key SDL.ScancodeUp    "Pressed"  -< input
+    keyUpR    <- key SDL.ScancodeUp    "Released" -< input
+    keyDownP  <- key SDL.ScancodeDown  "Pressed"  -< input
+    keyDownR  <- key SDL.ScancodeDown  "Released" -< input
+    keyLeftP  <- key SDL.ScancodeLeft  "Pressed"  -< input
+    keyLeftR  <- key SDL.ScancodeLeft  "Released" -< input
+    keyRightP <- key SDL.ScancodeRight "Pressed"  -< input
+    keyRightR <- key SDL.ScancodeRight "Released" -< input
+
+    events <-
+      returnA -<
+      [ keyWp,     keyWr
+      , keySp,     keySr
+      , keyAp,     keyAr
+      , keyDp,     keyDr
+      , keyQp,     keyQr
+      , keyEp,     keyEr 
+      , keyZp,     keyZr 
+      , keyXp,     keyXr
+      , keyUpP,    keyUpR
+      , keyDownP,  keyDownR
+      , keyLeftP,  keyLeftR
+      , keyRightP, keyRightR ]
+      
+    keys <-
+      returnA -<
+      (Keys
+        --( keyEvent (keyW     keys0) keyWp      keyWr     )
+        keyW_
+        ( keyEvent (keyS     keys0) keySp      keySr     )
+        ( keyEvent (keyA     keys0) keyAp      keyAr     )
+        ( keyEvent (keyD     keys0) keyDp      keyDr     )
+        ( keyEvent (keyQ     keys0) keyQp      keyQr     )
+        ( keyEvent (keyE     keys0) keyEp      keyEr     )
+        ( keyEvent (keyZ     keys0) keyZp      keyZr     )
+        ( keyEvent (keyX     keys0) keyXp      keyXr     )
+        ( keyEvent (keyUp    keys0) keyUpP     keyUpR    )
+        ( keyEvent (keyDown  keys0) keyDownP   keyDownR  )
+        ( keyEvent (keyLeft  keys0) keyLeftP   keyLeftR  )
+        ( keyEvent (keyRight keys0) keyRightP  keyRightR ))
+
+    returnA -< (keys, events)
+
 instance VectorSpace (V3 Double) Double where
   zeroVector                   = (V3 0 0 0)
   (*^) s (V3 x y z)            = (V3 (s*x) (s*y) (s*z))
@@ -235,7 +251,7 @@ control ctl0 =
         ctl         <- update ctl0            -< ctl0
         mtx         <- returnA                -< transform ctl
         ypr         <- returnA                -< ypr       ctl
-        (keys, evs) <- updateKeys (keys ctl0) -< input
+        (keys, evs) <- updateKeys ctl0 -< input
 
         result <-
           returnA -<
