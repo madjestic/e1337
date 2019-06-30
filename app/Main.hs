@@ -158,8 +158,8 @@ updateObject obj =
 auxF :: SDL.Scancode -> (Keys -> Bool) -> Controllable -> SF AppInput (Bool, Event ())
 auxF code key ctl =
   proc input -> do
-    keyPressed     <- key' SDL.ScancodeW     "Pressed"  -< input
-    keyReleased    <- key' SDL.ScancodeW     "Released" -< input
+    keyPressed     <- key' code  "Pressed"  -< input
+    keyReleased    <- key' code  "Released" -< input
     let result = keyEvent (key (keys ctl)) keyPressed keyReleased
         event  = lMerge keyPressed keyReleased
     returnA -< (result, event)
@@ -173,8 +173,8 @@ updateKeys ctl0 =
     -- let keyW_ = keyEvent (keyW     keys0) keyWp      keyWr
     let keys0 = keys ctl0
     
-    (keyW_, event) <- auxF SDL.ScancodeW keyW ctl0 -< input
-    -- keyW_ <- auxF SDL.ScancodeW keyW ctl0 -< input
+    (keyW_, keyWe) <- auxF SDL.ScancodeW keyW ctl0 -< input
+    (keyS_, keySe) <- auxF SDL.ScancodeS keyS ctl0 -< input
     
     keySp     <- key' SDL.ScancodeS     "Pressed"  -< input
     keySr     <- key' SDL.ScancodeS     "Released" -< input
@@ -203,25 +203,31 @@ updateKeys ctl0 =
 
     events <-
       returnA -<
-      [ keyWp,     keyWr
-      , keySp,     keySr
-      , keyAp,     keyAr
-      , keyDp,     keyDr
-      , keyQp,     keyQr
-      , keyEp,     keyEr 
-      , keyZp,     keyZr 
-      , keyXp,     keyXr
-      , keyUpP,    keyUpR
-      , keyDownP,  keyDownR
-      , keyLeftP,  keyLeftR
-      , keyRightP, keyRightR ]
+      [ keyWe
+      , keySe ]
+
+    -- events <-
+    --   returnA -<
+    --   [ keyWp,     keyWr
+    --   , keySp,     keySr
+    --   , keyAp,     keyAr
+    --   , keyDp,     keyDr
+    --   , keyQp,     keyQr
+    --   , keyEp,     keyEr 
+    --   , keyZp,     keyZr 
+    --   , keyXp,     keyXr
+    --   , keyUpP,    keyUpR
+    --   , keyDownP,  keyDownR
+    --   , keyLeftP,  keyLeftR
+    --   , keyRightP, keyRightR ]
       
     keys <-
       returnA -<
       (Keys
         --( keyEvent (keyW     keys0) keyWp      keyWr     )
         keyW_
-        ( keyEvent (keyS     keys0) keySp      keySr     )
+        --( keyEvent (keyS     keys0) keySp      keySr     )
+        keyS_
         ( keyEvent (keyA     keys0) keyAp      keyAr     )
         ( keyEvent (keyD     keys0) keyDp      keyDr     )
         ( keyEvent (keyQ     keys0) keyQp      keyQr     )
@@ -251,7 +257,7 @@ control ctl0 =
         ctl         <- update ctl0            -< ctl0
         mtx         <- returnA                -< transform ctl
         ypr         <- returnA                -< ypr       ctl
-        (keys, evs) <- updateKeys ctl0 -< input
+        (keys, evs)  <- updateKeys ctl0 -< input
 
         result <-
           returnA -<
