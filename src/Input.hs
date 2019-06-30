@@ -10,7 +10,7 @@ module Input
     , rbpPos
     , rbDown
     , key
-    , keyEventW
+    , key'
     , quitEvent
     , module SDL.Input.Keyboard.Codes
     ) where
@@ -77,17 +77,27 @@ key code mode
   = (inpKeyMode ^>> edgeJust) >>^ filterE (code ==) >>^ tagWith ()
   where
     inpKeyMode
-      = if | mode == "Pressed" -> inpKeyPressed
-           | otherwise         -> inpKeyReleased
+      = if | mode == "Pressed" -> inpKeySpacePressed
+           | otherwise         -> inpKeySpaceReleased
 
-keyEventW :: String -> SF AppInput (Event ())
-keyEventW mode =
+key' :: SDL.Scancode -> String -> SF AppInput (Event ())
+key' code mode =
   (inpKeyMode ^>> edgeJust) >>^ filterE (code ==) >>^ tagWith ()
   where
-    code = SDL.ScancodeW
     inpKeyMode
+      | code == SDL.ScancodeW
       = if | mode == "Pressed" -> inpKeyWPressed
            | otherwise         -> inpKeyWReleased
+      | code == SDL.ScancodeS
+      = if | mode == "Pressed" -> inpKeySPressed
+           | otherwise         -> inpKeySReleased
+      | code == SDL.ScancodeA
+      = if | mode == "Pressed" -> inpKeyAPressed
+           | otherwise         -> inpKeyAReleased
+      | code == SDL.ScancodeD
+      = if | mode == "Pressed" -> inpKeyDPressed
+           | otherwise         -> inpKeyDReleased           
+-- TODO : finish ^
 
 quitEvent :: SF AppInput (Event ())
 quitEvent = arr inpQuit >>> edge
@@ -100,12 +110,16 @@ data AppInput =
      , inpMouseLeft    :: Maybe (Double, Double) -- ^ Down button currently down
      , inpMouseRight   :: Maybe (Double, Double) -- ^ Right button currently down
      , inpQuit         :: Bool                   -- ^ SDL's QuitEvent
-     , inpKeyPressed   :: Maybe SDL.Scancode
-     , inpKeyReleased  :: Maybe SDL.Scancode
+     , inpKeySpacePressed   :: Maybe SDL.Scancode
+     , inpKeySpaceReleased  :: Maybe SDL.Scancode
      , inpKeyWPressed  :: Maybe SDL.Scancode
      , inpKeyWReleased :: Maybe SDL.Scancode
+     , inpKeySPressed  :: Maybe SDL.Scancode
+     , inpKeySReleased :: Maybe SDL.Scancode
      , inpKeyAPressed  :: Maybe SDL.Scancode
      , inpKeyAReleased :: Maybe SDL.Scancode
+     , inpKeyDPressed  :: Maybe SDL.Scancode
+     , inpKeyDReleased :: Maybe SDL.Scancode
      }
 
 type WinInput = Event SDL.EventPayload    
@@ -117,12 +131,16 @@ initAppInput =
      , inpMouseLeft    = Nothing
      , inpMouseRight   = Nothing
      , inpQuit         = False
-     , inpKeyPressed   = Nothing
-     , inpKeyReleased  = Nothing
+     , inpKeySpacePressed   = Nothing
+     , inpKeySpaceReleased  = Nothing
      , inpKeyWPressed  = Nothing
      , inpKeyWReleased = Nothing
+     , inpKeySPressed  = Nothing
+     , inpKeySReleased = Nothing
      , inpKeyAPressed  = Nothing
      , inpKeyAReleased = Nothing
+     , inpKeyDPressed  = Nothing
+     , inpKeyDReleased = Nothing
      }
 
 -- | Filter and transform SDL events into events which are relevant to our
@@ -143,33 +161,18 @@ nextAppInput inp (SDL.MouseMotionEvent ev) =
     inp { inpMousePos = (fromIntegral x, fromIntegral y) }
     where P (V2 x y) = SDL.mouseMotionEventPos ev
 -- | key events
--- nextAppInput inp (SDL.KeyboardEvent ev)
---     | scancode ev == SDL.ScancodeEscape
---       = inp { inpQuit = True }
---     | (scancode ev) `elem`
---        [ SDL.ScancodeW     
---        , SDL.ScancodeS     
---        , SDL.ScancodeA     
---        , SDL.ScancodeD     
---        , SDL.ScancodeQ     
---        , SDL.ScancodeE     
---        , SDL.ScancodeZ     
---        , SDL.ScancodeX     
---        , SDL.ScancodeUp    
---        , SDL.ScancodeDown  
---        , SDL.ScancodeLeft   
---        , SDL.ScancodeRight 
---        , SDL.ScancodeSpace ]
---   = if | SDL.keyboardEventKeyMotion ev == SDL.Pressed
---          -> inp { inpKeyPressed  = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev
---                 , inpKeyReleased = Nothing }
---        | otherwise
---          -> inp { inpKeyPressed  = Nothing
---                 , inpKeyReleased = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev }
-
 nextAppInput inp (SDL.KeyboardEvent ev)
     | scancode ev == SDL.ScancodeEscape
       = inp { inpQuit = True }
+      
+    | (scancode ev) == SDL.ScancodeSpace
+      = if | SDL.keyboardEventKeyMotion ev == SDL.Pressed
+             -> inp { inpKeySpacePressed  = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev
+                    , inpKeySpaceReleased = Nothing }
+           | otherwise
+             -> inp { inpKeySpacePressed  = Nothing
+                    , inpKeySpaceReleased = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev }
+
     | (scancode ev) == SDL.ScancodeW
       = if | SDL.keyboardEventKeyMotion ev == SDL.Pressed
              -> inp { inpKeyWPressed  = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev
@@ -177,14 +180,31 @@ nextAppInput inp (SDL.KeyboardEvent ev)
            | otherwise       
              -> inp { inpKeyWPressed  = Nothing
                     , inpKeyWReleased = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev }
+
+    | (scancode ev) == SDL.ScancodeS
+      = if | SDL.keyboardEventKeyMotion ev == SDL.Pressed
+             -> inp { inpKeySPressed  = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev
+                    , inpKeySReleased = Nothing }
+           | otherwise
+             -> inp { inpKeySPressed  = Nothing
+                    , inpKeySReleased = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev }
+                
     | (scancode ev) == SDL.ScancodeA
       = if | SDL.keyboardEventKeyMotion ev == SDL.Pressed
-             -> inp { inpKeyPressed  = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev
-                    , inpKeyReleased = Nothing }
+             -> inp { inpKeyAPressed  = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev
+                    , inpKeyAReleased = Nothing }
            | otherwise
-             -> inp { inpKeyPressed  = Nothing
-                    , inpKeyReleased = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev }
+             -> inp { inpKeyAPressed  = Nothing
+                    , inpKeyAReleased = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev }
 
+    | (scancode ev) == SDL.ScancodeD
+      = if | SDL.keyboardEventKeyMotion ev == SDL.Pressed
+             -> inp { inpKeyDPressed  = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev
+                    , inpKeyDReleased = Nothing }
+           | otherwise
+             -> inp { inpKeyDPressed  = Nothing
+                    , inpKeyDReleased = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev }
+                
 -- | mouse button events              
 nextAppInput inp (SDL.MouseButtonEvent ev) = inp { inpMouseLeft  = lmb
                                                  , inpMouseRight = rmb }

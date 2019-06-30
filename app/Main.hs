@@ -126,18 +126,18 @@ updateGame game =
     cam <- updateCamera $ camera game -< input
     returnA -< Game GamePlaying obj cam
 
-keyEvents :: SF AppInput ([Event ()])
-keyEvents =
+updateKeys :: Keys -> SF AppInput (Keys, [Event ()])
+updateKeys keys0 =
   proc input -> do
 
-    keyWp     <- keyEventW "Pressed"  -< input
-    keyWr     <- keyEventW "Released" -< input
-    keySp     <- key SDL.ScancodeS     "Pressed"  -< input
-    keySr     <- key SDL.ScancodeS     "Released" -< input
-    keyAp     <- key SDL.ScancodeA     "Pressed"  -< input
-    keyAr     <- key SDL.ScancodeA     "Released" -< input
-    keyDp     <- key SDL.ScancodeD     "Pressed"  -< input
-    keyDr     <- key SDL.ScancodeD     "Released" -< input
+    keyWp     <- key' SDL.ScancodeW     "Pressed"  -< input
+    keyWr     <- key' SDL.ScancodeW     "Released" -< input
+    keySp     <- key' SDL.ScancodeS     "Pressed"  -< input
+    keySr     <- key' SDL.ScancodeS     "Released" -< input
+    keyAp     <- key' SDL.ScancodeA     "Pressed"  -< input
+    keyAr     <- key' SDL.ScancodeA     "Released" -< input
+    keyDp     <- key' SDL.ScancodeD     "Pressed"  -< input
+    keyDr     <- key' SDL.ScancodeD     "Released" -< input
                                                   
     keyQp     <- key SDL.ScancodeQ     "Pressed"  -< input
     keyQr     <- key SDL.ScancodeQ     "Released" -< input
@@ -171,41 +171,7 @@ keyEvents =
       , keyDownP,  keyDownR
       , keyLeftP,  keyLeftR
       , keyRightP, keyRightR ]
-    
-    returnA -< events
-
-updateKeys :: Keys -> SF AppInput Keys
-updateKeys keys0 =
-  proc input -> do
-    --keyWp     <- key SDL.ScancodeW     "Pressed"  -< input
-    keyWp     <- keyEventW             "Pressed"  -< input
-    keyWr     <- keyEventW             "Released" -< input
-    --keyWr     <- key SDL.ScancodeW     "Released" -< input
-    keySp     <- key SDL.ScancodeS     "Pressed"  -< input
-    keySr     <- key SDL.ScancodeS     "Released" -< input
-    keyAp     <- key SDL.ScancodeA     "Pressed"  -< input
-    keyAr     <- key SDL.ScancodeA     "Released" -< input
-    keyDp     <- key SDL.ScancodeD     "Pressed"  -< input
-    keyDr     <- key SDL.ScancodeD     "Released" -< input
-                                                  
-    keyQp     <- key SDL.ScancodeQ     "Pressed"  -< input
-    keyQr     <- key SDL.ScancodeQ     "Released" -< input
-    keyEp     <- key SDL.ScancodeE     "Pressed"  -< input
-    keyEr     <- key SDL.ScancodeE     "Released" -< input
-    keyZp     <- key SDL.ScancodeZ     "Pressed"  -< input
-    keyZr     <- key SDL.ScancodeZ     "Released" -< input
-    keyXp     <- key SDL.ScancodeX     "Pressed"  -< input
-    keyXr     <- key SDL.ScancodeX     "Released" -< input
-    
-    keyUpP    <- key SDL.ScancodeUp    "Pressed"  -< input
-    keyUpR    <- key SDL.ScancodeUp    "Released" -< input
-    keyDownP  <- key SDL.ScancodeDown  "Pressed"  -< input
-    keyDownR  <- key SDL.ScancodeDown  "Released" -< input
-    keyLeftP  <- key SDL.ScancodeLeft  "Pressed"  -< input
-    keyLeftR  <- key SDL.ScancodeLeft  "Released" -< input
-    keyRightP <- key SDL.ScancodeRight "Pressed"  -< input
-    keyRightR <- key SDL.ScancodeRight "Released" -< input
-
+      
     keys <-
       returnA -<
       (Keys
@@ -222,7 +188,7 @@ updateKeys keys0 =
         ( keyEvent (keyLeft  keys0) keyLeftP   keyLeftR  )
         ( keyEvent (keyRight keys0) keyRightP  keyRightR ))
 
-    returnA -< keys
+    returnA -< (keys, events)
 
 updateCamera :: Camera -> SF AppInput Camera
 updateCamera cam =
@@ -266,11 +232,10 @@ control ctl0 =
   switch sf cont
     where
       sf = proc input -> do
-        ctl   <- update ctl0            -< ctl0
-        mtx   <- returnA                -< transform ctl
-        ypr   <- returnA                -< ypr       ctl
-        keys  <- updateKeys (keys ctl0) -< input
-        keyEs <- keyEvents              -< input
+        ctl         <- update ctl0            -< ctl0
+        mtx         <- returnA                -< transform ctl
+        ypr         <- returnA                -< ypr       ctl
+        (keys, evs) <- updateKeys (keys ctl0) -< input
 
         result <-
           returnA -<
@@ -282,7 +247,7 @@ control ctl0 =
         
         returnA -< 
           ( ctl
-          , catEvents keyEs
+          , catEvents evs
             $> result) -- :: (Controllable, Event Controllable)
       cont result = control result
 
