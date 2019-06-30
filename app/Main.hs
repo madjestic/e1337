@@ -155,89 +155,37 @@ updateObject obj =
         ((keys      . Obj.controller) obj)
         ((keyVecs   . Obj.controller) obj))
 
-auxF :: SDL.Scancode -> (Keys -> Bool) -> Controllable -> SF AppInput (Bool, Event ())
-auxF code key ctl =
+keyEvents :: SDL.Scancode -> (Keys -> Bool) -> Controllable -> SF AppInput (Bool, Event ())
+keyEvents code keyFunc ctl =
   proc input -> do
-    keyPressed     <- key' code  "Pressed"  -< input
-    keyReleased    <- key' code  "Released" -< input
-    let result = keyEvent (key (keys ctl)) keyPressed keyReleased
+    keyPressed     <- key code  "Pressed"  -< input
+    keyReleased    <- key code  "Released" -< input
+    let result = keyEvent (keyFunc (keys ctl)) keyPressed keyReleased
         event  = lMerge keyPressed keyReleased
     returnA -< (result, event)
 
 updateKeys :: Controllable -> SF AppInput (Keys, [Event ()])
 updateKeys ctl0 =
   proc input -> do
-
-    keyWp     <- key' SDL.ScancodeW     "Pressed"  -< input
-    keyWr     <- key' SDL.ScancodeW     "Released" -< input
-    -- let keyW_ = keyEvent (keyW     keys0) keyWp      keyWr
     let keys0 = keys ctl0
     
-    (keyW_, keyWe) <- auxF SDL.ScancodeW keyW ctl0 -< input
-    (keyS_, keySe) <- auxF SDL.ScancodeS keyS ctl0 -< input
-    
-    keySp     <- key' SDL.ScancodeS     "Pressed"  -< input
-    keySr     <- key' SDL.ScancodeS     "Released" -< input
-    keyAp     <- key' SDL.ScancodeA     "Pressed"  -< input
-    keyAr     <- key' SDL.ScancodeA     "Released" -< input
-    keyDp     <- key' SDL.ScancodeD     "Pressed"  -< input
-    keyDr     <- key' SDL.ScancodeD     "Released" -< input
-                                                  
-    keyQp     <- key' SDL.ScancodeQ     "Pressed"  -< input
-    keyQr     <- key' SDL.ScancodeQ     "Released" -< input
-    keyEp     <- key' SDL.ScancodeE     "Pressed"  -< input
-    keyEr     <- key' SDL.ScancodeE     "Released" -< input
-    keyZp     <- key' SDL.ScancodeZ     "Pressed"  -< input
-    keyZr     <- key' SDL.ScancodeZ     "Released" -< input
-    keyXp     <- key' SDL.ScancodeX     "Pressed"  -< input
-    keyXr     <- key' SDL.ScancodeX     "Released" -< input
-                     
-    keyUpP    <- key SDL.ScancodeUp    "Pressed"  -< input
-    keyUpR    <- key SDL.ScancodeUp    "Released" -< input
-    keyDownP  <- key SDL.ScancodeDown  "Pressed"  -< input
-    keyDownR  <- key SDL.ScancodeDown  "Released" -< input
-    keyLeftP  <- key SDL.ScancodeLeft  "Pressed"  -< input
-    keyLeftR  <- key SDL.ScancodeLeft  "Released" -< input
-    keyRightP <- key SDL.ScancodeRight "Pressed"  -< input
-    keyRightR <- key SDL.ScancodeRight "Released" -< input
+    (keyW_, keyWe) <- keyEvents SDL.ScancodeW keyW ctl0 -< input
+    (keyS_, keySe) <- keyEvents SDL.ScancodeS keyS ctl0 -< input
+    (keyA_, keyAe) <- keyEvents SDL.ScancodeA keyA ctl0 -< input
+    (keyD_, keyDe) <- keyEvents SDL.ScancodeD keyD ctl0 -< input
 
-    events <-
-      returnA -<
-      [ keyWe
-      , keySe ]
+    (keyQ_, keyQe) <- keyEvents SDL.ScancodeQ keyQ ctl0 -< input
+    (keyE_, keyEe) <- keyEvents SDL.ScancodeE keyE ctl0 -< input
+    (keyZ_, keyZe) <- keyEvents SDL.ScancodeZ keyZ ctl0 -< input
+    (keyX_, keyXe) <- keyEvents SDL.ScancodeX keyX ctl0 -< input
+  
+    (keyUp_,    keyUpE)    <- keyEvents SDL.ScancodeUp    keyUp    ctl0 -< input
+    (keyDown_,  keyDownE)  <- keyEvents SDL.ScancodeDown  keyDown  ctl0 -< input
+    (keyLeft_,  keyLeftE)  <- keyEvents SDL.ScancodeLeft  keyLeft  ctl0 -< input
+    (keyRight_, keyRightE) <- keyEvents SDL.ScancodeRight keyRight ctl0 -< input
 
-    -- events <-
-    --   returnA -<
-    --   [ keyWp,     keyWr
-    --   , keySp,     keySr
-    --   , keyAp,     keyAr
-    --   , keyDp,     keyDr
-    --   , keyQp,     keyQr
-    --   , keyEp,     keyEr 
-    --   , keyZp,     keyZr 
-    --   , keyXp,     keyXr
-    --   , keyUpP,    keyUpR
-    --   , keyDownP,  keyDownR
-    --   , keyLeftP,  keyLeftR
-    --   , keyRightP, keyRightR ]
-      
-    keys <-
-      returnA -<
-      (Keys
-        --( keyEvent (keyW     keys0) keyWp      keyWr     )
-        keyW_
-        --( keyEvent (keyS     keys0) keySp      keySr     )
-        keyS_
-        ( keyEvent (keyA     keys0) keyAp      keyAr     )
-        ( keyEvent (keyD     keys0) keyDp      keyDr     )
-        ( keyEvent (keyQ     keys0) keyQp      keyQr     )
-        ( keyEvent (keyE     keys0) keyEp      keyEr     )
-        ( keyEvent (keyZ     keys0) keyZp      keyZr     )
-        ( keyEvent (keyX     keys0) keyXp      keyXr     )
-        ( keyEvent (keyUp    keys0) keyUpP     keyUpR    )
-        ( keyEvent (keyDown  keys0) keyDownP   keyDownR  )
-        ( keyEvent (keyLeft  keys0) keyLeftP   keyLeftR  )
-        ( keyEvent (keyRight keys0) keyRightP  keyRightR ))
+    let events = [      keyWe, keySe, keyAe, keyDe, keyQe, keyEe, keyZe, keyXe, keyUpE, keyDownE, keyLeftE, keyRightE  ]
+        keys   = ( Keys keyW_  keyS_  keyA_  keyD_  keyQ_  keyE_  keyZ_  keyX_  keyUp_  keyDown_  keyLeft_  keyRight_ )
 
     returnA -< (keys, events)
 
@@ -399,31 +347,8 @@ initGame =
           ( Controllable
             (identity :: M44 Double)
             (V3 0 0 0)
-            (Keys
-             False
-             False
-             False
-             False
-             False
-             False
-             False
-             False
-             False
-             False
-             False
-             False)
-            [ fVel 
-            , bVel 
-            , lVel 
-            , rVel 
-            , uVel 
-            , dVel 
-            , pPitch
-            , nPitch
-            , pYaw 
-            , nYaw 
-            , pRoll
-            , nRoll ])
+            (Keys False False False False False False False False False False False False)
+            [ fVel, bVel, lVel, rVel, uVel, dVel, pPitch, nPitch, pYaw, nYaw, pRoll, nRoll ])
           where
             fVel   = V3 ( 0  )( 0  )( 999)   -- forwards  velocity
             bVel   = V3 ( 0  )( 0  )(-999)   -- backwards velocity
@@ -443,31 +368,8 @@ initGame =
           ( Controllable
             (identity :: M44 Double)
             (V3 0 0 0)
-            (Keys
-             False
-             False
-             False
-             False
-             False
-             False
-             False
-             False
-             False
-             False
-             False
-             False )
-            [ fVel 
-            , bVel 
-            , lVel 
-            , rVel 
-            , uVel 
-            , dVel 
-            , pPitch
-            , nPitch
-            , pYaw 
-            , nYaw 
-            , pRoll
-            , nRoll ])
+            (Keys False False False False False False False False False False False False )
+            [ fVel, bVel, lVel, rVel, uVel, dVel, pPitch, nPitch, pYaw, nYaw, pRoll, nRoll ])
           where
             fVel   = V3 ( 0  )( 0  )( 0.1)   -- forwards  velocity
             bVel   = V3 ( 0  )( 0  )(-0.1)   -- backwards velocity
