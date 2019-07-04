@@ -108,8 +108,9 @@ quitEvent = arr inpQuit >>> edge
 data AppInput =
      AppInput
      { inpMousePos          :: (Double, Double)       -- ^ Current mouse position
-     , inpMouseLeft         :: Maybe (Double, Double) -- ^ Down button currently down
-     , inpMouseRight        :: Maybe (Double, Double) -- ^ Right button currently down
+     , inpMouseLeft         :: Maybe (Double, Double) -- ^ Left   button currently down
+     , inpMouseRight        :: Maybe (Double, Double) -- ^ Right  button currently down
+     --, inpMouseMiddle       :: Maybe (Double, Double) -- ^ Middle button currently down
      , inpQuit              :: Bool                   -- ^ SDL's QuitEvent
      , inpKeySpacePressed   :: Maybe SDL.Scancode
      , inpKeySpaceReleased  :: Maybe SDL.Scancode
@@ -159,6 +160,7 @@ initAppInput =
      { inpMousePos          = (0, 0)
      , inpMouseLeft         = Nothing
      , inpMouseRight        = Nothing
+     --, inpMouseMiddle       = Nothing
      , inpQuit              = False
      , inpKeySpacePressed   = Nothing
      , inpKeySpaceReleased  = Nothing
@@ -333,10 +335,13 @@ nextAppInput inp (SDL.MouseButtonEvent ev) = inp { inpMouseLeft  = lmb
           button = SDL.mouseButtonEventButton ev
           pos    = inpMousePos inp
           inpMod = case (motion,button) of
-              (SDL.Released, SDL.ButtonLeft)  -> first  (const Nothing)
-              (SDL.Pressed,  SDL.ButtonLeft)  -> first  (const (Just pos))
-              (SDL.Released, SDL.ButtonRight) -> second (const Nothing)
-              (SDL.Pressed,  SDL.ButtonRight) -> second (const (Just pos))
+              (SDL.Released, SDL.ButtonLeft)   -> first  (const Nothing)
+              (SDL.Pressed,  SDL.ButtonLeft)   -> first  (const (Just pos))
+              (SDL.Released, SDL.ButtonRight)  -> second (const Nothing)
+              (SDL.Pressed,  SDL.ButtonRight)  -> second (const (Just pos))
+              -- (SDL.Released, SDL.ButtonMiddle) -> second (const Nothing)
+              -- (SDL.Pressed,  SDL.ButtonMiddle) -> second (const (Just pos))
+
               _                               -> id
           (lmb,rmb) = inpMod $ (inpMouseLeft &&& inpMouseRight) inp
 

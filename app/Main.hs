@@ -6,7 +6,7 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TemplateHaskell #-}
--- {-# LANGUAGE DeriveGeneric #-}
+
 module Main where 
 
 import Control.Concurrent
@@ -21,12 +21,13 @@ import SDL                hiding ( Point
                                  , M44
                                  , M33
                                  , Event
+                                 , Mouse
                                  , (^+^)
                                  , (*^))
-import Camera        as Cam
+import Camera        as C
 import Game          
 import Keys          
-import Object        as Obj
+import Object        as O
 import Controllable  
 import Geometry      
 import Input         as Inp
@@ -42,7 +43,7 @@ import Debug.Trace   as DT
 --     d88P 888888Y88b 888  888  888Y88888P888    d88P 888    888    8888888    
 --    d88P  888888 Y88b888  888  888 Y888P 888   d88P  888    888    888        
 --   d88P   888888  Y88888  888  888  Y8P  888  d88P   888    888    888        
-       --  d8888888888888   Y8888  888  888   "   888 d8888888888    888    888        
+  --  d8888888888888   Y8888  888  888   "   888 d8888888888    888    888        
 -- d88P     888888    Y8888888888888       888d88P     888    888    8888888888 
 
 -- < Animate > ------------------------------------------------------------
@@ -74,7 +75,7 @@ animate window resources sf =
           do
             uniforms <- initUniforms game
             draw window resources
-            return shouldExit 
+            return shouldExit
 
 
 --  .d8888b.88888888888    d8888888888888888888888888888b     d888       d8888 .d8888b. 888    8888888888888b    8888888888888 
@@ -121,22 +122,32 @@ gamePlay game =
 updateGame :: Game -> SF AppInput Game
 updateGame game = 
   proc input -> do
-    --obj <- updateObject $ object game -< input
     let obj = object game
+    --obj <- updateObject $ object game -< input
     cam <- updateCamera $ camera game -< input
     returnA -< Game GamePlaying obj cam
 
 updateCamera :: Camera -> SF AppInput Camera
-updateCamera cam =
+updateCamera cam = 
   proc input -> do
-    ctl <- control
-           ( Controllable
-             ((transform . Cam.controller) cam)
-             ((ypr       . Cam.controller) cam)
-             ((keys      . Cam.controller) cam)
-             ((keyVecs   . Cam.controller) cam)) -< input
-      
+    ctl <- control ctl0 -< input      
     returnA -< Camera ctl
+      where
+        ctl0
+          = ( Controllable
+              (transform.C.driver $ cam)
+              (ypr      .C.driver $ cam)
+              ( Controller
+                ( Keyboard
+                  (keys   .keyboard.controller.C.driver $ cam)
+                  (keyVecs.keyboard.controller.C.driver $ cam))
+                ( Mouse
+                  (lmb    .mouse.controller.C.driver $ cam)
+                  (rmb    .mouse.controller.C.driver $ cam)
+                  (pos    .mouse.controller.C.driver $ cam))
+              )
+            ) 
+
     
 updateObject :: Object -> SF AppInput Object
 updateObject obj =
@@ -144,30 +155,31 @@ updateObject obj =
     sclr    <- updateScalar $ scalar obj -< input
     --mtx     <- controller (Object.transform obj) (velocity obj) (keys obj) -< input
     --returnA -< Object sclr (geometry obj) mtx (velocity obj) (keys obj)
-    returnA -<
-      Object
-      sclr
-      (geometry obj)
-      (velocity obj)
-      ( Controllable
-        ((transform . Obj.controller) obj)
-        ((ypr       . Obj.controller) obj)
-        ((keys      . Obj.controller) obj)
-        ((keyVecs   . Obj.controller) obj))
+    returnA -< obj
+      -- Object
+      -- sclr
+      -- (geometry obj)
+      -- (velocity obj)
+      -- ( Controllable
+      --   ((transform . O.controller) obj)
+      --   ((ypr       . O.controller) obj)
+      --   ((keys      . O.controller) obj)
+      --   ((keyVecs   . O.controller) obj))
 
 keyEvents :: SDL.Scancode -> (Keys -> Bool) -> Controllable -> SF AppInput (Bool, Event ())
-keyEvents code keyFunc ctl =
+keyEvents code keyFunc ctl = 
   proc input -> do
     keyPressed     <- key code  "Pressed"  -< input
     keyReleased    <- key code  "Released" -< input
-    let result = keyEvent (keyFunc (keys ctl)) keyPressed keyReleased
+    let keys0  = keys.keyboard.controller $ ctl
+        result = keyEvent (keyFunc keys0) keyPressed keyReleased
         event  = lMerge keyPressed keyReleased
     returnA -< (result, event)
 
 updateKeys :: Controllable -> SF AppInput (Keys, [Event ()])
-updateKeys ctl0 =
+updateKeys ctl0 = 
   proc input -> do
-    let keys0 = keys ctl0
+    let keys0 = keys.keyboard.controller $ ctl0
     
     (keyW_, keyWe) <- keyEvents SDL.ScancodeW keyW ctl0 -< input
     (keyS_, keySe) <- keyEvents SDL.ScancodeS keyS ctl0 -< input
@@ -196,15 +208,15 @@ instance VectorSpace (V3 Double) Double where
   dot    (V3 x y z) (V3 k l m) = (x*k) + (y*l) + (z*m)
 
 control :: Controllable -> SF AppInput Controllable
-control ctl0 =
+control ctl0 = 
   -- | foldrWith mtx0 keys - for every key apply a folding transform to mtx0
   -- | in case of keypress event - update the set of keys and call new fold ^
   switch sf cont
     where
       sf = proc input -> do
-        ctl         <- update ctl0            -< ctl0
-        mtx         <- returnA                -< transform ctl
-        ypr         <- returnA                -< ypr       ctl
+        ctl          <- update ctl0     -< ctl0
+        mtx          <- returnA         -< transform ctl
+        ypr          <- returnA         -< ypr       ctl
         (keys, evs)  <- updateKeys ctl0 -< input
 
         result <-
@@ -212,8 +224,18 @@ control ctl0 =
           ( Controllable
             mtx
             ypr
-            keys
-            (keyVecs ctl) )
+            ( Controller
+              ( Keyboard
+                keys
+                (keyVecs (keyboard (controller ctl)))
+              )
+              ( Mouse
+                Nothing
+                Nothing
+                (0,0)
+              )
+            )
+          )
         
         returnA -< 
           ( ctl
@@ -228,15 +250,22 @@ keyEvent state pressed released
   | otherwise = state
 
 update :: Controllable -> SF Controllable Controllable
-update ctl0 = iterFrom update1 ctl0
+update ctl0 =
+  iterFrom update1 ctl0
   where
     update1 :: Controllable -> Controllable -> DTime -> Controllable -> Controllable
     update1 ctl0 ctl1 dt ctl2 = ctl
       where
-        ctl = (Controllable mtx ypr keys0 (keyVecs ctl0))
+        kvs = (keyVecs.keyboard.controller $ ctl0)
+        ctl = (Controllable
+               mtx
+               ypr
+               (Controller
+                (Keyboard keys0 kvs)
+                (Mouse Nothing Nothing (0,0))))
           where
             mtx0  = (transform ctl2)
-            keys0 = (keys      ctl0)
+            keys0 = (keys.keyboard.controller $ ctl0)
 
             ypr :: V3 Double
             ypr   =
@@ -247,12 +276,12 @@ update ctl0 = iterFrom update1 ctl0
                             [ keyUp,  keyDown, keyLeft, keyRight, keyQ,  keyE ])
                             [ pPitch, nPitch,  pYaw,    nYaw,     pRoll, nRoll ]
               where
-                pPitch = (keyVecs ctl0)!!6  -- positive  pitch
-                nPitch = (keyVecs ctl0)!!7  -- negative  pitch
-                pYaw   = (keyVecs ctl0)!!8  -- positive  yaw
-                nYaw   = (keyVecs ctl0)!!9  -- negative  yaw
-                pRoll  = (keyVecs ctl0)!!10 -- positive  roll
-                nRoll  = (keyVecs ctl0)!!11 -- negative  roll
+                pPitch = (keyVecs.keyboard.controller $ ctl0)!!6  -- positive  pitch
+                nPitch = (keyVecs.keyboard.controller $ ctl0)!!7  -- negative  pitch
+                pYaw   = (keyVecs.keyboard.controller $ ctl0)!!8  -- positive  yaw
+                nYaw   = (keyVecs.keyboard.controller $ ctl0)!!9  -- negative  yaw
+                pRoll  = (keyVecs.keyboard.controller $ ctl0)!!10 -- positive  roll
+                nRoll  = (keyVecs.keyboard.controller $ ctl0)!!11 -- negative  roll
             
             mtx =
               mkTransformationMat
@@ -273,12 +302,12 @@ update ctl0 = iterFrom update1 ctl0
                                 [keyW, keyS, keyA, keyD, keyZ, keyX])
                                 [fVel, bVel, lVel, rVel, uVel, dVel]
 
-                  where fVel   = (keyVecs ctl0)!!0  -- forwards  velocity
-                        bVel   = (keyVecs ctl0)!!1  -- backwards velocity
-                        lVel   = (keyVecs ctl0)!!2  -- left      velocity
-                        rVel   = (keyVecs ctl0)!!3  -- right     velocity
-                        uVel   = (keyVecs ctl0)!!4  -- right     velocity
-                        dVel   = (keyVecs ctl0)!!5  -- right     velocity
+                  where fVel   = (keyVecs.keyboard.controller $ ctl0)!!0  -- forwards  velocity
+                        bVel   = (keyVecs.keyboard.controller $ ctl0)!!1  -- backwards velocity
+                        lVel   = (keyVecs.keyboard.controller $ ctl0)!!2  -- left      velocity
+                        rVel   = (keyVecs.keyboard.controller $ ctl0)!!3  -- right     velocity
+                        uVel   = (keyVecs.keyboard.controller $ ctl0)!!4  -- right     velocity
+                        dVel   = (keyVecs.keyboard.controller $ ctl0)!!5  -- right     velocity
 
 updateScalar :: Double -> SF AppInput Double
 updateScalar pp0 =
@@ -339,50 +368,8 @@ initGame :: IO Game
 initGame =
   do
     geo <- readPGeo jsonFile
-    let obj =
-          Object
-          0.0
-          geo
-          (V4 0 0 0 0)
-          ( Controllable
-            (identity :: M44 Double)
-            (V3 0 0 0)
-            (Keys False False False False False False False False False False False False)
-            [ fVel, bVel, lVel, rVel, uVel, dVel, pPitch, nPitch, pYaw, nYaw, pRoll, nRoll ])
-          where
-            fVel   = V3 ( 0  )( 0  )( 999)   -- forwards  velocity
-            bVel   = V3 ( 0  )( 0  )(-999)   -- backwards velocity
-            lVel   = V3 ( 999)( 0  )( 0  )   -- left      velocity
-            rVel   = V3 (-999)( 0  )( 0  )   -- right     velocity
-            uVel   = V3 ( 0  )(-999)( 0  )   -- right     velocity
-            dVel   = V3 ( 0  )( 999)( 0  )   -- right     velocity
-            pPitch = V3 ( 999)( 0  )( 0  )   -- positive  pitch
-            nPitch = V3 (-999)( 0  )( 0  )   -- negative  pitch
-            pYaw   = V3 ( 0  )( 999)( 0  )   -- positive  yaw
-            nYaw   = V3 ( 0  )(-999)( 0  )   -- negative  yaw
-            pRoll  = V3 ( 0  )(  0 )( 999)   -- positive  roll
-            nRoll  = V3 ( 0  )(  0 )(-999)   -- negative  roll
-            
-        cam =
-          Camera
-          ( Controllable
-            (identity :: M44 Double)
-            (V3 0 0 0)
-            (Keys False False False False False False False False False False False False )
-            [ fVel, bVel, lVel, rVel, uVel, dVel, pPitch, nPitch, pYaw, nYaw, pRoll, nRoll ])
-          where
-            fVel   = V3 ( 0  )( 0  )( 0.1)   -- forwards  velocity
-            bVel   = V3 ( 0  )( 0  )(-0.1)   -- backwards velocity
-            lVel   = V3 ( 0.1)( 0  )( 0  )   -- left      velocity
-            rVel   = V3 (-0.1)( 0  )( 0  )   -- right     velocity
-            uVel   = V3 ( 0  )(-0.1)( 0  )   -- right     velocity
-            dVel   = V3 ( 0  )( 0.1)( 0  )   -- right     velocity
-            pPitch = V3 ( 0.1)( 0  )( 0  )   -- positive  pitch
-            nPitch = V3 (-0.1)( 0  )( 0  )   -- negative  pitch
-            pYaw   = V3 ( 0  )(-0.1)( 0  )   -- positive  yaw
-            nYaw   = V3 ( 0  )( 0.1)( 0  )   -- negative  yaw
-            pRoll  = V3 ( 0  )(  0 )(-0.1)   -- positive  roll
-            nRoll  = V3 ( 0  )(  0 )( 0.1)   -- negative  roll
+    let obj = initObj { geometry = geo }
+        cam = initCam
 
         initGame = Game GamePlaying obj cam
     return initGame
@@ -408,3 +395,25 @@ main = do
     window
     resources
     (parseWinInput >>> (mainGame game &&& handleExit))
+
+{-
+
+parseWinInput :: SF WinInput AppInput
+
+&&&
+mainGame      :: Game -> SF AppInput Game
+handleExit    :: SF AppInput Bool
+-> SF AppInput (Game, Bool)
+
+>>>
+parseWinInput :: SF WinInput AppInput
+_             :: SF AppInput (Game, Bool)
+-> SF WinInput (Game, Bool)
+
+arr :: (a → b) → SF a b
+(≫) :: SF a b → SF b c → SF a c
+(&&&) :: SF a b → SF a c → SF a (b, c)
+loop :: SF (a, c) (b, c) → SF a b
+
+
+-}
