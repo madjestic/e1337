@@ -24,7 +24,7 @@ import           Linear.Affine (Point(..))
 import           SDL.Input.Keyboard.Codes
 import qualified SDL
 
-import           Keys
+import           Keyboard
 
 import Debug.Trace as DT
 
@@ -334,15 +334,15 @@ nextAppInput inp (SDL.MouseButtonEvent ev) = inp { inpMouseLeft  = lmb
     where motion = SDL.mouseButtonEventMotion ev
           button = SDL.mouseButtonEventButton ev
           pos    = inpMousePos inp
-          inpMod = case (motion,button) of
-              (SDL.Released, SDL.ButtonLeft)   -> first  (const Nothing)
-              (SDL.Pressed,  SDL.ButtonLeft)   -> first  (const (Just pos))
-              (SDL.Released, SDL.ButtonRight)  -> second (const Nothing)
-              (SDL.Pressed,  SDL.ButtonRight)  -> second (const (Just pos))
-              -- (SDL.Released, SDL.ButtonMiddle) -> second (const Nothing)
-              -- (SDL.Pressed,  SDL.ButtonMiddle) -> second (const (Just pos))
-
-              _                               -> id
           (lmb,rmb) = inpMod $ (inpMouseLeft &&& inpMouseRight) inp
+            where
+              inpMod = case (motion,button) of
+                (SDL.Released, SDL.ButtonLeft)   -> first  (const Nothing)
+                (SDL.Pressed,  SDL.ButtonLeft)   -> first  (const (Just pos))
+                (SDL.Released, SDL.ButtonRight)  -> second (const Nothing)
+                (SDL.Pressed,  SDL.ButtonRight)  -> second (const (Just pos))
+                -- (SDL.Released, SDL.ButtonMiddle) -> second (const Nothing)
+                -- (SDL.Pressed,  SDL.ButtonMiddle) -> second (const (Just pos))
+                _ -> id
 
 nextAppInput inp _ = inp

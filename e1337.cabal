@@ -50,7 +50,8 @@ library
               , Drawables
               , Object
               , Camera
-              , Keys
+              , Keyboard
+              --, Mouse
               , Controllable
   default-language:                   Haskell2010
                                         
@@ -90,7 +91,8 @@ executable e1337
               , Shape2D
               , Object
               , Camera
-              , Keys
+              , Keyboard
+              --, Mouse
               , Controllable
   default-language:    Haskell2010
 
