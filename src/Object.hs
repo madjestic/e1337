@@ -17,6 +17,7 @@ initObj
     (Geo [] [] [])
     (V4 0 0 0 0)
     ( Controllable
+      (0,0)
       (identity :: M44 Double)
       (V3 0 0 0)
       (Controller (Keyboard keys0 kvs0) (Mouse Nothing Nothing (0,0) [])) )

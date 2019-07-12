@@ -104,7 +104,7 @@ gameIntro =
              proc (input, game) -> do
                introState <- returnA -< game
                playState  <- returnA -< game { gStg =  GamePlaying }
-               skipE      <- key SDL.ScancodeSpace "Pressed" -< input
+               skipE      <- keyInput SDL.ScancodeSpace "Pressed" -< input
                waitE      <- after loadDelay () -< ()
                returnA    -< (introState, (skipE `lMerge` waitE) $> playState)
            cont game  = 
@@ -116,7 +116,7 @@ gamePlay game =
      where sf =
              proc input -> do
                game      <- updateGame game -< input
-               reset     <- key SDL.ScancodeSpace "Pressed" -< input
+               reset     <- keyInput SDL.ScancodeSpace "Pressed" -< input
                returnA   -< (game, reset)
 
 updateGame :: Game -> SF AppInput Game
@@ -130,25 +130,10 @@ updateGame game =
 updateCamera :: Camera -> SF AppInput Camera
 updateCamera cam = 
   proc input -> do
-    ctl <- control ctl0 -< input      
-    returnA -< Camera ctl
-      where
-        ctl0
-          = ( Controllable
-              (transform.C.driver $ cam)
-              (ypr      .C.driver $ cam)
-              ( Controller
-                ( Keyboard
-                  (keys   .keyboard.controller.C.driver $ cam)
-                  (keyVecs.keyboard.controller.C.driver $ cam))
-                ( Mouse
-                  (lmb    .mouse.controller.C.driver $ cam)
-                  (rmb    .mouse.controller.C.driver $ cam)
-                  (pos    .mouse.controller.C.driver $ cam)
-                  (mvecs  .mouse.controller.C.driver $ cam))
-              )
-            ) 
-
+    kctl <- control (C.driver $ cam) -< input
+    mctl <- updateMousePing (C.driver $ cam) -< input
+    let pos0 = debug mctl
+    returnA -< Camera { C.driver = kctl { debug = pos0 } }
     
 updateObject :: Object -> SF AppInput Object
 updateObject obj =
@@ -166,29 +151,25 @@ updateObject obj =
       --   ((ypr       . O.controller) obj)
       --   ((keys      . O.controller) obj)
       --   ((keyVecs   . O.controller) obj))
--- btnEvents :: SDL.Scancode -> ()
+
+keyEvent :: Bool -> Event () -> Event () -> Bool
+keyEvent state pressed released
+  | isEvent pressed  = True
+  | isEvent released = False
+  | otherwise = state
 
 keyEvents :: SDL.Scancode -> (Keys -> Bool) -> Controllable -> SF AppInput (Bool, Event ())
 keyEvents code keyFunc ctl = 
   proc input -> do
-    keyPressed     <- key code  "Pressed"  -< input
-    keyReleased    <- key code  "Released" -< input
+    keyPressed     <- keyInput code  "Pressed"  -< input
+    keyReleased    <- keyInput code  "Released" -< input
     let keys0  = keys.keyboard.controller $ ctl
         result = keyEvent (keyFunc keys0) keyPressed keyReleased
         event  = lMerge keyPressed keyReleased
     returnA -< (result, event)
 
--- TODO: implement mouse update loop
--- updateMouse :: Controllable -> SF AppInput (Mouse, [Event ()])
--- updateMouse ctl0 = 
---   proc input -> do
---     let lmb = lmb.mouse.controller $ ctl0
---         rmb = rmb.mouse.controller $ ctl0
---         pos = pos.mouse.controller $ ctl0
-
---     (lmb_, lMBe) <- btnEvents SDL.ButtonLeft lmb ctl0 -< input
-
---     returnA -< undefined
+mousePosEvent :: SF AppInput ((Double, Double), Event ())
+mousePosEvent = mouseEventPos &&& mouseEvent
 
 updateKeys :: Controllable -> SF AppInput (Keys, [Event ()])
 updateKeys ctl0 = 
@@ -221,9 +202,58 @@ instance VectorSpace (V3 Double) Double where
   (^+^)  (V3 x y z) (V3 k l m) = (V3 (x+k) (y+l) (z+m))
   dot    (V3 x y z) (V3 k l m) = (x*k) + (y*l) + (z*m)
 
+updateMousePing :: Controllable -> SF AppInput Controllable
+updateMousePing ctl0 =
+  switch sf cont
+  where
+    sf = proc input -> do
+      mtx           <- returnA          -< transform ctl0
+      ypr           <- returnA          -< ypr       ctl0
+      (pos0, mev)   <- mousePosEvent      -< input
+      result <-
+        returnA -<
+        ( Controllable
+          pos0
+          mtx
+          ypr
+          ( Controller
+            ( keyboard.controller $ ctl0)
+            ( Mouse Nothing Nothing pos0 [] ) ) )
+      returnA -<
+        ( ctl0
+        , (DT.trace (show pos0) $ mev)
+          $> result
+        )
+    cont result = updateMousePong result
+
+updateMousePong :: Controllable -> SF AppInput Controllable
+updateMousePong ctl0 =
+  switch sf cont
+  where
+    sf = proc input -> do
+      mtx           <- returnA          -< transform ctl0
+      ypr           <- returnA          -< ypr       ctl0
+      (pos0, mev)   <- mousePosEvent      -< input
+      result <-
+        returnA -<
+        ( Controllable
+          pos0
+          mtx
+          ypr
+          ( Controller
+            ( keyboard.controller $ ctl0 )
+            ( Mouse Nothing Nothing pos0 [] ) ) )
+
+      returnA -<
+        ( ctl0
+        , mev
+          $> result
+        )
+    cont result = updateMousePing result
+
 control :: Controllable -> SF AppInput Controllable
 control ctl0 =
-  -- | foldrWith mtx0 keys - for every key apply a folding transform to mtx0
+  -- | foldrWith mtx0 keys - for every keyInput apply a folding transform to mtx0
   -- | in case of keypress event - update the set of keys and call new fold ^
   switch sf cont
     where
@@ -232,26 +262,19 @@ control ctl0 =
         mtx           <- returnA          -< transform ctl
         ypr           <- returnA          -< ypr       ctl
         (kkeys, kevs) <- updateKeys  ctl0 -< input
-        --(mkeys, mevs) <- updateMouse ctl0 -< input
-        let pos0 = pos.mouse.controller $ ctl0
+        (pos0, mev)   <- mousePosEvent      -< input
 
         result <-
           returnA -<
-          ( Controllable mtx ypr
+          ( Controllable (0,0) mtx ypr
             ( Controller
               ( Keyboard kkeys (keyVecs (keyboard (controller ctl))) )
               ( Mouse Nothing Nothing pos0 [] ) ) )
         returnA -< 
           ( ctl
-          , catEvents kevs -- (kevs ++ mevs)
+          , catEvents (mev:kevs) --(kevs ++ [mevs])
             $> result) -- :: (Controllable, Event Controllable)
       cont result = control result
-
-keyEvent :: Bool -> Event () -> Event () -> Bool
-keyEvent state pressed released
-  | isEvent pressed  = True
-  | isEvent released = False
-  | otherwise = state
 
 update :: Controllable -> SF Controllable Controllable
 update ctl0 =
@@ -260,19 +283,18 @@ update ctl0 =
     update1 :: Controllable -> Controllable -> DTime -> Controllable -> Controllable
     update1 ctl0 ctl1 dt ctl2 = ctl
       where
-        kvs = (keyVecs.keyboard.controller $ (DT.trace ("pos :" ++ show (pos.mouse.controller $ ctl1)) $ ctl0))
+        kvs = (keyVecs.keyboard.controller $ ctl0)
         mvs = [ -- mouse vectors
                 (V3 )]
         pos0 = pos.mouse.controller $ ctl2
-        --_ <- DT.trace ("pos0: " ++ show (pos.mouse.controller $ ctl0)) $ returnA -< ()
-        _ = DT.trace ("pos0: " ++ show (pos0))
 
         ctl = (Controllable
+               (0,0)
                mtx
                ypr
                (Controller
                 (Keyboard keys0 kvs)
-                (Mouse Nothing Nothing (DT.trace ("pos0: " ++ show (pos0)) $ pos0) [])))
+                (Mouse Nothing Nothing pos0 [])))
           where
             mtx0  = (transform ctl2)
             keys0 = (keys.keyboard.controller $ ctl0)
@@ -325,8 +347,8 @@ updateScalar pp0 =
     where
       sf = proc input -> do
         --_ <- DT.trace ("updateScalar: " ++ show pp0) $ returnA -< ()
-        keyLeft  <- key SDL.ScancodeLeft  "Pressed" -< input
-        keyRight <- key SDL.ScancodeRight "Pressed" -< input
+        keyLeft  <- keyInput SDL.ScancodeLeft  "Pressed" -< input
+        keyRight <- keyInput SDL.ScancodeRight "Pressed" -< input
         let result :: ( Double
                       , Event ()
                       , Event ())
@@ -349,8 +371,8 @@ updateScalar' pp0 v0 =
            proc input -> do
              p       <- -- DT.trace ("p: " ++ show pp0 ++ "\n") $
                         (pp0 +) ^<< integral -< v0
-             keyLeft <- key SDL.ScancodeLeft  "Released" -< input
-             keyRight<- key SDL.ScancodeRight "Released" -< input
+             keyLeft <- keyInput SDL.ScancodeLeft  "Released" -< input
+             keyRight<- keyInput SDL.ScancodeRight "Released" -< input
              returnA -< (p, mergeEvents
                             [ keyLeft  
                             , keyRight ] $> p) :: (Double, Event Double)
@@ -424,6 +446,5 @@ arr :: (a → b) → SF a b
 (≫) :: SF a b → SF b c → SF a c
 (&&&) :: SF a b → SF a c → SF a (b, c)
 loop :: SF (a, c) (b, c) → SF a b
-
 
 -}

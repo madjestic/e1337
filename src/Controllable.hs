@@ -13,8 +13,8 @@ import Mouse
 
 data Controllable
   =  Controllable
-     {
-       transform  :: M44 Double
+     { debug      :: (Double, Double)
+     , transform  :: M44 Double
      , ypr        :: V3 Double  -- yaw/pitch/roll
      , controller :: Controller
      } deriving Show

@@ -51,7 +51,7 @@ library
               , Object
               , Camera
               , Keyboard
-              --, Mouse
+              , Mouse
               , Controllable
   default-language:                   Haskell2010
                                         
@@ -92,7 +92,7 @@ executable e1337
               , Object
               , Camera
               , Keyboard
-              --, Mouse
+              , Mouse
               , Controllable
   default-language:    Haskell2010
 

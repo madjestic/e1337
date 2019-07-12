@@ -9,8 +9,10 @@ module Input
     , rbp
     , rbpPos
     , rbDown
-    , key
+    , keyInput
     , quitEvent
+    , mouseEvent
+    , mouseEventPos
     , module SDL.Input.Keyboard.Codes
     ) where
 
@@ -57,11 +59,12 @@ rbpPos = inpMouseRight ^>> edgeJust
 rbDown :: SF AppInput Bool
 rbDown = arr (isJust . inpMouseRight)
 
-key :: SDL.Scancode -> String -> SF AppInput (Event ())
-key code mode =
+keyInput :: SDL.Scancode -> String -> SF AppInput (Event ())
+keyInput code mode =
   (inpKeyMode ^>> edgeJust) >>^ filterE (code ==) >>^ tagWith ()
   where
     inpKeyMode
+      -- | code == code = inpMousePos -- TODO: attempting to add mouse input sensing
       | code == SDL.ScancodeSpace
       = if | mode == "Pressed" -> inpKeySpacePressed
            | otherwise         -> inpKeySpaceReleased           
@@ -105,6 +108,12 @@ key code mode =
 quitEvent :: SF AppInput (Event ())
 quitEvent = arr inpQuit >>> edge
 
+mouseEvent :: SF AppInput (Event ())
+mouseEvent = arr inpMouseMoving >>> edge
+
+mouseEventPos :: SF AppInput (Double, Double)
+mouseEventPos = arr inpMousePos
+
 data AppInput =
      AppInput
      { inpMousePos          :: (Double, Double)       -- ^ Current mouse position
@@ -112,6 +121,8 @@ data AppInput =
      , inpMouseRight        :: Maybe (Double, Double) -- ^ Right  button currently down
      --, inpMouseMiddle       :: Maybe (Double, Double) -- ^ Middle button currently down
      , inpQuit              :: Bool                   -- ^ SDL's QuitEvent
+     , inpMouseMoving       :: Bool
+     , inpMouseStopped      :: Bool
      , inpKeySpacePressed   :: Maybe SDL.Scancode
      , inpKeySpaceReleased  :: Maybe SDL.Scancode
      -- W
@@ -160,6 +171,8 @@ initAppInput =
      { inpMousePos          = (0, 0)
      , inpMouseLeft         = Nothing
      , inpMouseRight        = Nothing
+     , inpMouseMoving       = True
+     , inpMouseStopped      = False
      --, inpMouseMiddle       = Nothing
      , inpQuit              = False
      , inpKeySpacePressed   = Nothing
@@ -207,6 +220,8 @@ initAppInput =
 parseWinInput :: SF WinInput AppInput
 parseWinInput = accumHoldBy nextAppInput initAppInput
 
+--mousecode :: SDL.MouseMotionEventData -> (Double, Double)
+
 scancode :: SDL.KeyboardEventData -> Scancode
 scancode ev =
   SDL.keysymScancode $ SDL.keyboardEventKeysym ev
@@ -217,9 +232,11 @@ nextAppInput inp SDL.QuitEvent
   = inp { inpQuit = True }
 -- | mouse movement/position
 nextAppInput inp (SDL.MouseMotionEvent ev) =
-    inp { inpMousePos = (fromIntegral x, fromIntegral y) }
+    inp { inpMouseMoving  = True
+        , inpMouseStopped = False
+        , inpMousePos     = (fromIntegral x, fromIntegral y) }
     where P (V2 x y) = SDL.mouseMotionEventPos ev
--- | key events
+-- | keyInput events
 nextAppInput inp (SDL.KeyboardEvent ev)
     | scancode ev == SDL.ScancodeEscape
       = inp { inpQuit = True }
@@ -345,4 +362,5 @@ nextAppInput inp (SDL.MouseButtonEvent ev) = inp { inpMouseLeft  = lmb
                 -- (SDL.Pressed,  SDL.ButtonMiddle) -> second (const (Just pos))
                 _ -> id
 
-nextAppInput inp _ = inp
+nextAppInput inp _ = inp-- { inpMouseMoving  = False
+                        -- , inpMouseStopped = True }
