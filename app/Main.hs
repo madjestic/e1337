@@ -131,7 +131,7 @@ updateCamera :: Camera -> SF AppInput Camera
 updateCamera cam = 
   proc input -> do
     kctl <- control (C.driver $ cam) -< input
-    mctl <- updateMousePing (C.driver $ cam) -< input
+    mctl <- updateMouse (C.driver $ cam) -< input
     let pos0 = debug mctl
     returnA -< Camera { C.driver = kctl { debug = pos0 } }
     
@@ -202,14 +202,39 @@ instance VectorSpace (V3 Double) Double where
   (^+^)  (V3 x y z) (V3 k l m) = (V3 (x+k) (y+l) (z+m))
   dot    (V3 x y z) (V3 k l m) = (x*k) + (y*l) + (z*m)
 
-updateMousePing :: Controllable -> SF AppInput Controllable
-updateMousePing ctl0 =
+control :: Controllable -> SF AppInput Controllable
+control ctl0 =
+  -- | foldrWith mtx0 keys - for every keyInput apply a folding transform to mtx0
+  -- | in case of keypress event - update the set of keys and call new fold ^
+  switch sf cont
+    where
+      sf = proc input -> do
+        ctl           <- update ctl0      -< ctl0
+        mtx           <- returnA          -< transform ctl
+        ypr           <- returnA          -< ypr       ctl
+        (kkeys, kevs) <- updateKeys  ctl0 -< input
+        (pos0, mev)   <- mousePosEvent    -< input
+
+        result <-
+          returnA -<
+          ( Controllable (0,0) mtx ypr
+            ( Controller
+              ( Keyboard kkeys (keyVecs (keyboard (controller ctl))) )
+              ( Mouse Nothing Nothing pos0 [] ) ) )
+        returnA -< 
+          ( ctl
+          , catEvents (mev:kevs) --(kevs ++ [mevs])
+            $> result) -- :: (Controllable, Event Controllable)
+      cont result = control result
+
+updateMouse :: Controllable -> SF AppInput Controllable
+updateMouse ctl0 =
   switch sf cont
   where
     sf = proc input -> do
       mtx           <- returnA          -< transform ctl0
       ypr           <- returnA          -< ypr       ctl0
-      (pos0, mev)   <- mousePosEvent      -< input
+      (pos0, mev)   <- mousePosEvent    -< input
       result <-
         returnA -<
         ( Controllable
@@ -224,57 +249,7 @@ updateMousePing ctl0 =
         , (DT.trace (show pos0) $ mev)
           $> result
         )
-    cont result = updateMousePong result
-
-updateMousePong :: Controllable -> SF AppInput Controllable
-updateMousePong ctl0 =
-  switch sf cont
-  where
-    sf = proc input -> do
-      mtx           <- returnA          -< transform ctl0
-      ypr           <- returnA          -< ypr       ctl0
-      (pos0, mev)   <- mousePosEvent      -< input
-      result <-
-        returnA -<
-        ( Controllable
-          pos0
-          mtx
-          ypr
-          ( Controller
-            ( keyboard.controller $ ctl0 )
-            ( Mouse Nothing Nothing pos0 [] ) ) )
-
-      returnA -<
-        ( ctl0
-        , mev
-          $> result
-        )
-    cont result = updateMousePing result
-
-control :: Controllable -> SF AppInput Controllable
-control ctl0 =
-  -- | foldrWith mtx0 keys - for every keyInput apply a folding transform to mtx0
-  -- | in case of keypress event - update the set of keys and call new fold ^
-  switch sf cont
-    where
-      sf = proc input -> do
-        ctl           <- update ctl0      -< ctl0
-        mtx           <- returnA          -< transform ctl
-        ypr           <- returnA          -< ypr       ctl
-        (kkeys, kevs) <- updateKeys  ctl0 -< input
-        (pos0, mev)   <- mousePosEvent      -< input
-
-        result <-
-          returnA -<
-          ( Controllable (0,0) mtx ypr
-            ( Controller
-              ( Keyboard kkeys (keyVecs (keyboard (controller ctl))) )
-              ( Mouse Nothing Nothing pos0 [] ) ) )
-        returnA -< 
-          ( ctl
-          , catEvents (mev:kevs) --(kevs ++ [mevs])
-            $> result) -- :: (Controllable, Event Controllable)
-      cont result = control result
+    cont result = updateMouse result
 
 update :: Controllable -> SF Controllable Controllable
 update ctl0 =

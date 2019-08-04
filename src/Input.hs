@@ -362,5 +362,4 @@ nextAppInput inp (SDL.MouseButtonEvent ev) = inp { inpMouseLeft  = lmb
                 -- (SDL.Pressed,  SDL.ButtonMiddle) -> second (const (Just pos))
                 _ -> id
 
-nextAppInput inp _ = inp-- { inpMouseMoving  = False
-                        -- , inpMouseStopped = True }
+nextAppInput inp _ = inp
