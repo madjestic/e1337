@@ -146,17 +146,17 @@ initUniforms game =
     program <- loadShaders [
         ShaderInfo VertexShader   (FileSource "shaders/shader.vert"),
         --ShaderInfo FragmentShader (FileSource "shaders/shader.frag")
-        ShaderInfo FragmentShader (FileSource "shaders/BoS_02.frag")
+        ShaderInfo FragmentShader (FileSource "shaders/BoS_03.frag")
         ]
     currentProgram $= Just program
 
     -- | Set Uniforms
-    location0         <- get (uniformLocation program "m_position")
-    -- let m_pos         = Vector2 (0.0) (0.0) :: Vector2 GLfloat
-    let m_pos         = Vector2 (realToFrac $ fst mpos) (realToFrac $ snd mpos) :: Vector2 GLfloat
+    location0         <- get (uniformLocation program "u_mouse")
+    -- let u_mouse         = Vector2 (0.0) (0.0) :: Vector2 GLfloat
+    let u_mouse       = Vector2 (realToFrac $ fst mpos) (realToFrac $ snd mpos) :: Vector2 GLfloat
            where mpos = 
                    (pos . mouse . devices . C.controller . camera $ game)
-    uniform location0 $= m_pos
+    uniform location0 $= u_mouse
     
     location1         <- get (uniformLocation program "u_resolution")
     let u_res         = Vector2 (toEnum resX) (toEnum resY) :: Vector2 GLfloat
@@ -243,12 +243,6 @@ initBufferObjects game =
     vertexAttribPointer uvCoords  $=
         (ToFloat, VertexArrayDescriptor 3 Float stride (bufferOffset uvOffset))
     vertexAttribArray uvCoords    $= Enabled
-
-    -- -- | Shaders
-    -- program <- loadShaders [
-    --     ShaderInfo VertexShader   (FileSource "shaders/shader.vert"),
-    --     ShaderInfo FragmentShader (FileSource "shaders/shader.frag")]
-    -- currentProgram $= Just program
 
     return $ Descriptor vao (fromIntegral numIndices)
     

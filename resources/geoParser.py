@@ -30,11 +30,11 @@ def restoreArrayFromIndex (array, indices):
         result.append (array [i])
     return result
 
-def readJSON(fileIn):
+def readJSON(fileIn, fileOut):
     # in:  fileIn
     # out: jsonFile
-    fileIn  = "model.geo"
-    fileOut = "model.pgeo" # pgeo - processed geo, in JSON format
+    # fileIn  = "model.geo"
+    # fileOut = "model.pgeo" # pgeo - processed geo, in JSON format
 
     outfile = open(fileIn, "r")
     jsonFile = json.loads (outfile.read ())
@@ -96,7 +96,7 @@ def parseJSON(jsonFile):
 def Main(fileIn = "model.geo", fileOut = "model.pgeo"):
     
     #jsonFile = readJSON(fileIn)
-    data = parseJSON(readJSON(fileIn))
+    data = parseJSON(readJSON(fileIn, fileOut))
 
     # Write the data into a json fileIn
     with open(fileOut, 'w') as outfile:
@@ -104,11 +104,12 @@ def Main(fileIn = "model.geo", fileOut = "model.pgeo"):
 
 if __name__ == "__main__":
     print("This application converts Houdini geo format to a pgeo format.\n\
-PGeo is homeomorphic json geo container, suitable for standard haskell.\n")
+PGeo is homeomorphic json geo container, suitable for standard haskell.\n\
+Usage: $ python geoParser.py inputFile.geo outputFile.pgeo")
     
     if len(sys.argv) <= 1:
         print("Parsing default ./model.geo")
         Main()
     else:
         print("Parsing %s" % sys.argv[1])
-        Main(sys.argv[1])
+        Main(sys.argv[1], sys.argv[2])

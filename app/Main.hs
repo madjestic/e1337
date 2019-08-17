@@ -132,25 +132,6 @@ updateCamera cam =
     ctl <- loopControlable (Cam.controller $ cam) -< input
     returnA -< Camera { Cam.controller = ctl }
 
--- loopControlable :: Controllable -> SF AppInput Controllable
--- loopControlable ctl0 =
---   -- | foldrWith mtx0 keys - for every keyInput apply a folding transform to mtx0
---   -- | in case of keypress event - updateControllable the set of keys and call new fold ^
---   proc input -> do
---         ctl           <- updateControllable ctl0        -< ctl0
---         mtx           <- returnA          -< transform ctl
---         ypr           <- returnA          -< ypr       ctl
---         (kkeys, kevs) <- updateKeys  ctl0 -< input
---         (pos0, mev)   <- (mouseEventPos &&& mouseEvent) -< input
-
---         result <-
---           returnA -<
---           ( Controllable (0,0) mtx ypr
---             ( Devices
---               ( Keyboard kkeys (keyVecs (keyboard (devices ctl))) )
---               ( Mouse Nothing Nothing pos0 [] ) ) )
---         returnA -< result
-
 loopControlable :: Controllable -> SF AppInput Controllable
 loopControlable ctl0 =
   -- | foldrWith mtx0 keys - for every keyInput apply a folding transform to mtx0
