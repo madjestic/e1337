@@ -8,13 +8,15 @@
 --  "Y8888P88d88P     888888       8888888888888 
 
 module Game
-  ( Game  (..)
-  , Stage (..)
+  ( Game    (..)
+  , Stage   (..)
+  , Options (..)
   ) where
 
 import Camera
 import Geometry
 import Object
+import Foreign.C (CInt)
 
 -- meta game state
 data Stage =
@@ -24,10 +26,17 @@ data Stage =
    | GameMenu
    deriving Show
 
+data Options
+   = Options
+   { resolution :: (CInt, CInt)
+   } deriving Show
+
 -- game state
 data Game =
      Game
-     { gStg     :: Stage
+     {
+       options  :: Options
+     , gStg     :: Stage
      , object   :: Object
      , camera   :: Camera
      } deriving Show

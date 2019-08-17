@@ -124,7 +124,7 @@ updateGame game =
   proc input -> do
     let obj = object game
     cam     <- updateCamera $ camera game -< input
-    returnA -< Game GamePlaying obj cam
+    returnA -< Game (options game) GamePlaying obj cam
 
 updateCamera :: Camera -> SF AppInput Camera
 updateCamera cam = 
@@ -285,8 +285,8 @@ jsonFile = "src/model.pgeo"
 -- < Global Constants > ---------------------------------------------------
 mBlur     = 0.25 :: Float
 loadDelay = 2.0  :: Double
-resX      = 800  :: CInt
-resY      = 600  :: CInt
+resX      = 300  :: CInt
+resY      = 300  :: CInt
 
 initGame :: IO Game
 initGame =
@@ -295,7 +295,7 @@ initGame =
     let obj = initObj { geometry = geo }
         cam = initCam
 
-        initGame = Game GamePlaying obj cam
+        initGame = Game (Options (resX, resY)) GamePlaying obj cam
     return initGame
 
 

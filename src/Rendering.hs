@@ -20,8 +20,6 @@ import Foreign.Storable                       (sizeOf)
 -- import Graphics.GLUtil (readTexture, texture2DWrap)
 import Graphics.Rendering.OpenGL as GL hiding (position, Size)
 import SDL                             hiding (Point, Event, Timer, (^+^), (*^), (^-^), dot)
--- import SDL.Raw.Video
--- import SDL.Raw.Enum
 import Data.List.Split
 import Data.List.Index
 
@@ -40,9 +38,6 @@ import Linear.Projection as LP (perspective)
 
 import Unsafe.Coerce
 import Debug.Trace as DT
-
-resX = 800 :: Int
-resY = 600 :: Int
 
 toTexCoord3 :: (a, a, a) -> TexCoord3 a
 toTexCoord3 (k, l, m) = TexCoord3 k l m
@@ -160,6 +155,8 @@ initUniforms game =
     
     location1         <- get (uniformLocation program "u_resolution")
     let u_res         = Vector2 (toEnum resX) (toEnum resY) :: Vector2 GLfloat
+           where resX = fromEnum $ fst (resolution . options $ game)
+                 resY = fromEnum $ snd (resolution . options $ game)
     uniform location1 $= u_res
 
     ticks             <- SDL.ticks
