@@ -146,7 +146,7 @@ initUniforms game =
     program <- loadShaders [
         ShaderInfo VertexShader   (FileSource "shaders/shader.vert"),
         --ShaderInfo FragmentShader (FileSource "shaders/shader.frag")
-        ShaderInfo FragmentShader (FileSource "shaders/BoS_03.frag")
+        ShaderInfo FragmentShader (FileSource "shaders/BoS_02.frag")
         ]
     currentProgram $= Just program
 

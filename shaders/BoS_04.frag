@@ -7,14 +7,6 @@ uniform vec2 u_resolution;
 in  vec3 uv;
 out vec4 fragColor;
 
-float circle(in vec2 _st, in vec2 _mpos, in float _radius)
-{
-	vec2 dist = _st-vec2(_mpos);
-	return 1.-smoothstep(_radius-(_radius*0.01),
-						 _radius+(_radius*0.01),
-						 dot(dist, dist)*4.0);
-}
-
 void main()
 {
   vec3 iResolution  = vec3(u_resolution.x, u_resolution.y, 1.0);
@@ -23,8 +15,8 @@ void main()
   vec2 mpos = vec2 (u_mouse.x/u_resolution.x, u_mouse.y/u_resolution.y);
   mpos = vec2(mpos.x, 1.0-mpos.y);
 
-  // float pct = distance(st, mpos);
-  // pct = smoothstep(0.1+sin(u_time/100)*0.1, 0.11+sin(u_time/100)*0.1, pct);
+  float pct = distance(st, mpos);
+  pct = smoothstep(0.1+sin(u_time/100)*0.1, 0.11+sin(u_time/100)*0.1, pct);
   
   vec3 color  = vec3(circle(st, mpos, 0.9));
   fragColor    = vec4(color, 1.0);
