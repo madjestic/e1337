@@ -1,6 +1,6 @@
 module Controllable
   ( Controllable (..)
-  , Controller (..)
+  , Devices (..)
   , Keyboard (..)
   , Mouse (..)
   ) where
@@ -16,11 +16,11 @@ data Controllable
      { debug      :: (Double, Double)
      , transform  :: M44 Double
      , ypr        :: V3 Double  -- yaw/pitch/roll
-     , controller :: Controller
+     , devices    :: Devices
      } deriving Show
 
-data Controller
-  =  Controller
+data Devices
+  =  Devices
      {
        keyboard :: Keyboard 
      , mouse    :: Mouse    

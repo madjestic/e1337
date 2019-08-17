@@ -92,20 +92,14 @@ closeWindow window = do
 
 -- < OpenGL > -------------------------------------------------------------
 data Descriptor =
-     --Descriptor VertexArrayObject ArrayIndex NumArrayIndices
      Descriptor VertexArrayObject NumArrayIndices
 
 draw :: SDL.Window -> Descriptor -> IO ()
 draw window (Descriptor vao numIndices) =
   do
-    --(Descriptor vao firstIndex numVertices) <- initResources game
-    -- (Descriptor vao numIndices) <- initResources game
-
-    GL.clearColor $= Color4 0.1 0 0 1
+    GL.clearColor $= Color4 0.5 0 0 1
     GL.clear [ColorBuffer, DepthBuffer]
     bindVertexArrayObject $= Just vao
-    --drawArrays Triangles firstIndex numVertices
-    --drawElements Triangles numIndices GL.UnsignedInt nullPtr
     drawElements Triangles numIndices GL.UnsignedInt nullPtr
     GL.pointSize $= 10
 
@@ -113,17 +107,6 @@ draw window (Descriptor vao numIndices) =
     depthFunc $= Just Less
 
     SDL.glSwapWindow window
-
--- realToFracT :: (Double, Double) -> (GLfloat, GLfloat)
--- realToFracT = (\ (x,y) -> (realToFrac x, realToFrac y))
-
--- loadTex :: FilePath -> IO TextureObject
--- loadTex f =
---   do
---     t <- either error id <$> readTexture f
---     textureFilter Texture2D $= ((Linear', Nothing), Linear')
---     texture2DWrap $= (Repeated, ClampToEdge)
---     return t
 
 initVAO :: [Vertex4 Double] -> [TexCoord3 Double] -> [GLuint] -> IO [GLfloat]
 initVAO ps ts idx =
@@ -143,7 +126,7 @@ indexedVAO ps ts ids st =
     let vx  = concat $ fmap (\x -> snd x) iListSet
     return (vx, idx)
 
-         -- :: initVAO   -> Stride -> indexed VAO
+            -- :: initVAO   -> Stride -> indexed VAO
 indexedListSet :: [GLfloat] -> Int -> [(Int,[GLfloat])]
 indexedListSet vao n =
   fmap (\x -> x) $ indexed $ DS.toList $ DS.fromList $ chunksOf n $ vao
@@ -162,19 +145,19 @@ initUniforms game =
     -- | Shaders
     program <- loadShaders [
         ShaderInfo VertexShader   (FileSource "shaders/shader.vert"),
-        ShaderInfo FragmentShader (FileSource "shaders/shader.frag")
-        --ShaderInfo FragmentShader (FileSource "shaders/sphere.frag")
+        --ShaderInfo FragmentShader (FileSource "shaders/shader.frag")
+        ShaderInfo FragmentShader (FileSource "shaders/BoS_02.frag")
         ]
     currentProgram $= Just program
 
     -- | Set Uniforms
-    -- location0         <- get (uniformLocation program "fPPos")
-    -- uniform location0 $= (realToFrac ppos :: GLfloat)
-
-    -- location1         <- get (uniformLocation program "vBPos")
-    -- uniform location1 $= (Vector2 (realToFrac $ fst bpos)
-    --                               (realToFrac $ snd bpos) :: Vector2 GLfloat)
-
+    location0         <- get (uniformLocation program "m_position")
+    -- let m_pos         = Vector2 (0.0) (0.0) :: Vector2 GLfloat
+    let m_pos         = Vector2 (realToFrac $ fst mpos) (realToFrac $ snd mpos) :: Vector2 GLfloat
+           where mpos = 
+                   (pos . mouse . devices . C.controller . camera $ game)
+    uniform location0 $= m_pos
+    
     location1         <- get (uniformLocation program "u_resolution")
     let u_res         = Vector2 (toEnum resX) (toEnum resY) :: Vector2 GLfloat
     uniform location1 $= u_res
@@ -194,14 +177,13 @@ initUniforms game =
     
     let cam =
           fmap realToFrac . concat $ fmap DF.toList . DF.toList $
-          transform . C.driver . camera $ game --(identity::M44 Double) :: [GLfloat]
+          transform . C.controller . camera $ game --(identity::M44 Double) :: [GLfloat]
     camera            <- GL.newMatrix RowMajor cam :: IO (GLmatrix GLfloat)
     location4         <- get (uniformLocation program "camera")
     uniform location4 $= camera
 
     let mtx =
           fmap realToFrac . concat $ fmap DF.toList . DF.toList $
-          --transform . O.controller . object $ game --(identity::M44 Double) :: [GLfloat]
           (identity::M44 Double) :: [GLfloat]
     --_ <- DT.trace ("mtx: " ++ show mtx) $ return ()
     transform         <- GL.newMatrix RowMajor mtx :: IO (GLmatrix GLfloat)
@@ -209,8 +191,8 @@ initUniforms game =
     uniform location5 $= transform
     
     -- | Unload buffers
-    -- bindVertexArrayObject         $= Nothing
-    -- bindBuffer ElementArrayBuffer $= Nothing
+    bindVertexArrayObject         $= Nothing
+    bindBuffer ElementArrayBuffer $= Nothing
 
     return () -- $ Descriptor vao (fromIntegral numIndices)
     

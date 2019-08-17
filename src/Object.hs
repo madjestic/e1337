@@ -20,7 +20,7 @@ initObj
       (0,0)
       (identity :: M44 Double)
       (V3 0 0 0)
-      (Controller (Keyboard keys0 kvs0) (Mouse Nothing Nothing (0,0) [])) )
+      (Devices (Keyboard keys0 kvs0) (Mouse Nothing Nothing (0,0) [])) )
           where
             keys0  = ( Keys False False False False False False False False False False False False )
             kvs0   = [ fVel, bVel, lVel, rVel, uVel, dVel, pPitch, nPitch, pYaw, nYaw, pRoll, nRoll ]

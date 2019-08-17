@@ -2,14 +2,18 @@
 
 layout(location = 0) in vec4 vPosition;
 layout(location = 1) in vec3 uvCoords;
+uniform vec2  m_position;
 uniform float u_time;
+uniform vec2  u_resolution;
 uniform mat4  persp;
 uniform mat4  camera;
 uniform mat4  transform;
 
 // Output data ; will be interpolated for each fragment.
-out vec3 fragCoord;
 out float time;
+out vec3 uv;
+out vec2 u_res;
+out vec2 m_pos;
 
 void main()
 {
@@ -21,6 +25,8 @@ void main()
 	
 	gl_Position = //camera * persp * transform * vPosition;
 		persp * viewM44 * (vPosition + camera[3]);
-	fragCoord   = uvCoords;
-	time        = u_time;
+	uv    = uvCoords;
+	time  = u_time;
+	u_res = u_resolution;
+	m_pos = m_position;
 }

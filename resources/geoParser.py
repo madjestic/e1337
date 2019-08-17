@@ -104,7 +104,7 @@ def Main(fileIn = "model.geo", fileOut = "model.pgeo"):
 
 if __name__ == "__main__":
     print("This application converts Houdini geo format to a pgeo format.\n\
-PGeo is monomorphic json geo container, suitable for standard haskell.\n")
+PGeo is homeomorphic json geo container, suitable for standard haskell.\n")
     
     if len(sys.argv) <= 1:
         print("Parsing default ./model.geo")
