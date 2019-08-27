@@ -4,7 +4,6 @@ module Rendering
   ( openWindow
   , closeWindow
   , draw
---  , initResources
   , initBufferObjects
   , initUniforms
   , Descriptor(..)
@@ -17,11 +16,12 @@ import Foreign.C
 import Foreign.Marshal.Array                  (withArray)
 import Foreign.Ptr                            (plusPtr, nullPtr, Ptr)
 import Foreign.Storable                       (sizeOf)
--- import Graphics.GLUtil (readTexture, texture2DWrap)
 import Graphics.Rendering.OpenGL as GL hiding (position, Size)
 import SDL                             hiding (Point, Event, Timer, (^+^), (*^), (^-^), dot)
-import Data.List.Split
-import Data.List.Index
+import Data.List.Split (chunksOf)
+import Data.List.Index (indexed)
+import Data.List     (elemIndex, sortBy, sort)
+import Data.Function (on)
 
 import LoadShaders
 import Game
@@ -48,7 +48,7 @@ instance Drawables Geo where
     do
       let ps  = map toVertex4   $ position geo
           uvs = map toTexCoord3 $ uv geo
-          ids = map toGLuint $ indices geo
+          ids = map toGLuint    $ indices geo
       return $ Drawable ps uvs ids
 
 toGLuint :: Int -> GLuint
@@ -112,27 +112,40 @@ initVAO ps ts idx =
         iter = [0..(length idx)-1]
 
 indexedVAO :: [Vertex4 Double] -> [TexCoord3 Double] -> [GLuint] -> Int -> IO ([GLfloat],[GLuint])
-indexedVAO ps ts ids st =
+indexedVAO ps ts is st =
   do
-    vs <- initVAO ps ts ids
+    vs <- initVAO ps ts is
     let iListSet = indexedListSet vs st
-    let iList    = indexedList (indexed $ chunksOf st vs) iListSet
-    let idx = fmap (\(i,_) -> (fromIntegral i)) iList
-    let vx  = concat $ fmap (\x -> snd x) iListSet
+        iList    = (indexed $ chunksOf st vs)
+        idx = fmap (\(i,_) -> (fromIntegral i)) (matchLists iListSet iList)
+        vx  = concat $ fmap (\x -> snd x) iListSet
     return (vx, idx)
 
+-- | matchLists - cross-match 2 listst, replacing the elements of list2 with matching
+-- |          with elements of list1, concatenating the non-matched elements.
+-- |   il - indexed list
+-- |  nil - non-indexed list
+matchLists :: [(Int, [GLfloat])] -> [(Int, [GLfloat])] -> [(Int, [GLfloat])]
+matchLists il nil =
+  fmap (mFunc il ) nil -- | mFunc - matching function
+  where
+    -- | il      - indexed list
+    -- | nile    - non indexed list element
+    -- | Replaces the target element with the first match from the matching list il
+    mFunc il nile@(iy, cy) =
+      (\x -> case x of
+               Just idx -> il!!idx
+               Nothing  -> (-iy, cy) ) nili -- | if a unique index is found - flip the sign
+                                            -- | the idea is to separate normal indexes
+                                            -- | and unique indexes -> [idx:uidx] later
+      where
+        nili = elemIndex cy cxs
+        cxs  = fmap (\(i,s) -> s) il :: [[GLfloat]]
+    
             -- :: initVAO   -> Stride -> indexed VAO
 indexedListSet :: [GLfloat] -> Int -> [(Int,[GLfloat])]
 indexedListSet vao n =
   fmap (\x -> x) $ indexed $ DS.toList $ DS.fromList $ chunksOf n $ vao
-
-indexedList :: [(Int,[GLfloat])] -> [(Int,[GLfloat])] -> [(Int,[GLfloat])]
-indexedList loa ias = foldr (\x y -> matchIndex y x) loa ias
-
-matchIndex :: [(Int,[GLfloat])] -> (Int,[GLfloat]) -> [(Int,[GLfloat])]
-matchIndex loa indices@(i, iVal) = fmap (\la@(j, jVal) -> case () of
-                                                _ | iVal == jVal -> indices
-                                                  | otherwise    -> la) loa
 
 initUniforms :: Game -> IO ()
 initUniforms game =  
@@ -140,14 +153,13 @@ initUniforms game =
     -- | Shaders
     program <- loadShaders [
         ShaderInfo VertexShader   (FileSource "shaders/shader.vert"),
-        --ShaderInfo FragmentShader (FileSource "shaders/shader.frag")
-        ShaderInfo FragmentShader (FileSource "shaders/BoS_04.frag")
+        ShaderInfo FragmentShader (FileSource "shaders/shader.frag")
+        --ShaderInfo FragmentShader (FileSource "shaders/BoS_06.frag")
         ]
     currentProgram $= Just program
 
     -- | Set Uniforms
     location0         <- get (uniformLocation program "u_mouse")
-    -- let u_mouse         = Vector2 (0.0) (0.0) :: Vector2 GLfloat
     let u_mouse       = Vector2 (realToFrac $ fst mpos) (realToFrac $ snd mpos) :: Vector2 GLfloat
            where mpos = 
                    (pos . mouse . devices . C.controller . camera $ game)
@@ -167,7 +179,10 @@ initUniforms game =
     let proj =          
           fmap realToFrac . concat $ fmap DF.toList . DF.toList -- convert to GLfloat
           --               FOV    Aspect    Near   Far
-          $ LP.perspective (pi/2) (800/600) (0.01) 1.5 :: [GLfloat]
+          $ LP.perspective (pi/2) (resX/resY) (0.01) 1.5 :: [GLfloat]
+                     where resX = toEnum $ fromEnum $ fst (resolution . options $ game)
+                           resY = toEnum $ fromEnum $ snd (resolution . options $ game)
+
     persp             <- GL.newMatrix RowMajor proj :: IO (GLmatrix GLfloat)
     location3         <- get (uniformLocation program "persp")
     uniform location3 $= persp
@@ -191,8 +206,8 @@ initUniforms game =
     bindVertexArrayObject         $= Nothing
     bindBuffer ElementArrayBuffer $= Nothing
 
-    return () -- $ Descriptor vao (fromIntegral numIndices)
-    
+    return () -- $ Descriptor vao (fromIntegral numIndices)    
+
 
 initBufferObjects :: Game -> IO Descriptor
 initBufferObjects game =  

@@ -17,22 +17,25 @@
 //
 // More info here: http://www.iquilezles.org/www/articles/distancefractals/distancefractals.htm
 
-in  vec3 fragCoord;
-// in  float time;
-out vec4 fragColor;
-
 uniform float u_time;
+uniform vec2 u_resolution;
+
+in  vec4 gl_FragCoord;
+in  vec3 uv;
+out vec4 fragColor;
 
 void main()
 {
-  vec3  iResolution = vec3(1024, 1024, 1.0);
-  float iGlobalTime = u_time;
-  vec2  fragCoord2  = vec2(fragCoord.x, fragCoord.y);
+  float iGlobalTime = u_time*0.0;
+  //vec2 st           = gl_FragCoord.xy/u_resolution.xy;
+  vec2 st           = uv.xy;
+  vec3 iResolution  = vec3(1024, 1024, 1.0);
+  vec2 fragCoord2   = st;//vec2(gl_FragCoord.x, gl_FragCoord.y);
   vec2  p           = -3.0 + 5000.0 * fragCoord2 / iResolution.xy;
   p.x              *= iResolution.x/iResolution.y;
 
   // animation	
-  float tz = 0.0 + 0.00001*iGlobalTime;
+  float tz = 1.0 + 0.00001*iGlobalTime;
   float zoo = pow( 0.5, 13.0*tz );
   vec2 c = vec2(-0.05,.6805) + p*zoo;
 
@@ -54,15 +57,19 @@ void main()
     }
 
   // distance	
-	// d(c) = |Z|·log|Z|/|Z'|
-	float d = 0.5*sqrt(dot(z,z)/dot(dz,dz))*log(dot(z,z));
+  	// d(c) = |Z|·log|Z|/|Z'|
+  	float d = 0.5*sqrt(dot(z,z)/dot(dz,dz))*log(dot(z,z));
 
 	
   // do some soft coloring based on distance
-	d = clamp( 8.0*d/zoo, 0.0, 1.0 );
-	d = pow( d, 0.25 );
+  	d = clamp( 8.0*d/zoo, 0.0, 1.0 );
+  	d = pow( d, 0.25 );
   vec3 col = vec3( d );
-    
-  // fragColor = vec4( vec3(fragCoord.x,fragCoord.y,0.0), 1.0 );
+
+  //fragColor = vec4(st, 0.0, 0.0);
+	//fragColor = vec4( vec3(fragCoord2.x,fragCoord2.y,0.0), 1.0 );
+  //fragColor = vec4( vec3(uv.x,uv.y,0.0), 1.0 );
+  //fragColor = vec4( vec3(gl_FragCoord.x, gl_FragCoord.y, 0.0), 1.0 );
   fragColor = vec4( col, 1.0 );
+	// fragColor = vec4( 1.0, 1.0, 0.0, 1.0 );
 }

@@ -1,0 +1,3 @@
+#!/bin/sh
+
+cabal new-run +RTS -sstderr -RTS

@@ -1,0 +1,98 @@
+name:                e1337
+version:             0.1.0.0
+synopsis:            A 1984 Elite-inspired space-sim game
+description:         Please see the README on GitHub at <https://github.com/madjestic/e1337#readme>
+homepage:            https://github.com/madjestic/e1337
+license:             BSD3
+license-file:        LICENSE
+author:              madjestic
+maintainer:          madjestic13@gmail.com
+copyright:           Vladimir Lopatin
+category:            Game
+build-type:          Simple
+cabal-version:       >=1.10
+
+extra-source-files:
+                   ChangeLog.md
+                   README.md
+
+source-repository head
+  type: git
+  location: https://github.com/madjestic/e1337
+
+library
+  hs-source-dirs:
+                 src
+  build-depends:
+                base       >=4.7 && <5
+              , aeson      >= 1.3.1.1
+              , bytestring >=0.10.8.1
+              , OpenGL     >=3.0.2.2
+              , Yampa      >=0.13
+              , sdl2       >=2.4.1.0
+              , text       >=1.2.2.2
+              , linear     >=1.20.8
+              , GLUtil     >=0.10.3
+              , split      >=0.2.3.3
+              , ilist      >=0.2.0.0
+              , containers >=0.6.0.1
+  exposed-modules:
+                  Input
+                , Geometry
+                , Game
+                , Rendering
+  other-modules:
+                Paths_e1337
+              , Geo
+              , LoadShaders
+              , Shape2D
+              , FromVector
+              , Drawables
+              , Object
+              , Camera
+              , Keyboard
+              , Mouse
+              , Controllable
+  default-language:                   Haskell2010
+                                        
+executable e1337
+  main-is:       Main.hs
+  hs-source-dirs:
+                 app
+               , src
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N -eventlog -O2 -prof -fprof-auto -fprof-cafs -fforce-recomp "-with-rtsopts=-N -p -s -h -i0.1"
+  build-depends:
+                e1337
+              , base       >=4.7 && <5
+              , aeson      >=1.3.1.1
+              , text       >=1.2.2.2
+              , Yampa      >=0.13
+              , OpenGL     >=3.0.2.2
+              , filepath   >=0.4.14
+              , bytestring >=0.10.8.1
+              , sdl2       >=2.4.1.0
+              , linear     >=1.20.8
+              , GLUtil     >=0.10.3
+              , split      >=0.2.3.3
+              , ilist      >=0.2.0.0
+              , containers >=0.6.0.1
+              , lens       >=4.17
+  other-modules:
+                Paths_e1337
+              , Game
+              , Geometry
+              , Input
+              , NGL.LoadShaders
+              , Rendering
+              , Geo
+              , Drawables
+              , FromVector
+              , LoadShaders
+              , Shape2D
+              , Object
+              , Camera
+              , Keyboard
+              , Mouse
+              , Controllable
+  default-language:    Haskell2010
+

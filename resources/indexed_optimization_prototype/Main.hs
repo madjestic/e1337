@@ -26,15 +26,13 @@ matchLists il nil =
   where
     -- | il      - indexed list
     -- | nile    - non indexed list element
-    -- | max_idx - max index value, all non-indexed elements should be indexed
-    -- |           as max_idx + m, where m is the number of elements in il
-    -- |   Replaces the target element with the first match from the matching list il
+    -- | Replaces the target element with the first match from the matching list il
     mFunc il nile@(iy, cy) =
       (\x -> case x of
                Just idx -> il!!idx
-               Nothing  -> (-iy, cy) ) nili -- | if a unic index is found - flip the sign
+               Nothing  -> (-iy, cy) ) nili -- | if a unique index is found - flip the sign
                                             -- | the idea is to separate normal indexes
-                                            -- | and unique indexes -> [idx:uidx]
+                                            -- | and unique indexes -> [idx:uidx] later
       where
         nili = elemIndex cy cxs
         cxs  = fmap (\(i,s) -> s) il :: [[Char]]
@@ -43,17 +41,18 @@ sortLists :: [(Integer, [Char])] -> [(Integer, [Char])] -> [(Integer, [Char])]
 sortLists il nil =
   pos_idx ++ neg_idx
   where
-    -- | uil - unsorted indexed list
-    uil            = sortBy (compare `on` fst) (matchLists iList niList)
     pos_idx        = (snd splitListTuple)
     neg_idx        = zipWith (\i x@(ix, cx) -> (i, cx))  [size..]
-                     $ reverse (fst splitListTuple)
+                   $ reverse (fst splitListTuple)
     size           = toEnum $ length il :: Integer
     splitListTuple = splitAt zero uil
-    idx            = elemIndex True $ fmap (\(i,_) -> i > 0) uil
     zero           = case idx of
                        Just i  -> i - 1
                        Nothing -> 0
+    idx            = elemIndex True $ fmap (\(i,_) -> i > 0) uil
+    -- | uil - unsorted indexed list
+    uil            = sortBy (compare `on` fst) (matchLists iList niList)
+
 
 -- | sortLists iList niList
 --   [(0,"a"),(1,"b"),(1,"b"),(2,"c"),(3,"d"),(4,"e")]
