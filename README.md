@@ -1,7 +1,7 @@
 # A space-sim game.
 
 ## Progress so far:
-![youtube](https://youtu.be/lJfOzcvqTJ0)
+[youtube](https://youtu.be/lJfOzcvqTJ0)
 
 ## Building and running:
 ```bash
