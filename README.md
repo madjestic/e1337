@@ -1,4 +1,7 @@
-# A 1984 Elite-inspired space-sim game
+# A space-sim game.
+
+## Progress so far:
+![youtube](https://youtu.be/lJfOzcvqTJ0)
 
 ## Building and running:
 ```bash
