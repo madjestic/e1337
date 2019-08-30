@@ -2,17 +2,35 @@
 * inspired by Strugatsky "XXII century" series.
 
 Implemented * and planned ** features:
+* Spaceship (ISS with mandlbrot fractal shading)
+
+** Planet.
+
+** Asteroids.
+
 ** Space Trading
+
 ** Dynamic Space Bodies
-** Realistic Gravitaional Space Physics:
+
+** Realistic Gravitational Space Physics:
+
 ** Planet Landing
+
 ** Pirates Hunting
+
 ** Korovan Robbing
-** Realistic Newtonian physics and Inntertia
-** Ships and materials can break due to overloads, including, but not limiting to, extreme changes of acceleration if applied to a mass of a material.
-** Spectral controls of simulation vs arcade settings over physics and gameplay elements.
+
+** Realistic Newtonian physics and Inertia
+
+** Ships and materials can break due to overloads, including, but not limited to, extreme changes of acceleration if applied to a mass of a material.
+
+** Spectral control of simulation vs arcade settings over physics and gameplay elements.
+
 ** Relativistic Space-Time model
-** Evolving Civillisations
+
+** Evolving Civilisations
+
+
 
 ## Progress so far:
 [youtube](https://www.youtube.com/watch?v=oiajlYck-50)
