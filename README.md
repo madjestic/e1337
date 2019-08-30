@@ -1,4 +1,18 @@
-# A space-sim game.
+# A space-sim game
+* inspired by Strugatsky "XXII century" series.
+
+Implemented * and planned ** features:
+** Space Trading
+** Dynamic Space Bodies
+** Realistic Gravitaional Space Physics:
+** Planet Landing
+** Pirates Hunting
+** Korovan Robbing
+** Realistic Newtonian physics and Inntertia
+** Ships and materials can break due to overloads, including, but not limiting to, extreme changes of acceleration if applied to a mass of a material.
+** Spectral controls of simulation vs arcade settings over physics and gameplay elements.
+** Relativistic Space-Time model
+** Evolving Civillisations
 
 ## Progress so far:
 [youtube](https://www.youtube.com/watch?v=oiajlYck-50)
