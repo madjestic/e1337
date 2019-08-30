@@ -1,35 +1,35 @@
 # A space-sim game
-* inspired by Strugatsky "XXII century" series.
+* inspired by Strugatsky "Noon: XXII century" series.
 
-Implemented * and planned ** features:
+Implemented * and planned - features:
+
 * Spaceship (ISS with mandlbrot fractal shading)
 
-** Planet.
-
-** Asteroids.
-
-** Space Trading
-
-** Dynamic Space Bodies
-
-** Realistic Gravitational Space Physics:
-
-** Planet Landing
-
-** Pirates Hunting
-
-** Korovan Robbing
-
-** Realistic Newtonian physics and Inertia
-
-** Ships and materials can break due to overloads, including, but not limited to, extreme changes of acceleration if applied to a mass of a material.
-
-** Spectral control of simulation vs arcade settings over physics and gameplay elements.
-
-** Relativistic Space-Time model
-
-** Evolving Civilisations
-
+- Planet.
+  
+- Asteroids.
+  
+- Space Trading
+  
+- Dynamic Space Bodies
+  
+- Realistic Gravitational Space Physics:
+  
+- Planet Landing
+  
+- Pirates Hunting
+  
+- Korovan Robbing
+  
+- Realistic Newtonian physics and Inertia
+  
+- Ships and materials can break due to overloads, including, but not limited to, extreme changes of acceleration if applied to a mass of a material.
+  
+- Spectral control of simulation vs arcade settings over physics and gameplay elements.
+  
+- Relativistic Space-Time model
+  
+- Evolving Civilisations
 
 
 ## Progress so far:
