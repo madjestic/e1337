@@ -41,13 +41,13 @@ library
                 , Geometry
                 , Game
                 , Rendering
+                , Drawables
+                , Shape2D
+                , FromVector
   other-modules:
                 Paths_e1337
               , Geo
               , LoadShaders
-              , Shape2D
-              , FromVector
-              , Drawables
               , Object
               , Camera
               , Keyboard

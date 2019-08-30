@@ -16,7 +16,7 @@ import Foreign.C
 import Foreign.Marshal.Array                  (withArray)
 import Foreign.Ptr                            (plusPtr, nullPtr, Ptr)
 import Foreign.Storable                       (sizeOf)
-import Graphics.Rendering.OpenGL as GL hiding (position, Size)
+import Graphics.Rendering.OpenGL as GL hiding (positions, Size)
 import SDL                             hiding (Point, Event, Timer, (^+^), (*^), (^-^), dot)
 import Data.List.Split (chunksOf)
 import Data.List.Index (indexed)
@@ -39,20 +39,25 @@ import Linear.Projection as LP (perspective)
 import Unsafe.Coerce
 import Debug.Trace as DT
 
+-- TODO: this should probably also be moved to Shape2D/FromVector ?
 toTexCoord3 :: (a, a, a) -> TexCoord3 a
 toTexCoord3 (k, l, m) = TexCoord3 k l m
+
+toGLuint :: Int -> GLuint
+toGLuint x = fromIntegral x
 
 instance Drawables Geo where
   toDrawable :: Geo -> IO Drawable
   toDrawable geo =
     do
-      let ps  = map toVertex4   $ position geo
+      let ps  = map toVertex4   $ positions geo
           uvs = map toTexCoord3 $ uv geo
           ids = map toGLuint    $ indices geo
       return $ Drawable ps uvs ids
-
-toGLuint :: Int -> GLuint
-toGLuint x = fromIntegral x
+      
+  toVAO :: Geo -> IO Drawable
+  toVAO geo = do
+    return $ VAO (vs geo) (map toGLuint $ is geo)
 
 openWindow :: Text -> (CInt, CInt) -> IO SDL.Window
 openWindow title (sizex,sizey) = do
@@ -152,8 +157,8 @@ initUniforms game =
   do
     -- | Shaders
     program <- loadShaders [
-        ShaderInfo VertexShader   (FileSource "shaders/shader.vert"),
-        ShaderInfo FragmentShader (FileSource "shaders/shader.frag")
+        ShaderInfo VertexShader   (FileSource "shaders/ISS/shader.vert"),
+        ShaderInfo FragmentShader (FileSource "shaders/ISS/shader.frag")
         --ShaderInfo FragmentShader (FileSource "shaders/BoS_06.frag")
         ]
     currentProgram $= Just program
@@ -212,10 +217,13 @@ initUniforms game =
 initBufferObjects :: Game -> IO Descriptor
 initBufferObjects game =  
   do
-    drw <- toDrawable $ (geometry . object) game
-  
+    --drw <- toDrawable $ (geometry . object) game
+    (VAO vs idx) <- toVAO $ (geometry . object) game
+    
     let stride = 7 -- TODO : stride <- attr sizes
-    (vs, idx) <- indexedVAO (verts drw) (uvs drw) (ids drw) stride
+    --(_, idx) <- indexedVAO (verts drw) (uvs drw) (ids drw) stride
+    -- let vs = --[-1.0,-1.0,-1.0,0.0,0.0,0.0,0.0,0.0,-1.0,-1.0,0.0,0.5,0.0,0.0,0.0,0.0,-1.0,0.0,0.5,0.5,0.0,0.0,-1.0,-1.0,0.0,0.5,0.0,0.0,1.0,-1.0,-1.0,0.0,1.0,0.0,0.0,1.0,0.0,-1.0,0.0,1.0,0.5,0.0,-1.0,0.0,-1.0,0.0,0.0,0.5,0.0,0.0,0.0,-1.0,0.0,0.5,0.5,0.0,0.0,1.0,-1.0,0.0,0.5,1.0,0.0,0.0,0.0,-1.0,0.0,0.5,0.5,0.0,1.0,0.0,-1.0,0.0,1.0,0.5,0.0,1.0,1.0,-1.0,0.0,1.0,1.0,0.0,1.0,1.0,-1.0,0.0,1.0,1.0,0.0,0.0,1.0,-1.0,0.0,0.5,1.0,0.0,0.0,0.0,-1.0,0.0,0.5,0.5,0.0,0.0,1.0,-1.0,0.0,0.5,1.0,0.0,-1.0,1.0,-1.0,0.0,0.0,1.0,0.0,-1.0,0.0,-1.0,0.0,0.0,0.5,0.0,1.0,0.0,-1.0,0.0,1.0,0.5,0.0,0.0,0.0,-1.0,0.0,0.5,0.5,0.0,0.0,-1.0,-1.0,0.0,0.5,0.0,0.0,0.0,0.0,-1.0,0.0,0.5,0.5,0.0,-1.0,0.0,-1.0,0.0,0.0,0.5,0.0,-1.0,-1.0,-1.0,0.0,0.0,0.0,0.0] :: [GLfloat]
+    --       [-1.0,-1.0,-1.0,1.0,0.0,0.0,0.0,-1.0,0.0,-1.0,1.0,0.0,0.5,0.0,-1.0,1.0,-1.0,1.0,0.0,1.0,0.0,0.0,-1.0,-1.0,1.0,0.5,0.0,0.0,0.0,0.0,-1.0,1.0,0.5,0.5,0.0,0.0,1.0,-1.0,1.0,0.5,1.0,0.0,1.0,-1.0,-1.0,1.0,1.0,0.0,0.0,1.0,0.0,-1.0,1.0,1.0,0.5,0.0,1.0,1.0,-1.0,1.0,1.0,1.0,0.0] :: [GLfloat]
 
     -- | VAO
     vao <- genObjectName

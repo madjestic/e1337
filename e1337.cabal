@@ -41,13 +41,13 @@ library
                 , Geometry
                 , Game
                 , Rendering
+                , Drawables
+                , Shape2D
+                , FromVector
   other-modules:
                 Paths_e1337
               , Geo
               , LoadShaders
-              , Shape2D
-              , FromVector
-              , Drawables
               , Object
               , Camera
               , Keyboard
@@ -60,7 +60,7 @@ executable e1337
   hs-source-dirs:
                  app
                , src
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N -eventlog -O2
+  ghc-options:         -threaded -O2
   build-depends:
                 e1337
               , base       >=4.7 && <5

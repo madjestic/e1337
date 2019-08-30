@@ -29,7 +29,7 @@ import Game
 import Keyboard
 import Object        as Obj
 import Controllable  
-import Geometry      
+import Geometry
 import Input         as Inp
 import Rendering
 import Data.Foldable as DF (toList)
@@ -280,6 +280,9 @@ handleExit = quitEvent >>^ isEvent
 jsonFile :: FilePath
 jsonFile = "src/model.pgeo"
 
+jsonFile' :: FilePath
+jsonFile' = "src/models/iss.vgeo"
+
 --  CCCCC   OOOOO  NN   NN  SSSSS  TTTTTTT   AAA   NN   NNn TTTTTTT  SSSSS  
 -- CC    C OO   OO NNN  NN SS        TTT    AAAAA  NNN  NN   TTT   SS      
 -- CC      OO   OO NN N NN  SSSSS    TTT   AA   AA NN N NN   TTT    SSSSS  
@@ -295,7 +298,8 @@ resY      = 600  :: CInt
 initGame :: IO Game
 initGame =
   do
-    geo <- readPGeo jsonFile
+    --geo <- readPGeo jsonFile
+    geo <- readVBO jsonFile'
     let obj = initObj { geometry = geo }
         cam = initCam
 
@@ -317,6 +321,8 @@ main = do
   game      <- initGame
   window    <- openWindow "e1337" (resX, resY)
   resources <- initBufferObjects game
+  -- TODO: finish feeding glval to vbo
+  -- glval <- decodeFileStrict "model.i.json" :: IO (Maybe [Float]) 
   
   animate
     window

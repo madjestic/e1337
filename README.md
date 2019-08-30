@@ -1,7 +1,9 @@
 # A space-sim game.
 
 ## Progress so far:
-[youtube](https://youtu.be/lJfOzcvqTJ0)
+[youtube](https://www.youtube.com/watch?v=oiajlYck-50)
+
+![](https://github.com/madjestic/e1337/blob/master/output.png)
 
 ## Building and running:
 ```bash
@@ -13,6 +15,9 @@ $ gpu ./run.sh
 ```bash
 $ cd ./resources
 $ make
+$ cd ./resources/geoIndexer
+$ ./Main
+$ cp ./resources/geoIndexer/model.i.json ./src/models/iss.vgeo
 ```
 
 ## Working with REPL:
@@ -91,7 +96,6 @@ Cosmic Body:
   a , Acceleration V3
   a', Angular Velocity 2xQuat (rotation speed)
 ```
-
 
 ## Output:
 ![](https://github.com/madjestic/e1337/blob/master/output.png)

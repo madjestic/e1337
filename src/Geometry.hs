@@ -16,6 +16,7 @@ module Geometry
   ( Geo(..)
   , getJSON
   , readPGeo
+  , readVBO
   ) where
 
 import Control.Monad (mzero)
@@ -32,13 +33,22 @@ instance FromVector Vec3 where
   toVertex4 (k, l, m) = Vertex4 k l m 1.0  
 
 data Geo
-  =  Geo
+  =
+    Geo
      {
-       position :: Positions
-     , uv       :: UVs
-     , indices  :: [Int]
+       positions :: Positions
+     , uv        :: UVs
+     , indices   :: [Int]
 --     , normal   :: [Vec3]
-     } deriving Show
+     }
+  | GLGeo
+     {
+       vs  :: [Float]
+     , is :: [Int]
+     } 
+  deriving Show
+
+
 
 -- | TODO : replace Vec3 -> Vec4
 type Vec3     = (Double, Double, Double)
@@ -86,13 +96,21 @@ instance FromJSON Index where
 getJSON :: FilePath -> IO B.ByteString
 getJSON  = B.readFile
 
+readVBO :: FilePath -> IO Geo
+readVBO file = 
+  do
+    d <- decodeFileStrict file :: IO (Maybe ([Float],[Int]))
+    return $ case d of
+               Just d -> GLGeo (fst d) (snd d)
+               Nothing  -> GLGeo [] []
+
 readPGeo :: FilePath -> IO Geo
 readPGeo jsonFile =
   do
     d <- (eitherDecode <$> getJSON jsonFile) :: IO (Either String Geo)
-    let ps        = (position . fromEitherDecode) d
-    let uvs       = (uv       . fromEitherDecode) d
-    let ids       = (indices  . fromEitherDecode) d
+    let ps        = (positions . fromEitherDecode) d
+    let uvs       = (uv        . fromEitherDecode) d
+    let ids       = (indices   . fromEitherDecode) d
     
     return $ Geo ps uvs ids
 

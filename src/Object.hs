@@ -15,6 +15,7 @@ initObj
   = Object
     0.0
     (Geo [] [] [])
+    --(Geo [] [] [])
     (V4 0 0 0 0)
     ( Controllable
       (0,0)
