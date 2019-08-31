@@ -3,34 +3,45 @@
 
 Implemented * and planned -- features:
 
-* Spaceship (ISS with mandlbrot fractal shading)
+* Spaceships (ISS with mandlbrot fractal shading)
 
--- Planet.
+-- Spacestations.
+
+-- Planets.
 
 -- Asteroids.
 
--- Space Trading
+-- Dynamic Space Bodies.
 
--- Dynamic Space Bodies
+-- Realistic Gravitational Space Physics.
 
--- Realistic Gravitational Space Physics:
+-- Planet Landing.
 
--- Planet Landing
+-- Trading.
 
--- Pirates Hunting
+-- Combat.
 
--- Korovan Robbing
+-- Exploration.
 
--- Realistic Newtonian physics and Inertia
+-- Pirates Hunting.
 
--- Ships and materials can break due to overloads, including, but not limited to, extreme changes of acceleration if applied to a mass of a material.
+-- Korovan Robbing.
+
+-- Realistic Newtonian physics and Inertia.
+
+-- Ships and materials can break due to overloads, including, but not limited to, extreme changes of acceleration applied a mass with certain material properties.
+
+-- Relativistic Space-Time model.
+
+-- Evolving Civilisations.
 
 -- Spectral control of simulation vs arcade settings over physics and gameplay elements.
 
--- Relativistic Space-Time model
+-- Hybrid Sandbox Singlplayer with Indirect Multiplayer.
 
--- Evolving Civilisations
+-- A mix of emerging gameplay with hand-crafted scenarios.
 
+-- Direct Coop Multiplayer.
 
 ## Progress so far:
 [youtube](https://www.youtube.com/watch?v=oiajlYck-50)
