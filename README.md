@@ -3,7 +3,7 @@
 
 Implemented * and planned -- features:
 
-* Spaceships (ISS with mandlbrot fractal shading)
+* Spaceships (ISS with mandelbrot fractal shading)
 
 -- Spacestations.
 
