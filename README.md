@@ -1,9 +1,9 @@
-# A space-sim game
+# A relativistic space-time sim game.
 * inspired by Strugatsky "Noon: XXII century" series.
 
 Implemented * and planned -- features:
 
-* Spaceships (ISS with mandelbrot fractal shading)
+* Spaceships (ISS with mandelbrot fractal shading).
 
 -- Spacestations.
 
@@ -11,9 +11,7 @@ Implemented * and planned -- features:
 
 -- Asteroids.
 
--- Dynamic Space Bodies.
-
--- Realistic Gravitational Space Physics.
+-- Dynamic Space Bodies with Realistic Gravitational Space Physics.
 
 -- Planet Landing.
 
@@ -29,19 +27,25 @@ Implemented * and planned -- features:
 
 -- Realistic Newtonian physics and Inertia.
 
--- Ships and materials can break due to overloads, including, but not limited to, extreme changes of acceleration applied a mass with certain material properties.
+-- Ship components, crew and materials can be damaged due to overloads, including, but not limited to, extreme changes of acceleration applied a mass with certain material properties.
+
+-- Crew-management with survivial elements.
+
+-- Component-based destruction model.
 
 -- Relativistic Space-Time model.
 
--- Evolving Civilisations.
+-- Dynamic Evolving Civilisations.
 
 -- Spectral control of simulation vs arcade settings over physics and gameplay elements.
 
 -- Hybrid Sandbox Singlplayer with Indirect Multiplayer.
 
--- A mix of emerging gameplay with hand-crafted scenarios.
+-- A mix of emerging gameplay with hand-crafted scenarios and evolving tree of story-lines.
 
 -- Direct Coop Multiplayer.
+
+-- Community-assisted development.
 
 ## Progress so far:
 [youtube](https://www.youtube.com/watch?v=oiajlYck-50)

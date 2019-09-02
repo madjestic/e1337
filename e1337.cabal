@@ -46,7 +46,6 @@ library
                 , FromVector
   other-modules:
                 Paths_e1337
-              , Geo
               , LoadShaders
               , Object
               , Camera
@@ -84,7 +83,6 @@ executable e1337
               , Input
               , NGL.LoadShaders
               , Rendering
-              , Geo
               , Drawables
               , FromVector
               , LoadShaders

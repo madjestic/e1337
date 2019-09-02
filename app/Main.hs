@@ -278,10 +278,11 @@ handleExit :: SF AppInput Bool
 handleExit = quitEvent >>^ isEvent
 
 jsonFile :: FilePath
-jsonFile = "src/model.pgeo"
+jsonFile = "models/model.pgeo"
 
+-- ISS model
 jsonFile' :: FilePath
-jsonFile' = "src/models/iss.vgeo"
+jsonFile' = "models/iss.vgeo"
 
 --  CCCCC   OOOOO  NN   NN  SSSSS  TTTTTTT   AAA   NN   NNn TTTTTTT  SSSSS  
 -- CC    C OO   OO NNN  NN SS        TTT    AAAAA  NNN  NN   TTT   SS      
@@ -298,8 +299,8 @@ resY      = 600  :: CInt
 initGame :: IO Game
 initGame =
   do
-    --geo <- readPGeo jsonFile
-    geo <- readVBO jsonFile'
+    geo <- readPGeo jsonFile
+    --geo <- readVBO jsonFile'
     let obj = initObj { geometry = geo }
         cam = initCam
 
@@ -328,24 +329,3 @@ main = do
     window
     resources
     (parseWinInput >>> (mainGame game &&& handleExit))
-
-{-
-
-parseWinInput :: SF WinInput AppInput
-
-&&&
-mainGame      :: Game -> SF AppInput Game
-handleExit    :: SF AppInput Bool
--> SF AppInput (Game, Bool)
-
->>>
-parseWinInput :: SF WinInput AppInput
-_             :: SF AppInput (Game, Bool)
--> SF WinInput (Game, Bool)
-
-arr :: (a → b) → SF a b
-(≫) :: SF a b → SF b c → SF a c
-(&&&) :: SF a b → SF a c → SF a (b, c)
-loop :: SF (a, c) (b, c) → SF a b
-
--}

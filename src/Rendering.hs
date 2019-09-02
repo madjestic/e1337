@@ -157,9 +157,17 @@ initUniforms game =
   do
     -- | Shaders
     program <- loadShaders [
-        ShaderInfo VertexShader   (FileSource "shaders/ISS/shader.vert"),
-        ShaderInfo FragmentShader (FileSource "shaders/ISS/shader.frag")
-        --ShaderInfo FragmentShader (FileSource "shaders/BoS_06.frag")
+      -- ISS model
+      -- ShaderInfo VertexShader   (FileSource "shaders/ISS/shader.vert"),
+      -- ShaderInfo FragmentShader (FileSource "shaders/ISS/shader.frag")
+
+      -- BookOfShaders 06
+      -- ShaderInfo VertexShader   (FileSource "shaders/BookOfShaders/06/shader.vert"),
+      -- ShaderInfo FragmentShader (FileSource "shaders/BookOfShaders/06/BoS_06.frag")
+      -- Ray-Marching
+      ShaderInfo VertexShader   (FileSource "shaders/sphere/shader.vert"),
+      ShaderInfo FragmentShader (FileSource "shaders/sphere/sphere.frag")
+      
         ]
     currentProgram $= Just program
 
@@ -217,13 +225,11 @@ initUniforms game =
 initBufferObjects :: Game -> IO Descriptor
 initBufferObjects game =  
   do
-    --drw <- toDrawable $ (geometry . object) game
-    (VAO vs idx) <- toVAO $ (geometry . object) game
+    --(VAO vs idx) <- toVAO $ (geometry . object) game
     
+    drw <- toDrawable $ (geometry . object) game
     let stride = 7 -- TODO : stride <- attr sizes
-    --(_, idx) <- indexedVAO (verts drw) (uvs drw) (ids drw) stride
-    -- let vs = --[-1.0,-1.0,-1.0,0.0,0.0,0.0,0.0,0.0,-1.0,-1.0,0.0,0.5,0.0,0.0,0.0,0.0,-1.0,0.0,0.5,0.5,0.0,0.0,-1.0,-1.0,0.0,0.5,0.0,0.0,1.0,-1.0,-1.0,0.0,1.0,0.0,0.0,1.0,0.0,-1.0,0.0,1.0,0.5,0.0,-1.0,0.0,-1.0,0.0,0.0,0.5,0.0,0.0,0.0,-1.0,0.0,0.5,0.5,0.0,0.0,1.0,-1.0,0.0,0.5,1.0,0.0,0.0,0.0,-1.0,0.0,0.5,0.5,0.0,1.0,0.0,-1.0,0.0,1.0,0.5,0.0,1.0,1.0,-1.0,0.0,1.0,1.0,0.0,1.0,1.0,-1.0,0.0,1.0,1.0,0.0,0.0,1.0,-1.0,0.0,0.5,1.0,0.0,0.0,0.0,-1.0,0.0,0.5,0.5,0.0,0.0,1.0,-1.0,0.0,0.5,1.0,0.0,-1.0,1.0,-1.0,0.0,0.0,1.0,0.0,-1.0,0.0,-1.0,0.0,0.0,0.5,0.0,1.0,0.0,-1.0,0.0,1.0,0.5,0.0,0.0,0.0,-1.0,0.0,0.5,0.5,0.0,0.0,-1.0,-1.0,0.0,0.5,0.0,0.0,0.0,0.0,-1.0,0.0,0.5,0.5,0.0,-1.0,0.0,-1.0,0.0,0.0,0.5,0.0,-1.0,-1.0,-1.0,0.0,0.0,0.0,0.0] :: [GLfloat]
-    --       [-1.0,-1.0,-1.0,1.0,0.0,0.0,0.0,-1.0,0.0,-1.0,1.0,0.0,0.5,0.0,-1.0,1.0,-1.0,1.0,0.0,1.0,0.0,0.0,-1.0,-1.0,1.0,0.5,0.0,0.0,0.0,0.0,-1.0,1.0,0.5,0.5,0.0,0.0,1.0,-1.0,1.0,0.5,1.0,0.0,1.0,-1.0,-1.0,1.0,1.0,0.0,0.0,1.0,0.0,-1.0,1.0,1.0,0.5,0.0,1.0,1.0,-1.0,1.0,1.0,1.0,0.0] :: [GLfloat]
+    (vs, idx) <- indexedVAO (verts drw) (uvs drw) (ids drw) stride
 
     -- | VAO
     vao <- genObjectName
