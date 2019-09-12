@@ -16,11 +16,11 @@ module Geometry
   ( Geo(..)
   , getJSON
   , readPGeo
-  , readVBO
+  , readVBOGeo
   ) where
 
 import Control.Monad (mzero)
-import Data.Aeson                             hiding (withArray)
+import Data.Aeson                             
 import Data.Maybe                             (fromMaybe)
 import qualified Data.ByteString.Lazy as B
 import Graphics.Rendering.OpenGL as GL        (Vertex4(..))
@@ -33,8 +33,7 @@ instance FromVector Vec3 where
   toVertex4 (k, l, m) = Vertex4 k l m 1.0  
 
 data Geo
-  =
-    Geo
+  =  Geo
      {
        positions :: Positions
      , uv        :: UVs
@@ -96,8 +95,8 @@ instance FromJSON Index where
 getJSON :: FilePath -> IO B.ByteString
 getJSON  = B.readFile
 
-readVBO :: FilePath -> IO Geo
-readVBO file = 
+readVBOGeo :: FilePath -> IO Geo
+readVBOGeo file = 
   do
     d <- decodeFileStrict file :: IO (Maybe ([Float],[Int]))
     return $ case d of
@@ -120,4 +119,5 @@ readPGeo jsonFile =
           case d of
             Left err -> Nothing
             Right ps -> Just ps
+            
     

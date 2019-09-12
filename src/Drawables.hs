@@ -9,21 +9,26 @@ import Graphics.Rendering.OpenGL as GL        ( Vertex4(..)
                                               , GLfloat )
 
 
+-- data Drawable
+--   =
+--     Drawable
+--     {
+--       verts  :: [Vertex4 Double]
+--     , uvs    :: [TexCoord3 Double]
+--     , ids    :: [GLuint]
+--     }
+--   | VAO
+--     {
+--       vao  :: [GLfloat]
+--     , vids :: [GLuint]
+--     } 
+--   deriving Show
+
 data Drawable
-  =
-    Drawable
-    {
-      verts  :: [Vertex4 Double]
-    , uvs    :: [TexCoord3 Double]
+  =  Drawable
+    { verts  :: [GLfloat]
     , ids    :: [GLuint]
-    }
-  | VAO
-    {
-      vao  :: [GLfloat]
-    , vids :: [GLuint]
-    } 
-  deriving Show
+    } deriving Show
 
 class Drawables a where
   toDrawable :: a -> IO Drawable
-  toVAO      :: a -> IO Drawable

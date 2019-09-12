@@ -31,6 +31,7 @@ import Controllable
 import Geometry
 import Drawables
 import Shape2D
+import Material
 
 import Data.Set          as DS (fromList, toList)
 import Data.Foldable     as DF (toList)
@@ -47,17 +48,22 @@ toGLuint :: Int -> GLuint
 toGLuint x = fromIntegral x
 
 instance Drawables Geo where
-  toDrawable :: Geo -> IO Drawable
-  toDrawable geo =
-    do
-      let ps  = map toVertex4   $ positions geo
-          uvs = map toTexCoord3 $ uv geo
-          ids = map toGLuint    $ indices geo
-      return $ Drawable ps uvs ids
-      
-  toVAO :: Geo -> IO Drawable
-  toVAO geo = do
-    return $ VAO (vs geo) (map toGLuint $ is geo)
+  toDrawable =
+    (\x -> case x of
+             Geo ps uv ids -> toGLGeo (Geo ps uv ids)
+             GLGeo vs is   -> return $ Drawable vs is'
+               where
+                 is'  = map toGLuint is)
+
+toGLGeo :: Geo -> IO Drawable
+toGLGeo geo = do
+  let stride = 7 -- TODO : stride <- attr sizes
+  (vs, idx) <- indexedVAO ps' uv' ids' stride
+  return (Drawable vs idx) -- $ Drawable ps' uv' ids'
+    where
+      ps'  = map toVertex4   $ positions geo
+      uv'  = map toTexCoord3 $ uv        geo
+      ids' = map toGLuint    $ indices   geo
 
 openWindow :: Text -> (CInt, CInt) -> IO SDL.Window
 openWindow title (sizex,sizey) = do
@@ -157,18 +163,11 @@ initUniforms game =
   do
     -- | Shaders
     program <- loadShaders [
-      -- ISS model
-      -- ShaderInfo VertexShader   (FileSource "shaders/ISS/shader.vert"),
-      -- ShaderInfo FragmentShader (FileSource "shaders/ISS/shader.frag")
-
-      -- BookOfShaders 06
-      -- ShaderInfo VertexShader   (FileSource "shaders/BookOfShaders/06/shader.vert"),
-      -- ShaderInfo FragmentShader (FileSource "shaders/BookOfShaders/06/BoS_06.frag")
-      -- Ray-Marching
-      ShaderInfo VertexShader   (FileSource "shaders/sphere/shader.vert"),
-      ShaderInfo FragmentShader (FileSource "shaders/sphere/sphere.frag")
-      
-        ]
+      ShaderInfo VertexShader
+        (FileSource (vertShader . material . object $ game)),
+      ShaderInfo FragmentShader
+        (FileSource (fragShader . material . object $ game))
+      ]
     currentProgram $= Just program
 
     -- | Set Uniforms
@@ -222,14 +221,16 @@ initUniforms game =
     return () -- $ Descriptor vao (fromIntegral numIndices)    
 
 
+-- TODO : overload loading optimized and non-indexed geometries
 initBufferObjects :: Game -> IO Descriptor
 initBufferObjects game =  
   do
-    --(VAO vs idx) <- toVAO $ (geometry . object) game
+    --(VAO vs idx) <- toVAO $ (geometry . object) game -- for loading optimized geo
     
-    drw <- toDrawable $ (geometry . object) game
-    let stride = 7 -- TODO : stride <- attr sizes
-    (vs, idx) <- indexedVAO (verts drw) (uvs drw) (ids drw) stride
+    -- drw <- toDrawable $ (geometry . object) game
+    -- let stride = 7 -- TODO : stride <- attr sizes
+    -- (vs, idx) <- indexedVAO (verts drw) (uvs drw) (ids drw) stride
+    (Drawable vs idx) <- toDrawable $ (geometry . object) game
 
     -- | VAO
     vao <- genObjectName

@@ -9,12 +9,14 @@
 
 module Main where 
 
+import Data.Foldable as DF       (toList)
+import GHC.Generics
 import Control.Concurrent
 import Control.Lens       hiding (transform, indexed)
-import Data.Text          (Text)
+import Data.Text                 (Text)
 import Foreign.C          
 import FRP.Yampa          hiding (identity)
-import Data.Functor       (($>))
+import Data.Functor              (($>))
 
 import Linear.Matrix      (M44, M33, identity)
 import SDL                hiding ( Point
@@ -24,6 +26,9 @@ import SDL                hiding ( Point
                                  , Mouse
                                  , (^+^)
                                  , (*^))
+import Data.Aeson               (decodeFileStrict)
+import Data.Text                (pack)
+       
 import Camera        as Cam
 import Game          
 import Keyboard
@@ -32,8 +37,9 @@ import Controllable
 import Geometry
 import Input         as Inp
 import Rendering
-import Data.Foldable as DF (toList)
-import GHC.Generics
+import Material
+
+import Unsafe.Coerce
 
 -- Tests
 import Data.List.Split (chunksOf)
@@ -277,53 +283,66 @@ instance VectorSpace (V3 Double) Double where
 handleExit :: SF AppInput Bool
 handleExit = quitEvent >>^ isEvent
 
-jsonFile :: FilePath
-jsonFile = "models/model.pgeo"
+loadProject :: FilePath -> IO [String]
+loadProject file = 
+  do
+    d <- decodeFileStrict file :: IO (Maybe [String])
+    return $
+      case d of
+        Just d -> d
+        Nothing -> ["600", "600"
+                   ,"models/plane.pgeo"
+                   ,"shaders/mandelbrot/shader.vert"
+                   ,"shaders/mandelbrot/shader.frag"]
 
--- ISS model
-jsonFile' :: FilePath
-jsonFile' = "models/iss.vgeo"
+initGame :: [String] -> IO Game 
+initGame d =
+  do
+    geo <- (\x -> case (reverse . take 4 . reverse $ x) of
+                 "pgeo" -> readPGeo   x
+                 "vgeo" -> readVBOGeo x ) modelPath
 
---  CCCCC   OOOOO  NN   NN  SSSSS  TTTTTTT   AAA   NN   NNn TTTTTTT  SSSSS  
--- CC    C OO   OO NNN  NN SS        TTT    AAAAA  NNN  NN   TTT   SS      
--- CC      OO   OO NN N NN  SSSSS    TTT   AA   AA NN N NN   TTT    SSSSS  
--- CC    C OO   OO NN  NNN      SS   TTT   AAAAAAA NN  NNN   TTT        SS 
---  CCCCC   OOOO0  NN   NN  SSSSS    TTT   AA   AA NN   NN   TTT    SSSSS  
-
--- < Global Constants > ---------------------------------------------------
+    let initGame =
+          Game
+            ( Options
+              (lable)
+              (unsafeCoerce ((read resX :: Int )
+                            ,(read resY :: Int)) :: (CInt, CInt)))
+              GamePlaying
+              defaultObj
+              { geometry = geo
+              , material =
+                  Material
+                  vertShaderPath
+                  fragShaderPath
+                  [] }       
+              initCam
+    return initGame
+      where
+        lable     = d!!0
+        resX      = d!!1
+        resY      = d!!2
+        modelPath = d!!3
+        vertShaderPath = d!!4
+        fragShaderPath = d!!5
+        
+-- < Global Constants > --------------------------------------------------------
 mBlur     = 0.25 :: Float
 loadDelay = 2.0  :: Double
-resX      = 800  :: CInt
-resY      = 600  :: CInt
-
-initGame :: IO Game
-initGame =
-  do
-    geo <- readPGeo jsonFile
-    --geo <- readVBO jsonFile'
-    let obj = initObj { geometry = geo }
-        cam = initCam
-
-        initGame = Game (Options (resX, resY)) GamePlaying obj cam
-    return initGame
-
--- 888b     d888       d88888888888888b    888 
--- 8888b   d8888      d88888  888  8888b   888 
--- 88888b.d88888     d88P888  888  88888b  888 
--- 888Y88888P888    d88P 888  888  888Y88b 888 
--- 888 Y888P 888   d88P  888  888  888 Y88b888 
--- 888  Y8P  888  d88P   888  888  888  Y88888 
--- 888   "   888 d8888888888  888  888   Y8888 
--- 888       888d88P     8888888888888    Y888 
 
 -- < Main Function > -----------------------------------------------------------
 main :: IO ()
 main = do
-  game      <- initGame
-  window    <- openWindow "e1337" (resX, resY)
+  game <- initGame =<< loadProject "projects/iss"
+  let
+    res = resolution . options $ game
+    resX = (fst res)
+    resY = (snd res)
+    
+  window    <- openWindow
+               ((pack $ lable . options $ game) :: Text)
+               (resX, resY)
   resources <- initBufferObjects game
-  -- TODO: finish feeding glval to vbo
-  -- glval <- decodeFileStrict "model.i.json" :: IO (Maybe [Float]) 
   
   animate
     window

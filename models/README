@@ -1,1 +1,4 @@
 vgeo - vertex geo, a vbo-friendly format with indexed optimization.
+
+iss.vgeo   - oprimized ISS model
+plane.pgeo - a square plane of 2-triangles

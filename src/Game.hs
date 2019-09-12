@@ -16,7 +16,11 @@ module Game
 import Camera
 import Geometry
 import Object
-import Foreign.C (CInt)
+import Foreign.C                              (CInt)
+                                              
+import Control.Monad                          (mzero)
+import Data.Maybe                             (fromMaybe)
+import qualified Data.ByteString.Lazy as B
 
 -- meta game state
 data Stage =
@@ -28,7 +32,8 @@ data Stage =
 
 data Options
    = Options
-   { resolution :: (CInt, CInt)
+   { lable :: String
+   , resolution :: (CInt, CInt)
    } deriving Show
 
 -- game state

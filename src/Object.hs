@@ -1,21 +1,22 @@
 module Object
   ( Object (..)
-  , initObj
+  , defaultObj
   ) where
 
 import Linear.V4
+import Linear.Matrix (M44, M33, identity)
+import Linear (V3(..))
 
-import            Keyboard
-import            Geometry
-import            Controllable
-import            Linear.Matrix (M44, M33, identity)
-import            Linear (V3(..))
+import Controllable
+import Geometry
+import Keyboard
+import Material
 
-initObj 
+defaultObj 
   = Object
     0.0
     (Geo [] [] [])
-    --(Geo [] [] [])
+    defaultMat
     (V4 0 0 0 0)
     ( Controllable
       (0,0)
@@ -38,10 +39,11 @@ initObj
             pRoll  = V3 ( 0  )(  0 )( 999)   -- positive  roll
             nRoll  = V3 ( 0  )(  0 )(-999)   -- negative  roll
 
-data Object =
-     Object
+data Object
+  =  Object
      { scalar     :: Double
      , geometry   :: Geo
+     , material   :: Material
      , velocity   :: V4 Double
      , driver     :: Controllable
      } deriving Show
