@@ -2,7 +2,7 @@
 
 At the moment it's a Shader-Toy-like application with blackjack and exotic dancers:
 
-It supports loading and rendering simple projects files, describing a model, a material and some options, has a camera supports user-input.
+It supports loading and rendering simple projects files, describing a model, a material, it has a camera and supports user-input.
 
 * Loads a model.
 * Applies a material.
