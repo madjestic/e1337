@@ -28,6 +28,7 @@ import SDL                hiding ( Point
                                  , (*^))
 import Data.Aeson               (decodeFileStrict)
 import Data.Text                (pack)
+import System.Environment (getArgs)
        
 import Camera        as Cam
 import Game          
@@ -290,10 +291,7 @@ loadProject file =
     return $
       case d of
         Just d -> d
-        Nothing -> ["600", "600"
-                   ,"models/plane.pgeo"
-                   ,"shaders/mandelbrot/shader.vert"
-                   ,"shaders/mandelbrot/shader.frag"]
+        Nothing -> []
 
 initGame :: [String] -> IO Game 
 initGame d =
@@ -333,7 +331,8 @@ loadDelay = 2.0  :: Double
 -- < Main Function > -----------------------------------------------------------
 main :: IO ()
 main = do
-  game <- initGame =<< loadProject "projects/iss"
+  args <- getArgs
+  game <- initGame =<< loadProject (unsafeCoerce (args!!0) :: FilePath)
   let
     res = resolution . options $ game
     resX = (fst res)

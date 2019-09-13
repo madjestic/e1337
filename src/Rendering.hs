@@ -220,16 +220,9 @@ initUniforms game =
 
     return () -- $ Descriptor vao (fromIntegral numIndices)    
 
-
--- TODO : overload loading optimized and non-indexed geometries
 initBufferObjects :: Game -> IO Descriptor
 initBufferObjects game =  
   do
-    --(VAO vs idx) <- toVAO $ (geometry . object) game -- for loading optimized geo
-    
-    -- drw <- toDrawable $ (geometry . object) game
-    -- let stride = 7 -- TODO : stride <- attr sizes
-    -- (vs, idx) <- indexedVAO (verts drw) (uvs drw) (ids drw) stride
     (Drawable vs idx) <- toDrawable $ (geometry . object) game
 
     -- | VAO

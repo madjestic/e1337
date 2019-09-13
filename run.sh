@@ -1,3 +1,4 @@
 #!/bin/sh
 
-cabal new-run
+# pass the path to the project as an CLI argument:
+cabal new-run e1337 ./projects/BoS_07 

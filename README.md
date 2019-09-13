@@ -1,4 +1,17 @@
-# A relativistic space-time sim game.
+# What is it?
+
+At the moment it's a Shader-Toy-like application with blackjack and exotic dancers:
+
+It supports loading and rendering simple projects files, describing a model and a material and some options, has a camera and user-input.
+
+* Loads a model.
+* Applies a material.
+* Renders a scene.
+* Has a camera that supports user-input.
+
+[a youtube demo](https://youtu.be/DApECcZsKfc)
+
+# What it wants to be: A relativistic space-time-sim pilot game.
 * inspired by Strugatsky "Noon: XXII century" series.
 
 Implemented * and planned -- features:

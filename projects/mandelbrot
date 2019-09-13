@@ -2,5 +2,5 @@
 , "300"
 , "300"
 , "models/plane.pgeo"
-,"shaders/mandelbrot/shader.vert"
-,"shaders/mandelbrot/shader.frag" ]
+, "shaders/mandelbrot/shader.vert"
+, "shaders/mandelbrot/shader.frag" ]
