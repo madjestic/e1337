@@ -9,7 +9,7 @@ It supports loading and rendering simple projects files, describing a model, a m
 * Renders a scene.
 * Has a camera that supports user-input.
 
-[a youtube demo](https://youtu.be/DApECcZsKfc)
+[a youtube demo](https://youtu.be/KVFu1DjKTCE)
 
 # What it wants to be: A relativistic space-time-sim pilot game.
 * inspired by Strugatsky "Noon: XXII century" series.
