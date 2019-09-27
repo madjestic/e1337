@@ -15,7 +15,7 @@ import Material
 defaultObj 
   = Object
     0.0
-    (Geo [] [] [])
+    (Geo [] [] [] [] [] [])
     defaultMat
     (V4 0 0 0 0)
     ( Controllable

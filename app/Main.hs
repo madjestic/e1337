@@ -288,6 +288,7 @@ loadProject :: FilePath -> IO [String]
 loadProject file = 
   do
     d <- decodeFileStrict file :: IO (Maybe [String])
+    --print d
     return $
       case d of
         Just d -> d
@@ -333,6 +334,7 @@ main :: IO ()
 main = do
   args <- getArgs
   game <- initGame =<< loadProject (unsafeCoerce (args!!0) :: FilePath)
+  --print game
   let
     res = resolution . options $ game
     resX = (fst res)

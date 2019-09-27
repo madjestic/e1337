@@ -1,0 +1,268 @@
+	Wed Aug 28 01:08 2019 Time and Allocation Profiling Report  (Final)
+
+	   Main +RTS -N -p -s -h -i0.1 -sstderr -RTS
+
+	total time  =        5.25 secs   (20986 ticks @ 1000 us, 4 processors)
+	total alloc = 829,012,704 bytes  (excludes profiling overheads)
+
+COST CENTRE        MODULE                       SRC                                                %time %alloc
+
+initVAO.\          Main                         Main.hs:(39,17)-(40,97)                             93.5    1.9
+toBoundedRealFloat Data.Scientific              src/Data/Scientific.hs:(758,1)-(785,27)              1.4    9.3
+array_             Data.Aeson.Parser.Internal   Data/Aeson/Parser/Internal.hs:173:35-59              1.3   31.9
+indexedListSet     Main                         Main.hs:(77,1)-(78,71)                               0.8    1.9
+float              Data.Aeson.Encoding.Internal Data/Aeson/Encoding/Internal.hs:287:1-51             0.7   22.2
+initVAO.\.\        Main                         Main.hs:39:40-67                                     0.5    4.1
+initVAO.\.\        Main                         Main.hs:40:40-64                                     0.3    3.2
+prompt             Data.Attoparsec.Internal     Data/Attoparsec/Internal.hs:(55,1)-(58,45)           0.3    8.7
+<?>                Data.Aeson.Types.Internal    Data/Aeson/Types/Internal.hs:511:1-74                0.2    5.8
+initVAO            Main                         Main.hs:(37,1)-(42,34)                               0.1    1.9
+toRealFloat        Data.Scientific              src/Data/Scientific.hs:744:1-47                      0.1    1.3
+chunksOf           Data.List.Split.Internals    src/Data/List/Split/Internals.hs:(514,1)-(517,49)    0.1    1.6
+encodeToLazyText   Data.Aeson.Text              Data/Aeson/Text.hs:44:1-72                           0.1    1.3
+
+
+                                                                                                                                               individual      inherited
+COST CENTRE                         MODULE                            SRC                                                   no.     entries  %time %alloc   %time %alloc
+
+MAIN                                MAIN                              <built-in>                                            328          0    0.0    0.0   100.0  100.0
+ CAF                                Geometry                          <entire-module>                                       650          0    0.0    0.0     0.0    0.0
+  getJSON                           Geometry                          src/Geometry.hs:95:1-21                               660          1    0.0    0.0     0.0    0.0
+ CAF                                Data.Aeson.Encoding.Internal      <entire-module>                                       645          0    0.0    0.0     0.0    0.0
+  closeBracket                      Data.Aeson.Encoding.Internal      Data/Aeson/Encoding/Internal.hs:245:1-35              869          1    0.0    0.0     0.0    0.0
+  comma                             Data.Aeson.Encoding.Internal      Data/Aeson/Encoding/Internal.hs:242:1-35              866          1    0.0    0.0     0.0    0.0
+  empty                             Data.Aeson.Encoding.Internal      Data/Aeson/Encoding/Internal.hs:205:1-23              868          1    0.0    0.0     0.0    0.0
+  float                             Data.Aeson.Encoding.Internal      Data/Aeson/Encoding/Internal.hs:287:1-51              863          1    0.0    0.0     0.0    0.0
+  openBracket                       Data.Aeson.Encoding.Internal      Data/Aeson/Encoding/Internal.hs:244:1-35              861          1    0.0    0.0     0.0    0.0
+ CAF                                Data.Aeson.Parser.Internal        <entire-module>                                       644          0    0.0    0.0     0.0    0.0
+  json                              Data.Aeson.Parser.Internal        Data/Aeson/Parser/Internal.hs:112:1-12                684          1    0.0    0.0     0.0    0.0
+  jsonEOF                           Data.Aeson.Parser.Internal        Data/Aeson/Parser/Internal.hs:431:1-41                681          1    0.0    0.0     0.0    0.0
+   endOfInput                       Data.Attoparsec.Internal          Data/Attoparsec/Internal.hs:(110,1)-(117,55)          757          1    0.0    0.0     0.0    0.0
+  jstring                           Data.Aeson.Parser.Internal        Data/Aeson/Parser/Internal.hs:321:1-32                693          1    0.0    0.0     0.0    0.0
+  value                             Data.Aeson.Parser.Internal        Data/Aeson/Parser/Internal.hs:200:1-36                685          1    0.0    0.0     0.0    0.0
+   array_                           Data.Aeson.Parser.Internal        Data/Aeson/Parser/Internal.hs:173:35-59               700          1    0.0    0.0     0.0    0.0
+   fromList                         Data.HashMap.Strict.Base          Data/HashMap/Strict/Base.hs:598:1-64                  764          1    0.0    0.0     0.0    0.0
+   object_                          Data.Aeson.Parser.Internal        Data/Aeson/Parser/Internal.hs:136:46-89               688          1    0.0    0.0     0.0    0.0
+   signed                           Data.Attoparsec.ByteString.Char8  Data/Attoparsec/ByteString/Char8.hs:(470,1)-(472,12)  715          1    0.0    0.0     0.0    0.0
+ CAF                                Data.Aeson.Types.FromJSON         <entire-module>                                       642          0    0.0    0.0     0.0    0.0
+  fromJSONKeyCoerce                 Data.Aeson.Types.FromJSON         Data/Aeson/Types/FromJSON.hs:486:1-48                 786          1    0.0    0.0     0.0    0.0
+ CAF                                Data.Aeson.Types.Internal         <entire-module>                                       639          0    0.0    0.0     0.0    0.0
+  prependFailure                    Data.Aeson.Types.Internal         Data/Aeson/Types/Internal.hs:533:1-37                 831          1    0.0    0.0     0.0    0.0
+ CAF                                Data.Attoparsec.ByteString.Char8  <entire-module>                                       628          0    0.0    0.0     0.0    0.0
+  decimal                           Data.Attoparsec.ByteString.Char8  Data/Attoparsec/ByteString/Char8.hs:(447,1)-(448,49)  719          1    0.0    0.0     0.0    0.0
+ CAF                                Data.Attoparsec.Internal          <entire-module>                                       625          0    0.0    0.0     0.0    0.0
+  demandInput                       Data.Attoparsec.Internal          Data/Attoparsec/Internal.hs:(73,1)-(78,41)            731          1    0.0    0.0     0.0    0.0
+ CAF                                Data.Scientific                   <entire-module>                                       612          0    0.0    0.0     0.0    0.0
+  marray#                           Data.Primitive.Array              Data/Primitive/Array.hs:84:5-11                       840        325    0.0    0.0     0.0    0.0
+  array#                            Data.Primitive.Array              Data/Primitive/Array.hs:79:5-10                       841         11    0.0    0.0     0.0    0.0
+  scientific                        Data.Scientific                   src/Data/Scientific.hs:174:1-23                       798          1    0.0    0.0     0.0    0.0
+  toBoundedInteger                  Data.Scientific                   src/Data/Scientific.hs:(795,1)-(825,21)               836          0    0.0    0.0     0.0    0.0
+ CAF                                Data.HashMap.Base                 <entire-module>                                       606          0    0.0    0.0     0.0    0.0
+  bitsPerSubkey                     Data.HashMap.Base                 Data/HashMap/Base.hs:1858:1-17                        776          1    0.0    0.0     0.0    0.0
+  empty                             Data.HashMap.Base                 Data/HashMap/Base.hs:464:1-13                         766          1    0.0    0.0     0.0    0.0
+ CAF                                GHC.Conc.Signal                   <entire-module>                                       436          0    0.0    0.0     0.0    0.0
+ CAF                                GHC.Float                         <entire-module>                                       427          0    0.0    0.0     0.0    0.0
+ CAF                                GHC.Float.ConversionUtils         <entire-module>                                       426          0    0.0    0.0     0.0    0.0
+ CAF                                GHC.IO.Encoding                   <entire-module>                                       418          0    0.0    0.0     0.0    0.0
+ CAF                                GHC.IO.Encoding.Iconv             <entire-module>                                       416          0    0.0    0.0     0.0    0.0
+ CAF                                GHC.IO.Handle.FD                  <entire-module>                                       408          0    0.0    0.0     0.0    0.0
+ CAF                                GHC.IO.Handle.Text                <entire-module>                                       406          0    0.0    0.0     0.0    0.0
+ CAF                                System.Posix.Internals            <entire-module>                                       374          0    0.0    0.0     0.0    0.0
+ CAF                                GHC.Event.Thread                  <entire-module>                                       361          0    0.0    0.0     0.0    0.0
+ CAF                                GHC.IO.FD                         <entire-module>                                       351          0    0.0    0.0     0.0    0.0
+ CAF                                GHC.Integer.Type                  <entire-module>                                       339          0    0.0    0.0     0.0    0.0
+ CAF:$dOrd_rcWC                     Main                              <no location info>                                    653          0    0.0    0.0     0.0    0.0
+ CAF:$dToJSON_rcWA                  Main                              <no location info>                                    652          0    0.0    0.0     0.0    0.0
+ CAF:jsonFile                       Main                              Main.hs:81:1-8                                        651          0    0.0    0.0     0.0    0.0
+  jsonFile                          Main                              Main.hs:81:1-25                                       662          1    0.0    0.0     0.0    0.0
+ CAF:main                           :Main                             Main.hs:84:1-4                                        655          0    0.0    0.0     0.0    0.0
+ CAF:main                           Main                              Main.hs:84:1-4                                        654          0    0.0    0.0     0.0    0.0
+  main                              Main                              Main.hs:(84,1)-(89,51)                                656          1    0.0    0.0     0.0    0.0
+   readPGeo                         Geometry                          src/Geometry.hs:(98,1)-(112,31)                       658          1    0.0    0.0     0.0    0.0
+ main                               Main                              Main.hs:(84,1)-(89,51)                                657          0    0.0    0.0   100.0  100.0
+  encodeToLazyText                  Data.Aeson.Text                   Data/Aeson/Text.hs:44:1-72                            666          1    0.1    1.3     0.8   23.7
+   fromEncoding                     Data.Aeson.Encoding.Internal      Data/Aeson/Encoding/Internal.hs:81:7-18               667          1    0.0    0.0     0.0    0.0
+   float                            Data.Aeson.Encoding.Internal      Data/Aeson/Encoding/Internal.hs:287:1-51              864          0    0.7   22.1     0.7   22.1
+   openBracket                      Data.Aeson.Encoding.Internal      Data/Aeson/Encoding/Internal.hs:244:1-35              862          0    0.0    0.0     0.1    0.3
+    float                           Data.Aeson.Encoding.Internal      Data/Aeson/Encoding/Internal.hs:287:1-51              865          0    0.0    0.1     0.1    0.3
+     closeBracket                   Data.Aeson.Encoding.Internal      Data/Aeson/Encoding/Internal.hs:245:1-35              870          0    0.0    0.0     0.0    0.0
+     comma                          Data.Aeson.Encoding.Internal      Data/Aeson/Encoding/Internal.hs:242:1-35              867          0    0.0    0.1     0.0    0.1
+  ids                               Drawables                         src/Drawables.hs:17:7-9                               675          1    0.0    0.0     0.0    0.0
+  indexedVAO                        Main                              Main.hs:(45,1)-(52,20)                                664          1    0.0    0.0    95.5   15.6
+   indexedVAO.iListSet              Main                              Main.hs:48:9-39                                       669          1    0.0    0.0     1.0    4.0
+    indexedListSet                  Main                              Main.hs:(77,1)-(78,71)                                670          1    0.8    1.9     1.0    4.0
+     indexedListSet.\               Main                              Main.hs:78:15                                         860       6191    0.0    0.0     0.0    0.0
+     chunksOf                       Data.List.Split.Internals         src/Data/List/Split/Internals.hs:(514,1)-(517,49)     672          1    0.1    1.6     0.2    1.9
+      build                         Data.List.Split.Internals         src/Data/List/Split/Internals.hs:499:1-18             673          1    0.1    0.3     0.1    0.3
+     indexed                        Data.List.Index                   lib/Data/List/Index.hs:(117,1)-(120,15)               671          1    0.0    0.1     0.0    0.1
+   indexedVAO.vx                    Main                              Main.hs:51:9-50                                       668          1    0.0    0.4     0.0    0.4
+    indexedVAO.vx.\                 Main                              Main.hs:51:36-40                                      859       6191    0.0    0.0     0.0    0.0
+   initVAO                          Main                              Main.hs:(37,1)-(42,34)                                665          1    0.1    1.9    94.5   11.2
+    initVAO.\                       Main                              Main.hs:(39,17)-(40,97)                               842      30003   93.5    1.9    94.3    9.1
+     initVAO.\.\                    Main                              Main.hs:40:40-64                                      858      30003    0.3    3.2     0.3    3.2
+     initVAO.\.\                    Main                              Main.hs:39:40-67                                      851      30003    0.5    4.1     0.5    4.1
+    initVAO.iter                    Main                              Main.hs:42:9-34                                       674          1    0.0    0.3     0.0    0.3
+  main.stride                       Main                              Main.hs:87:7-16                                       852          1    0.0    0.0     0.0    0.0
+  toDrawable                        Main                              Main.hs:(29,3)-(34,34)                                663          1    0.0    0.0     0.3    1.1
+   toDrawable.ids                   Main                              Main.hs:33:11-45                                      676          1    0.0    0.3     0.1    0.6
+    toGLuint                        Main                              Main.hs:25:1-27                                       843      30003    0.1    0.2     0.1    0.2
+    indices                         Geometry                          src/Geometry.hs:40:8-14                               677          1    0.0    0.0     0.0    0.0
+   toDrawable.ps                    Main                              Main.hs:31:11-46                                      845          1    0.0    0.1     0.0    0.1
+    position                        Geometry                          src/Geometry.hs:38:8-15                               846          1    0.0    0.0     0.0    0.0
+   toDrawable.uvs                   Main                              Main.hs:32:11-40                                      854          1    0.0    0.3     0.1    0.4
+    toTexCoord3                     Main                              Main.hs:22:1-39                                       857      30003    0.1    0.1     0.1    0.1
+    uv                              Geometry                          src/Geometry.hs:39:8-9                                855          1    0.0    0.0     0.0    0.0
+  uvs                               Drawables                         src/Drawables.hs:16:7-9                               853          1    0.0    0.0     0.0    0.0
+  verts                             Drawables                         src/Drawables.hs:15:7-11                              844          1    0.0    0.0     0.0    0.0
+  readPGeo                          Geometry                          src/Geometry.hs:(98,1)-(112,31)                       659          0    0.0    0.0     3.5   59.6
+   <?>                              Data.Aeson.Types.Internal         Data/Aeson/Types/Internal.hs:511:1-74                 785     174786    0.2    5.8     1.8   17.4
+    unId                            Data.Vector.Fusion.Util           Data/Vector/Fusion/Util.hs:25:21-24                   791     210976    0.0    0.0     0.0    0.0
+    array#                          Data.Primitive.Array              Data/Primitive/Array.hs:79:5-10                       792     174779    0.0    0.0     0.0    0.0
+    toRealFloat                     Data.Scientific                   src/Data/Scientific.hs:744:1-47                       848     108582    0.1    1.3     1.5   10.6
+     toBoundedRealFloat             Data.Scientific                   src/Data/Scientific.hs:(758,1)-(785,27)               849     108582    1.4    9.3     1.4    9.3
+      array#                        Data.Primitive.Array              Data/Primitive/Array.hs:79:5-10                       850     107683    0.0    0.0     0.0    0.0
+    toBoundedInteger                Data.Scientific                   src/Data/Scientific.hs:(795,1)-(825,21)               834      30003    0.1    0.4     0.1    0.5
+     coefficient                    Data.Scientific                   src/Data/Scientific.hs:156:7-17                       835      30003    0.0    0.0     0.0    0.0
+     array#                         Data.Primitive.Array              Data/Primitive/Array.hs:79:5-10                       839      30000    0.0    0.0     0.0    0.0
+     base10Exponent                 Data.Scientific                   src/Data/Scientific.hs:167:7-20                       837      30000    0.0    0.0     0.0    0.0
+     normalize                      Data.Scientific                   src/Data/Scientific.hs:(1122,1)-(1125,45)             838      30000    0.0    0.1     0.0    0.1
+    hash                            Data.HashMap.Base                 Data/HashMap/Base.hs:166:1-28                         787          3    0.0    0.0     0.0    0.0
+     hashByteArrayWithSalt          Data.Hashable.Class               Data/Hashable/Class.hs:(751,1)-(753,20)               788          3    0.0    0.0     0.0    0.0
+    new_                            Data.HashMap.Array                Data/HashMap/Array.hs:256:1-28                        789          3    0.0    0.0     0.0    0.0
+    sparseIndex                     Data.HashMap.Base                 Data/HashMap/Base.hs:1867:1-42                        790          3    0.0    0.0     0.0    0.0
+    prependFailure                  Data.Aeson.Types.Internal         Data/Aeson/Types/Internal.hs:533:1-37                 832          0    0.0    0.1     0.0    0.5
+     modifyFailure                  Data.Aeson.Types.Internal         Data/Aeson/Types/Internal.hs:(523,1)-(524,36)         833      30003    0.0    0.4     0.0    0.4
+   hash                             Data.HashMap.Base                 Data/HashMap/Base.hs:166:1-28                         783          1    0.0    0.0     0.0    0.0
+    hashByteArrayWithSalt           Data.Hashable.Class               Data/Hashable/Class.hs:(751,1)-(753,20)               784          1    0.0    0.0     0.0    0.0
+   indices                          Geometry                          src/Geometry.hs:40:8-14                               678          1    0.0    0.0     0.0    0.0
+   parse                            Data.Attoparsec.ByteString.Lazy   Data/Attoparsec/ByteString/Lazy.hs:(88,1)-(95,56)     679          1    0.0    0.0     1.6   42.0
+    buffer                          Data.Attoparsec.ByteString.Buffer Data/Attoparsec/ByteString/Buffer.hs:85:1-45          686          1    0.0    0.0     0.0    0.0
+    runParser                       Data.Attoparsec.Internal.Types    Data/Attoparsec/Internal/Types.hs:111:7-15            680          1    0.0    0.0     0.0    0.0
+    jsonEOF                         Data.Aeson.Parser.Internal        Data/Aeson/Parser/Internal.hs:431:1-41                682          0    0.0    0.0     1.6   42.0
+     runParser                      Data.Attoparsec.Internal.Types    Data/Attoparsec/Internal/Types.hs:111:7-15            683         17    0.0    0.0     0.0    0.0
+     fromPos                        Data.Attoparsec.Internal.Types    Data/Attoparsec/Internal/Types.hs:46:21-27            687          3    0.0    0.0     0.0    0.0
+     endOfInput                     Data.Attoparsec.Internal          Data/Attoparsec/Internal.hs:(110,1)-(117,55)          758          0    0.0    0.0     0.0    0.0
+      value                         Data.Aeson.Parser.Internal        Data/Aeson/Parser/Internal.hs:200:1-36                759          0    0.0    0.0     0.0    0.0
+       array_                       Data.Aeson.Parser.Internal        Data/Aeson/Parser/Internal.hs:173:35-59               760          0    0.0    0.0     0.0    0.0
+        prompt                      Data.Attoparsec.Internal          Data/Attoparsec/Internal.hs:(55,1)-(58,45)            761          0    0.0    0.0     0.0    0.0
+         object_                    Data.Aeson.Parser.Internal        Data/Aeson/Parser/Internal.hs:136:46-89               762          0    0.0    0.0     0.0    0.0
+          runParser                 Data.Attoparsec.Internal.Types    Data/Attoparsec/Internal/Types.hs:111:7-15            763          1    0.0    0.0     0.0    0.0
+     value                          Data.Aeson.Parser.Internal        Data/Aeson/Parser/Internal.hs:200:1-36                689          0    0.0    0.1     1.6   42.0
+      array_                        Data.Aeson.Parser.Internal        Data/Aeson/Parser/Internal.hs:173:35-59               701          0    1.3   31.0     1.6   40.5
+       runParser                    Data.Attoparsec.Internal.Types    Data/Attoparsec/Internal/Types.hs:111:7-15            702    9501697    0.0    0.0     0.0    0.0
+       fromPos                      Data.Attoparsec.Internal.Types    Data/Attoparsec/Internal/Types.hs:46:21-27            703    1817239    0.0    0.0     0.0    0.0
+       marray#                      Data.Primitive.Array              Data/Primitive/Array.hs:84:5-11                       797     262800    0.0    0.0     0.0    0.0
+       unId                         Data.Vector.Fusion.Util           Data/Vector/Fusion/Util.hs:25:21-24                   796     131400    0.0    0.0     0.0    0.0
+       sChunks                      Data.Vector.Fusion.Bundle.Monadic Data/Vector/Fusion/Bundle/Monadic.hs:122:30-36        795      32850    0.0    0.0     0.0    0.0
+       sSize                        Data.Vector.Fusion.Bundle.Monadic Data/Vector/Fusion/Bundle/Monadic.hs:124:30-34        794      32850    0.0    0.0     0.0    0.0
+       upperBound                   Data.Vector.Fusion.Bundle.Size    Data/Vector/Fusion/Bundle/Size.hs:(118,1)-(120,30)    793      32850    0.0    0.0     0.0    0.0
+       prompt                       Data.Attoparsec.Internal          Data/Attoparsec/Internal.hs:(55,1)-(58,45)            704         45    0.2    7.7     0.2    8.5
+        runParser                   Data.Attoparsec.Internal.Types    Data/Attoparsec/Internal/Types.hs:111:7-15            705    2574595    0.0    0.0     0.0    0.0
+        fromPos                     Data.Attoparsec.Internal.Types    Data/Attoparsec/Internal/Types.hs:46:21-27            707     514485    0.0    0.0     0.0    0.0
+        marray#                     Data.Primitive.Array              Data/Primitive/Array.hs:84:5-11                       772     198852    0.0    0.0     0.0    0.0
+        unId                        Data.Vector.Fusion.Util           Data/Vector/Fusion/Util.hs:25:21-24                   771      66332    0.0    0.0     0.0    0.0
+        pappend                     Data.Attoparsec.ByteString.Buffer Data/Attoparsec/ByteString/Buffer.hs:(104,1)-(105,51) 706         44    0.0    0.7     0.0    0.7
+        sChunks                     Data.Vector.Fusion.Bundle.Monadic Data/Vector/Fusion/Bundle/Monadic.hs:122:30-36        770         36    0.0    0.0     0.0    0.0
+        sSize                       Data.Vector.Fusion.Bundle.Monadic Data/Vector/Fusion/Bundle/Monadic.hs:124:30-34        769         36    0.0    0.0     0.0    0.0
+        upperBound                  Data.Vector.Fusion.Bundle.Size    Data/Vector/Fusion/Bundle/Size.hs:(118,1)-(120,30)    768         36    0.0    0.0     0.0    0.0
+        demandInput                 Data.Attoparsec.Internal          Data/Attoparsec/Internal.hs:(73,1)-(78,41)            741          0    0.0    0.0     0.0    0.0
+        object_                     Data.Aeson.Parser.Internal        Data/Aeson/Parser/Internal.hs:136:46-89               708          0    0.0    0.0     0.0    0.0
+         runParser                  Data.Attoparsec.Internal.Types    Data/Attoparsec/Internal/Types.hs:111:7-15            755          6    0.0    0.0     0.0    0.0
+         fromPos                    Data.Attoparsec.Internal.Types    Data/Attoparsec/Internal/Types.hs:46:21-27            756          2    0.0    0.0     0.0    0.0
+         jstring                    Data.Aeson.Parser.Internal        Data/Aeson/Parser/Internal.hs:321:1-32                709          0    0.0    0.0     0.0    0.0
+          runParser                 Data.Attoparsec.Internal.Types    Data/Attoparsec/Internal/Types.hs:111:7-15            713         14    0.0    0.0     0.0    0.0
+          fromPos                   Data.Attoparsec.Internal.Types    Data/Attoparsec/Internal/Types.hs:46:21-27            714          2    0.0    0.0     0.0    0.0
+          jstring_                  Data.Aeson.Parser.Internal        Data/Aeson/Parser/Internal.hs:(326,35)-(338,33)       710          2    0.0    0.0     0.0    0.0
+           runParser                Data.Attoparsec.Internal.Types    Data/Attoparsec/Internal/Types.hs:111:7-15            711        186    0.0    0.0     0.0    0.0
+           fromPos                  Data.Attoparsec.Internal.Types    Data/Attoparsec/Internal/Types.hs:46:21-27            712         32    0.0    0.0     0.0    0.0
+           fromList                 Data.HashMap.Strict.Base          Data/HashMap/Strict/Base.hs:598:1-64                  767          0    0.0    0.0     0.0    0.0
+            unsafeInsert            Data.HashMap.Base                 Data/HashMap/Base.hs:(784,1)-(814,76)                 773          3    0.0    0.0     0.0    0.0
+             hash                   Data.HashMap.Base                 Data/HashMap/Base.hs:166:1-28                         774          3    0.0    0.0     0.0    0.0
+              hashByteArrayWithSalt Data.Hashable.Class               Data/Hashable/Class.hs:(751,1)-(753,20)               775          3    0.0    0.0     0.0    0.0
+             copy                   Data.HashMap.Array                Data/HashMap/Array.hs:(328,1)-(333,30)                778          2    0.0    0.0     0.0    0.0
+             new_                   Data.HashMap.Array                Data/HashMap/Array.hs:256:1-28                        777          1    0.0    0.0     0.0    0.0
+             sparseIndex            Data.HashMap.Base                 Data/HashMap/Base.hs:1867:1-42                        779          1    0.0    0.0     0.0    0.0
+        scientific                  Data.Scientific                   src/Data/Scientific.hs:174:1-23                       806          0    0.0    0.1     0.0    0.1
+        signed                      Data.Attoparsec.ByteString.Char8  Data/Attoparsec/ByteString/Char8.hs:(470,1)-(472,12)  742          0    0.0    0.0     0.0    0.0
+         decimal                    Data.Attoparsec.ByteString.Char8  Data/Attoparsec/ByteString/Char8.hs:(447,1)-(448,49)  743          0    0.0    0.0     0.0    0.0
+       demandInput                  Data.Attoparsec.Internal          Data/Attoparsec/Internal.hs:(73,1)-(78,41)            732          0    0.0    0.0     0.0    0.6
+        prompt                      Data.Attoparsec.Internal          Data/Attoparsec/Internal.hs:(55,1)-(58,45)            733          6    0.0    0.6     0.0    0.6
+         runParser                  Data.Attoparsec.Internal.Types    Data/Attoparsec/Internal/Types.hs:111:7-15            735     220885    0.0    0.0     0.0    0.0
+         fromPos                    Data.Attoparsec.Internal.Types    Data/Attoparsec/Internal/Types.hs:46:21-27            736      43095    0.0    0.0     0.0    0.0
+         marray#                    Data.Primitive.Array              Data/Primitive/Array.hs:84:5-11                       811         40    0.0    0.0     0.0    0.0
+         unId                       Data.Vector.Fusion.Util           Data/Vector/Fusion/Util.hs:25:21-24                   810         20    0.0    0.0     0.0    0.0
+         pappend                    Data.Attoparsec.ByteString.Buffer Data/Attoparsec/ByteString/Buffer.hs:(104,1)-(105,51) 734          6    0.0    0.0     0.0    0.0
+         sChunks                    Data.Vector.Fusion.Bundle.Monadic Data/Vector/Fusion/Bundle/Monadic.hs:122:30-36        809          5    0.0    0.0     0.0    0.0
+         sSize                      Data.Vector.Fusion.Bundle.Monadic Data/Vector/Fusion/Bundle/Monadic.hs:124:30-34        808          5    0.0    0.0     0.0    0.0
+         upperBound                 Data.Vector.Fusion.Bundle.Size    Data/Vector/Fusion/Bundle/Size.hs:(118,1)-(120,30)    807          5    0.0    0.0     0.0    0.0
+         scientific                 Data.Scientific                   src/Data/Scientific.hs:174:1-23                       812          0    0.0    0.0     0.0    0.0
+         signed                     Data.Attoparsec.ByteString.Char8  Data/Attoparsec/ByteString/Char8.hs:(470,1)-(472,12)  752          0    0.0    0.0     0.0    0.0
+          decimal                   Data.Attoparsec.ByteString.Char8  Data/Attoparsec/ByteString/Char8.hs:(447,1)-(448,49)  753          0    0.0    0.0     0.0    0.0
+       scientific                   Data.Scientific                   src/Data/Scientific.hs:174:1-23                       799          0    0.0    0.3     0.0    0.3
+       signed                       Data.Attoparsec.ByteString.Char8  Data/Attoparsec/ByteString/Char8.hs:(470,1)-(472,12)  726          0    0.0    0.0     0.0    0.0
+        decimal                     Data.Attoparsec.ByteString.Char8  Data/Attoparsec/ByteString/Char8.hs:(447,1)-(448,49)  727          0    0.0    0.0     0.0    0.0
+      fromList                      Data.HashMap.Strict.Base          Data/HashMap/Strict/Base.hs:598:1-64                  765          0    0.0    0.0     0.0    0.0
+       unsafeInsert                 Data.HashMap.Base                 Data/HashMap/Base.hs:(784,1)-(814,76)                 780          1    0.0    0.0     0.0    0.0
+        hash                        Data.HashMap.Base                 Data/HashMap/Base.hs:166:1-28                         781          1    0.0    0.0     0.0    0.0
+         hashByteArrayWithSalt      Data.Hashable.Class               Data/Hashable/Class.hs:(751,1)-(753,20)               782          1    0.0    0.0     0.0    0.0
+      object_                       Data.Aeson.Parser.Internal        Data/Aeson/Parser/Internal.hs:136:46-89               690          0    0.0    0.0     0.0    0.0
+       runParser                    Data.Attoparsec.Internal.Types    Data/Attoparsec/Internal/Types.hs:111:7-15            691         28    0.0    0.0     0.0    0.0
+       fromPos                      Data.Attoparsec.Internal.Types    Data/Attoparsec/Internal/Types.hs:46:21-27            692          6    0.0    0.0     0.0    0.0
+       jstring                      Data.Aeson.Parser.Internal        Data/Aeson/Parser/Internal.hs:321:1-32                694          0    0.0    0.0     0.0    0.0
+        runParser                   Data.Attoparsec.Internal.Types    Data/Attoparsec/Internal/Types.hs:111:7-15            695         14    0.0    0.0     0.0    0.0
+        fromPos                     Data.Attoparsec.Internal.Types    Data/Attoparsec/Internal/Types.hs:46:21-27            696          2    0.0    0.0     0.0    0.0
+        jstring_                    Data.Aeson.Parser.Internal        Data/Aeson/Parser/Internal.hs:(326,35)-(338,33)       697          2    0.0    0.0     0.0    0.0
+         runParser                  Data.Attoparsec.Internal.Types    Data/Attoparsec/Internal/Types.hs:111:7-15            698        100    0.0    0.0     0.0    0.0
+         fromPos                    Data.Attoparsec.Internal.Types    Data/Attoparsec/Internal/Types.hs:46:21-27            699         16    0.0    0.0     0.0    0.0
+      signed                        Data.Attoparsec.ByteString.Char8  Data/Attoparsec/ByteString/Char8.hs:(470,1)-(472,12)  716          0    0.0    0.1     0.1    1.5
+       runParser                    Data.Attoparsec.Internal.Types    Data/Attoparsec/Internal/Types.hs:111:7-15            717      34910    0.0    0.0     0.0    0.0
+       fromPos                      Data.Attoparsec.Internal.Types    Data/Attoparsec/Internal/Types.hs:46:21-27            718       3491    0.0    0.0     0.0    0.0
+       decimal                      Data.Attoparsec.ByteString.Char8  Data/Attoparsec/ByteString/Char8.hs:(447,1)-(448,49)  720          0    0.0    0.1     0.1    1.4
+        runParser                   Data.Attoparsec.Internal.Types    Data/Attoparsec/Internal/Types.hs:111:7-15            721      41884    0.0    0.0     0.0    0.0
+        fromPos                     Data.Attoparsec.Internal.Types    Data/Attoparsec/Internal/Types.hs:46:21-27            722      10471    0.0    0.0     0.0    0.0
+        array_                      Data.Aeson.Parser.Internal        Data/Aeson/Parser/Internal.hs:173:35-59               723          0    0.0    0.9     0.0    1.3
+         runParser                  Data.Attoparsec.Internal.Types    Data/Attoparsec/Internal/Types.hs:111:7-15            724     262640    0.0    0.0     0.0    0.0
+         fromPos                    Data.Attoparsec.Internal.Types    Data/Attoparsec/Internal/Types.hs:46:21-27            725      49541    0.0    0.0     0.0    0.0
+         marray#                    Data.Primitive.Array              Data/Primitive/Array.hs:84:5-11                       804      26408    0.0    0.0     0.0    0.0
+         unId                       Data.Vector.Fusion.Util           Data/Vector/Fusion/Util.hs:25:21-24                   803      13204    0.0    0.0     0.0    0.0
+         sChunks                    Data.Vector.Fusion.Bundle.Monadic Data/Vector/Fusion/Bundle/Monadic.hs:122:30-36        802       3301    0.0    0.0     0.0    0.0
+         sSize                      Data.Vector.Fusion.Bundle.Monadic Data/Vector/Fusion/Bundle/Monadic.hs:124:30-34        801       3301    0.0    0.0     0.0    0.0
+         upperBound                 Data.Vector.Fusion.Bundle.Size    Data/Vector/Fusion/Bundle/Size.hs:(118,1)-(120,30)    800       3301    0.0    0.0     0.0    0.0
+         prompt                     Data.Attoparsec.Internal          Data/Attoparsec/Internal.hs:(55,1)-(58,45)            728          1    0.0    0.3     0.0    0.3
+          runParser                 Data.Attoparsec.Internal.Types    Data/Attoparsec/Internal/Types.hs:111:7-15            729      96410    0.0    0.0     0.0    0.0
+          fromPos                   Data.Attoparsec.Internal.Types    Data/Attoparsec/Internal/Types.hs:46:21-27            730      18812    0.0    0.0     0.0    0.0
+          marray#                   Data.Primitive.Array              Data/Primitive/Array.hs:84:5-11                       817         24    0.0    0.0     0.0    0.0
+          unId                      Data.Vector.Fusion.Util           Data/Vector/Fusion/Util.hs:25:21-24                   816         12    0.0    0.0     0.0    0.0
+          sChunks                   Data.Vector.Fusion.Bundle.Monadic Data/Vector/Fusion/Bundle/Monadic.hs:122:30-36        815          3    0.0    0.0     0.0    0.0
+          sSize                     Data.Vector.Fusion.Bundle.Monadic Data/Vector/Fusion/Bundle/Monadic.hs:124:30-34        814          3    0.0    0.0     0.0    0.0
+          upperBound                Data.Vector.Fusion.Bundle.Size    Data/Vector/Fusion/Bundle/Size.hs:(118,1)-(120,30)    813          3    0.0    0.0     0.0    0.0
+          pappend                   Data.Attoparsec.ByteString.Buffer Data/Attoparsec/ByteString/Buffer.hs:(104,1)-(105,51) 754          1    0.0    0.0     0.0    0.0
+          scientific                Data.Scientific                   src/Data/Scientific.hs:174:1-23                       818          0    0.0    0.0     0.0    0.0
+         demandInput                Data.Attoparsec.Internal          Data/Attoparsec/Internal.hs:(73,1)-(78,41)            737          0    0.0    0.0     0.0    0.1
+          prompt                    Data.Attoparsec.Internal          Data/Attoparsec/Internal.hs:(55,1)-(58,45)            738          0    0.0    0.1     0.0    0.1
+           runParser                Data.Attoparsec.Internal.Types    Data/Attoparsec/Internal/Types.hs:111:7-15            739      32242    0.0    0.0     0.0    0.0
+           fromPos                  Data.Attoparsec.Internal.Types    Data/Attoparsec/Internal/Types.hs:46:21-27            740       6291    0.0    0.0     0.0    0.0
+           marray#                  Data.Primitive.Array              Data/Primitive/Array.hs:84:5-11                       823          8    0.0    0.0     0.0    0.0
+           unId                     Data.Vector.Fusion.Util           Data/Vector/Fusion/Util.hs:25:21-24                   822          4    0.0    0.0     0.0    0.0
+           sChunks                  Data.Vector.Fusion.Bundle.Monadic Data/Vector/Fusion/Bundle/Monadic.hs:122:30-36        821          1    0.0    0.0     0.0    0.0
+           sSize                    Data.Vector.Fusion.Bundle.Monadic Data/Vector/Fusion/Bundle/Monadic.hs:124:30-34        820          1    0.0    0.0     0.0    0.0
+           upperBound               Data.Vector.Fusion.Bundle.Size    Data/Vector/Fusion/Bundle/Size.hs:(118,1)-(120,30)    819          1    0.0    0.0     0.0    0.0
+           scientific               Data.Scientific                   src/Data/Scientific.hs:174:1-23                       824          0    0.0    0.0     0.0    0.0
+         scientific                 Data.Scientific                   src/Data/Scientific.hs:174:1-23                       805          0    0.0    0.0     0.0    0.0
+        demandInput                 Data.Attoparsec.Internal          Data/Attoparsec/Internal.hs:(73,1)-(78,41)            744          0    0.0    0.0     0.0    0.0
+         prompt                     Data.Attoparsec.Internal          Data/Attoparsec/Internal.hs:(55,1)-(58,45)            745          1    0.0    0.0     0.0    0.0
+          runParser                 Data.Attoparsec.Internal.Types    Data/Attoparsec/Internal/Types.hs:111:7-15            747         49    0.0    0.0     0.0    0.0
+          fromPos                   Data.Attoparsec.Internal.Types    Data/Attoparsec/Internal/Types.hs:46:21-27            748         10    0.0    0.0     0.0    0.0
+          pappend                   Data.Attoparsec.ByteString.Buffer Data/Attoparsec/ByteString/Buffer.hs:(104,1)-(105,51) 746          1    0.0    0.0     0.0    0.0
+          array_                    Data.Aeson.Parser.Internal        Data/Aeson/Parser/Internal.hs:173:35-59               749          0    0.0    0.0     0.0    0.0
+           runParser                Data.Attoparsec.Internal.Types    Data/Attoparsec/Internal/Types.hs:111:7-15            750         16    0.0    0.0     0.0    0.0
+           marray#                  Data.Primitive.Array              Data/Primitive/Array.hs:84:5-11                       829          8    0.0    0.0     0.0    0.0
+           unId                     Data.Vector.Fusion.Util           Data/Vector/Fusion/Util.hs:25:21-24                   828          4    0.0    0.0     0.0    0.0
+           fromPos                  Data.Attoparsec.Internal.Types    Data/Attoparsec/Internal/Types.hs:46:21-27            751          3    0.0    0.0     0.0    0.0
+           sChunks                  Data.Vector.Fusion.Bundle.Monadic Data/Vector/Fusion/Bundle/Monadic.hs:122:30-36        827          1    0.0    0.0     0.0    0.0
+           sSize                    Data.Vector.Fusion.Bundle.Monadic Data/Vector/Fusion/Bundle/Monadic.hs:124:30-34        826          1    0.0    0.0     0.0    0.0
+           upperBound               Data.Vector.Fusion.Bundle.Size    Data/Vector/Fusion/Bundle/Size.hs:(118,1)-(120,30)    825          1    0.0    0.0     0.0    0.0
+           scientific               Data.Scientific                   src/Data/Scientific.hs:174:1-23                       830          0    0.0    0.0     0.0    0.0
+   position                         Geometry                          src/Geometry.hs:38:8-15                               847          1    0.0    0.0     0.0    0.0
+   uv                               Geometry                          src/Geometry.hs:39:8-9                                856          1    0.0    0.0     0.0    0.0
+   getJSON                          Geometry                          src/Geometry.hs:95:1-21                               661          0    0.0    0.2     0.0    0.2

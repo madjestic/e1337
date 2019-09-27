@@ -5,6 +5,7 @@
 
 import json
 import sys
+from itertools import chain
 # from itertools import izip
 
 def toDict (jsonFile):
@@ -33,8 +34,8 @@ def restoreArrayFromIndex (array, indices):
 def readJSON(fileIn, fileOut):
     # in:  fileIn
     # out: jsonFile
-    # fileIn  = "model.geo"
-    # fileOut = "model.pgeo" # pgeo - processed geo, in JSON format
+    # fileIn  = "models/model.geo"
+    # fileOut = "models/model.pgeo" # pgeo - processed geo, in JSON format
 
     outfile = open(fileIn, "r")
     jsonFile = json.loads (outfile.read ())
@@ -54,21 +55,53 @@ def parseJSON(jsonFile):
     ###  TOPOLOGY  ###
     topology      = toDict (jsonDict ["topology"])
     indices       = topology["pointref"][1]
-    # print(indices)
 
     ### ATTRIBUTES ###
     attrs         = toDict (jsonDict ["attributes"])
 
-    vtxAttrs      = attrs    ["vertexattributes"] [0]
-    vtxAttrsD     = toDict (vtxAttrs [1])
-    vtxAttrsDvals = vtxAttrsD ["values"]
-    vtxTuples     = toDict (vtxAttrsDvals) ["tuples"]    
+    # DEBUG:
+    # print("Alpha: ", vtxAttrs [0])
+    # print("Cd: "   , vtxAttrs [1])
+    # print("N: "    , vtxAttrs [2])
+    # print("uv: "   , vtxAttrs [3])
+    # print("P: "    , ptAttrs  [0])
 
-    ptAttrs       = attrs    ["pointattributes"] [0]
-    ptAttrsD      = toDict (ptAttrs [1])
-    ptAttrsDvals  = ptAttrsD ["values"] # Point Attrs Dictionary Values
-    ptTuples      = toDict (ptAttrsDvals) ["tuples"]
-    # print ("pTuples: ", ptTuples, "\n")
+    # vertex attributes list
+    vtxAttrs          = attrs ["vertexattributes"]
+    
+    # Alpha vtx attr
+    vtxAttrAlpha         = vtxAttrs [0]
+    vtxAttrAlphaDict     = toDict (vtxAttrAlpha [1])
+    vtxAttrAlphaDictVals = vtxAttrAlphaDict ["values"]
+    vtxAttrAlphaArrays   = toDict (vtxAttrAlphaDictVals) ["arrays"]
+
+    # Color
+    vtxAttrCd         = vtxAttrs [1]
+    vtxAttrCdDict     = toDict (vtxAttrCd [1])
+    vtxAttrCdDictVals = vtxAttrCdDict ["values"]
+    vtxAttrCdTuples   = toDict (vtxAttrCdDictVals) ["tuples"]    
+
+    # Normal
+    vtxAttrN         = vtxAttrs[2]
+    vtxAttrNDict     = toDict (vtxAttrN [1])
+    vtxAttrNDictVals = vtxAttrNDict ["values"]
+    vtxAttrNTuples        = toDict (vtxAttrNDictVals) ["tuples"]    
+
+    # UV
+    vtxAttrUV      = vtxAttrs [3]
+    vtxAttrUVDict     = toDict (vtxAttrUV [1])
+    vtxAttrUVDictVals = vtxAttrUVDict ["values"]
+    vtxAttrUVTuples     = toDict (vtxAttrUVDictVals) ["tuples"]    
+
+    # Point Attributes
+    ptAttrs          = attrs ["pointattributes"]
+    
+    # Position point attr
+    ptAttrP       = ptAttrs [0]
+    ptAttrPDict      = toDict (ptAttrP [1])
+    ptAttrPDictVals  = ptAttrPDict ["values"] # Point Attr Dictionary Values
+    ptAttrPTuples      = toDict (ptAttrPDictVals) ["tuples"]
+    # print ("pTuples: ", ptAttrPTuples, "\n")
 
     ### FORMAT JSON ###
     data    = {}
@@ -82,10 +115,20 @@ def parseJSON(jsonFile):
     # print (jsonEntry)
 
     # print(vtxTuples)
-    jsonEntry = {'uv' : vtxTuples}
+    #jsonEntry = {'Alpha' : vtxAttrAlphaArrays}
+    jsonEntry = {'Alpha' : list(chain.from_iterable(vtxAttrAlphaArrays))}    
+    data.get('PGeo').update(jsonEntry)
+    
+    jsonEntry = {'Cd' : vtxAttrCdTuples}
     data.get('PGeo').update(jsonEntry)
 
-    jsonEntry = {'position' : ptTuples}
+    jsonEntry = {'N' : vtxAttrNTuples}
+    data.get('PGeo').update(jsonEntry)
+
+    jsonEntry = {'uv' : vtxAttrUVTuples}
+    data.get('PGeo').update(jsonEntry)
+
+    jsonEntry = {'position' : ptAttrPTuples}
     # print ("pTuples: ", ptTuples, "\n")
     data.get('PGeo').update(jsonEntry)
     # print ("jsonEntry: ", jsonEntry)
@@ -93,7 +136,7 @@ def parseJSON(jsonFile):
     return data
 
 
-def Main(fileIn = "model.geo", fileOut = "model.pgeo"):
+def Main(fileIn = "models/model.geo", fileOut = "models/model.pgeo"):
     
     #jsonFile = readJSON(fileIn)
     data = parseJSON(readJSON(fileIn, fileOut))
@@ -108,7 +151,7 @@ PGeo is homeomorphic json geo container, suitable for standard haskell.\n\
 Usage: $ python geoParser.py inputFile.geo outputFile.pgeo")
     
     if len(sys.argv) <= 1:
-        print("Parsing default ./model.geo")
+        print("Parsing default ./models/model.geo")
         Main()
     else:
         print("Parsing %s" % sys.argv[1])

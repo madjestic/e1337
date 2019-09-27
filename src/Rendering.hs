@@ -16,12 +16,13 @@ import Foreign.C
 import Foreign.Marshal.Array                  (withArray)
 import Foreign.Ptr                            (plusPtr, nullPtr, Ptr)
 import Foreign.Storable                       (sizeOf)
-import Graphics.Rendering.OpenGL as GL hiding (positions, Size)
+import Graphics.Rendering.OpenGL as GL hiding (positions, color, normal, Size)
 import SDL                             hiding (Point, Event, Timer, (^+^), (*^), (^-^), dot)
 import Data.List.Split (chunksOf)
 import Data.List.Index (indexed)
 import Data.List     (elemIndex, sortBy, sort)
 import Data.Function (on)
+import Graphics.GLUtil (readTexture, texture2DWrap)
 
 import LoadShaders
 import Game
@@ -50,20 +51,66 @@ toGLuint x = fromIntegral x
 instance Drawables Geo where
   toDrawable =
     (\x -> case x of
-             Geo ps uv ids -> toGLGeo (Geo ps uv ids)
-             GLGeo vs is   -> return $ Drawable vs is'
+             Geo indices alpha color normal uv positions
+               -> fromGeo (Geo indices alpha color normal uv positions)
+             GLGeo vs idx
+               -> return $ Drawable vs is'
                where
-                 is'  = map toGLuint is)
+                 is'  = map toGLuint idx)
 
-toGLGeo :: Geo -> IO Drawable
-toGLGeo geo = do
-  let stride = 7 -- TODO : stride <- attr sizes
-  (vs, idx) <- indexedVAO ps' uv' ids' stride
+fromGeo :: Geo -> IO Drawable
+fromGeo geo = do
+  let stride = 14 -- TODO : stride <- attr sizes
+  (vs, idx) <- (indexedVAO ids' as' cds' ns' uv' ps' stride) -- :: IO ([GLfloat],[GLuint])
+  --_ <- DT.trace ("vs: " ++ show vs) $ return ()
   return (Drawable vs idx) -- $ Drawable ps' uv' ids'
     where
-      ps'  = map toVertex4   $ positions geo
-      uv'  = map toTexCoord3 $ uv        geo
       ids' = map toGLuint    $ indices   geo
+      as'  = alpha geo
+      cds' = map (\ (r, g, b) -> Vertex3   r g b) $ color  geo
+      ns'  = map (\ (x, y, z) -> Vertex3   x y z) $ normal geo
+      uv'  = map (\ (k, l, m) -> TexCoord3 k l m) $ uv     geo --toTexCoord3 $ uv        geo
+      ps'  = map toVertex4   $ positions geo
+
+indexedVAO :: [GLuint]
+           -> [Float]
+           -> [Vertex3 Double]
+           -> [Vertex3 Double]
+           -> [TexCoord3 Double]
+           -> [Vertex4 Double]
+           -> Int
+           -> IO ([GLfloat],[GLuint])
+indexedVAO idx as cds ns ts ps st =
+  do
+    vao <- initVAO idx as cds ns ts ps
+    let iListSet = (fmap (\x -> x) $ indexed $ DS.toList $ DS.fromList $ chunksOf st $ vao) :: [(Int,[GLfloat])] --indexedListSet vao st
+        iList    = (indexed $ chunksOf st vao)
+        idx = fmap (\(i,_) -> (fromIntegral i)) (matchLists iListSet iList)
+        vx  = concat $ fmap (\x -> snd x) iListSet
+    return (vx, idx)
+
+indexedListSet :: [GLfloat] -> Int -> [(Int,[GLfloat])]
+indexedListSet vao st =
+  fmap (\x -> x) $ indexed $ DS.toList $ DS.fromList $ chunksOf st $ vao
+
+initVAO :: [GLuint]
+        -> [Float]
+        -> [Vertex3 Double]
+        -> [Vertex3 Double]
+        -> [TexCoord3 Double]
+        -> [Vertex4 Double]
+        -> IO [GLfloat]
+initVAO idx as cds ns ts ps  =
+  return $ concat $
+    fmap (\i ->
+            (\x -> [x])                                            (as !!(fromIntegral       i)) ++ -- 1
+            (\(Vertex3   r g b)   -> fmap realToFrac [r,g,b])      (cds!!(fromIntegral       i)) ++ -- 3
+            (\(Vertex3   x y z)   -> fmap realToFrac [x,y,z])      (ns !!(fromIntegral       i)) ++ -- 3
+            (\(TexCoord3 u v w)   -> fmap realToFrac [u, v, w])    (ts !!(fromIntegral       i)) ++ -- 3
+            (\(Vertex4   x y z w) -> fmap realToFrac [x, y, z, w]) (ps !!(fromIntegral (idx!!i)))   -- 4 -> stride 14
+         ) iter
+      where
+        iter = [0..(length idx)-1]
 
 openWindow :: Text -> (CInt, CInt) -> IO SDL.Window
 openWindow title (sizex,sizey) = do
@@ -114,24 +161,6 @@ draw window (Descriptor vao numIndices) =
 
     SDL.glSwapWindow window
 
-initVAO :: [Vertex4 Double] -> [TexCoord3 Double] -> [GLuint] -> IO [GLfloat]
-initVAO ps ts idx =
-  return $ concat $
-    fmap (\i -> (\(Vertex4 x y z w) -> fmap realToFrac [x, y, z, w]) (ps!!(fromIntegral (idx!!i))) ++
-                (\(TexCoord3 u v w) -> fmap realToFrac [u, v, w])    (ts!!(fromIntegral       i))) iter
-      where
-        iter = [0..(length idx)-1]
-
-indexedVAO :: [Vertex4 Double] -> [TexCoord3 Double] -> [GLuint] -> Int -> IO ([GLfloat],[GLuint])
-indexedVAO ps ts is st =
-  do
-    vs <- initVAO ps ts is
-    let iListSet = indexedListSet vs st
-        iList    = (indexed $ chunksOf st vs)
-        idx = fmap (\(i,_) -> (fromIntegral i)) (matchLists iListSet iList)
-        vx  = concat $ fmap (\x -> snd x) iListSet
-    return (vx, idx)
-
 -- | matchLists - cross-match 2 listst, replacing the elements of list2 with matching
 -- |          with elements of list1, concatenating the non-matched elements.
 -- |   il - indexed list
@@ -146,18 +175,13 @@ matchLists il nil =
     mFunc il nile@(iy, cy) =
       (\x -> case x of
                Just idx -> il!!idx
-               Nothing  -> (-iy, cy) ) nili -- | if a unique index is found - flip the sign
-                                            -- | the idea is to separate normal indexes
+               Nothing  -> (-iy, cy) ) nili -- | if a unique index idx found - flip the sign
+                                            -- | the idea idx to separate normal indexes
                                             -- | and unique indexes -> [idx:uidx] later
       where
         nili = elemIndex cy cxs
         cxs  = fmap (\(i,s) -> s) il :: [[GLfloat]]
     
-            -- :: initVAO   -> Stride -> indexed VAO
-indexedListSet :: [GLfloat] -> Int -> [(Int,[GLfloat])]
-indexedListSet vao n =
-  fmap (\x -> x) $ indexed $ DS.toList $ DS.fromList $ chunksOf n $ vao
-
 initUniforms :: Game -> IO ()
 initUniforms game =  
   do
@@ -248,24 +272,45 @@ initBufferObjects game =
         
     -- | Bind the pointer to the vertex attribute data
     let floatSize  = (fromIntegral $ sizeOf (0.0::GLfloat)) :: GLsizei
-        stride     =  7 * floatSize
+        stride     =  14 * floatSize -- TODO : stride value should come from a single location
 
+    -- | Colors
+    let cds       = AttribLocation 0
+        cdsOffset = 1 * floatSize
+    vertexAttribPointer cds  $=
+        (ToFloat, VertexArrayDescriptor 3 Float stride (bufferOffset cdsOffset))
+    vertexAttribArray cds    $= Enabled
+    
+    -- | UV
+    let uvCoords   = AttribLocation 1
+        uvOffset   = 7 * floatSize
+    vertexAttribPointer uvCoords  $=
+        (ToFloat, VertexArrayDescriptor 3 Float stride (bufferOffset uvOffset))
+    vertexAttribArray uvCoords    $= Enabled
+    
     -- | Positions
-    let vPosition  = AttribLocation 0
-        posOffset  = 0 * floatSize
+    let vPosition  = AttribLocation 2
+        posOffset  = 10 * floatSize
     vertexAttribPointer vPosition $=
         (ToFloat, VertexArrayDescriptor 4 Float stride (bufferOffset posOffset))
     vertexAttribArray vPosition   $= Enabled
 
-    -- | UV
-    let uvCoords   = AttribLocation 1
-        uvOffset   = 4 * floatSize
-    vertexAttribPointer uvCoords  $=
-        (ToFloat, VertexArrayDescriptor 3 Float stride (bufferOffset uvOffset))
-    vertexAttribArray uvCoords    $= Enabled
+    -- | Assign Textures
+    activeTexture            $= TextureUnit 0
+    let tex_00 = "textures/4096_earth_clouds.jpg"
+    tx0 <- loadTex tex_00
+    texture Texture2D        $= Enabled
+    textureBinding Texture2D $= Just tx0
 
     return $ Descriptor vao (fromIntegral numIndices)
     
-
 bufferOffset :: Integral a => a -> Ptr b
 bufferOffset = plusPtr nullPtr . fromIntegral
+
+loadTex :: FilePath -> IO TextureObject
+loadTex f =
+  do
+    t <- either error id <$> readTexture f
+    textureFilter Texture2D $= ((Linear', Nothing), Linear')
+    texture2DWrap $= (Repeated, ClampToEdge)
+    return t
