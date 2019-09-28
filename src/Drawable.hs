@@ -1,5 +1,6 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE InstanceSigs #-}
 
 module Drawable
   ( ToDrawable(..)
@@ -28,22 +29,19 @@ data Drawable
 class ToDrawable a where
   toDrawable :: a -> IO Drawable
 
-toGLuint :: Int -> GLuint
-toGLuint x = fromIntegral x
-
 instance FromGeo (IO Drawable) where  
---  fromGeo :: Geo -> IO Drawable
+  fromGeo :: Geo -> IO Drawable
   fromGeo geo = do
     let stride = 14 -- TODO : stride <- attr sizes
-    (vs, idx) <- (indexedVAO ids' as' cds' ns' uv' ps' stride) -- :: IO ([GLfloat],[GLuint])
+    (vs, idx) <- (indexedVAO ids' as' cds' ns' uv' ps' stride) :: IO ([GLfloat],[GLuint])
     --_ <- DT.trace ("vs: " ++ show vs) $ return ()
     return (Drawable vs idx) -- $ Drawable ps' uv' ids'
       where
-        ids' = map toGLuint    $ indices   geo
+        ids' = map fromIntegral $ indices   geo
         as'  = alpha geo
         cds' = map (\ (r, g, b) -> Vertex3   r g b) $ color  geo
         ns'  = map (\ (x, y, z) -> Vertex3   x y z) $ normal geo
-        uv'  = map (\ (k, l, m) -> TexCoord3 k l m) $ uv     geo --toTexCoord3 $ uv        geo
+        uv'  = map (\ (k, l, m) -> TexCoord3 k l m) $ uv     geo
         ps'  = map toVertex4   $ positions geo
 
 indexedVAO :: [GLuint]
@@ -56,7 +54,7 @@ indexedVAO :: [GLuint]
            -> IO ([GLfloat],[GLuint])
 indexedVAO idx as cds ns ts ps st =
   do
-    vao <- initVAO idx as cds ns ts ps
+    vao <- toVAO idx as cds ns ts ps
     let iListSet = (fmap (\x -> x) $ indexed $ DS.toList $ DS.fromList $ chunksOf st $ vao) :: [(Int,[GLfloat])] --indexedListSet vao st
         iList    = (indexed $ chunksOf st vao)
         idx = fmap (\(i,_) -> (fromIntegral i)) (matchLists iListSet iList)
@@ -88,14 +86,14 @@ indexedListSet :: [GLfloat] -> Int -> [(Int,[GLfloat])]
 indexedListSet vao st =
   fmap (\x -> x) $ indexed $ DS.toList $ DS.fromList $ chunksOf st $ vao
 
-initVAO :: [GLuint]
-        -> [Float]
-        -> [Vertex3 Double]
-        -> [Vertex3 Double]
-        -> [TexCoord3 Double]
-        -> [Vertex4 Double]
-        -> IO [GLfloat]
-initVAO idx as cds ns ts ps  =
+toVAO :: [GLuint]
+      -> [Float]
+      -> [Vertex3 Double]
+      -> [Vertex3 Double]
+      -> [TexCoord3 Double]
+      -> [Vertex4 Double]
+      -> IO [GLfloat]
+toVAO idx as cds ns ts ps  =
   return $ concat $
     fmap (\i ->
             (\x -> [x])                                            (as !!(fromIntegral       i)) ++ -- 1
