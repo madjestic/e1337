@@ -14,6 +14,8 @@
 {-# LANGUAGE NamedFieldPuns #-}
 module Geometry
   ( Geo(..)
+  , FromGeo(..)
+  , Vec3(..)
   , getJSON
   , readPGeo
   , readVBOGeo
@@ -26,7 +28,6 @@ import qualified Data.ByteString.Lazy as B
 import Graphics.Rendering.OpenGL as GL        (Vertex4(..))
 
 import FromVector
-
 
 instance FromVector Vec3 where
   toVertex4 :: Vec3 -> Vertex4 Double
@@ -48,6 +49,9 @@ data Geo
      , is  :: [Int]   -- indices
      } 
   deriving Show
+
+class FromGeo a where
+  fromGeo :: Geo -> a
 
 -- | TODO : replace Vec3 -> Vec4
 type Vec3     = (Double, Double, Double)
@@ -130,7 +134,7 @@ readPGeo :: FilePath -> IO Geo
 readPGeo jsonFile =
   do
     d <- (eitherDecode <$> getJSON jsonFile) :: IO (Either String Geo)
-    print d
+    --print d
     let ids = (indices   . fromEitherDecode) d
         as  = (alpha     . fromEitherDecode) d
         cds = (color     . fromEitherDecode) d

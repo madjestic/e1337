@@ -41,7 +41,7 @@ library
                , Geometry
                , Game
                , Rendering
-               , Drawables
+               , Drawable
                , Shape2D
                , FromVector
   other-modules:
@@ -84,7 +84,7 @@ executable e1337
                , Input
                , NGL.LoadShaders
                , Rendering
-               , Drawables
+               , Drawable
                , FromVector
                , LoadShaders
                , Shape2D
