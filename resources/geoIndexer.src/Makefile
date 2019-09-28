@@ -9,6 +9,6 @@ prof:
 	./Main +RTS -sstderr -RTS
 
 clean:
-	rm ./Main
+	rm ./geoIndexer
 	rm ./Main.hi
 	rm ./Main.o
