@@ -20,6 +20,8 @@ import Data.List                       (elemIndex, sortBy, sort)
 import Geometry
 import FromVector
 
+import Debug.Trace as DT
+
 data Drawable
   =  Drawable
     { verts  :: [GLfloat]
@@ -33,16 +35,20 @@ instance FromGeo (IO Drawable) where
   fromGeo :: Geo -> IO Drawable
   fromGeo geo = do
     let stride = 14 -- TODO : stride <- attr sizes
-    (vs, idx) <- (indexedVAO ids' as' cds' ns' uv' ps' stride) :: IO ([GLfloat],[GLuint])
-    --_ <- DT.trace ("vs: " ++ show vs) $ return ()
-    return (Drawable vs idx) -- $ Drawable ps' uv' ids'
+    --(vs, idx) <- (indexedVAO ids' as' cds' ns' uv' ps' stride) :: IO ([GLfloat],[GLuint])
+    vs <- (toVAO ids' as' cds' ns' uv' ps') :: IO [GLfloat]
+    _ <- DT.trace ("vs: "   ++ show vs) $ return ()
+    _ <- DT.trace ("ids': " ++ show ids') $ return ()
+    --return (Drawable vs ids')
+    return (Drawable vs uid)
       where
-        ids' = map fromIntegral $ indices   geo
+        ids' = map fromIntegral $ indices geo
+        uid  = (map fromIntegral [0..((length ids')-1)] :: [GLuint])
         as'  = alpha geo
         cds' = map (\ (r, g, b) -> Vertex3   r g b) $ color  geo
         ns'  = map (\ (x, y, z) -> Vertex3   x y z) $ normal geo
         uv'  = map (\ (k, l, m) -> TexCoord3 k l m) $ uv     geo
-        ps'  = map toVertex4   $ positions geo
+        ps'  = map toVertex4 $ positions geo
 
 indexedVAO :: [GLuint]
            -> [Float]

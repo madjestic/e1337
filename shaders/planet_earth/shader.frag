@@ -6,6 +6,7 @@ uniform sampler2D tex_00;
 
 in  vec4 gl_FragCoord;
 in  vec3 uv;
+in  vec3 Cd;
 out vec4 fragColor;
 
 void main()

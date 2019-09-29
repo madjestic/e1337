@@ -284,6 +284,7 @@ instance VectorSpace (V3 Double) Double where
 handleExit :: SF AppInput Bool
 handleExit = quitEvent >>^ isEvent
 
+-- < Project Loading > --------------------------------------------------------
 loadProject :: FilePath -> IO [String]
 loadProject file = 
   do
