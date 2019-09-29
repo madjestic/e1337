@@ -75,7 +75,7 @@ data Descriptor =
 draw :: SDL.Window -> Descriptor -> IO ()
 draw window (Descriptor vao numIndices) =
   do
-    GL.clearColor $= Color4 0.5 0 0 1
+    GL.clearColor $= Color4 0.5 0.5 1.0 1.0
     GL.clear [ColorBuffer, DepthBuffer]
     bindVertexArrayObject $= Just vao
     drawElements Triangles numIndices GL.UnsignedInt nullPtr
@@ -189,22 +189,36 @@ initBufferObjects game =
     let floatSize  = (fromIntegral $ sizeOf (0.0::GLfloat)) :: GLsizei
         stride     =  14 * floatSize -- TODO : stride value should come from a single location
 
+    -- | Alpha
+    let alpha       = AttribLocation 0
+        alphaOffset = 0 * floatSize
+    vertexAttribPointer alpha  $=
+        (ToFloat, VertexArrayDescriptor 1 Float stride (bufferOffset alphaOffset))
+    vertexAttribArray alpha    $= Enabled
+    
     -- | Colors
-    let cds       = AttribLocation 0
-        cdsOffset = 1 * floatSize
-    vertexAttribPointer cds  $=
-        (ToFloat, VertexArrayDescriptor 3 Float stride (bufferOffset cdsOffset))
-    vertexAttribArray cds    $= Enabled
+    let color       = AttribLocation 1
+        colorOffset = 1 * floatSize
+    vertexAttribPointer color  $=
+        (ToFloat, VertexArrayDescriptor 3 Float stride (bufferOffset colorOffset))
+    vertexAttribArray color    $= Enabled
+
+    -- | Normals
+    let normal       = AttribLocation 2
+        normalOffset = 4 * floatSize
+    vertexAttribPointer normal  $=
+        (ToFloat, VertexArrayDescriptor 3 Float stride (bufferOffset normalOffset))
+    vertexAttribArray normal    $= Enabled
     
     -- | UV
-    let uvCoords   = AttribLocation 1
+    let uvCoords   = AttribLocation 3
         uvOffset   = 7 * floatSize
     vertexAttribPointer uvCoords  $=
         (ToFloat, VertexArrayDescriptor 3 Float stride (bufferOffset uvOffset))
     vertexAttribArray uvCoords    $= Enabled
     
     -- | Positions
-    let vPosition  = AttribLocation 2
+    let vPosition  = AttribLocation 4
         posOffset  = 10 * floatSize
     vertexAttribPointer vPosition $=
         (ToFloat, VertexArrayDescriptor 4 Float stride (bufferOffset posOffset))

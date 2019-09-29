@@ -4,7 +4,7 @@
 # @echo "converting $1 to $2 and copying to $3"
 
 SOURCE="./models/$1.geo"
-TARGET="../models/$1.geo"
+TARGET="../models/$1.vgeo"
 PDG="./models/$1.pgeo"
 PDGCPY="../models/$1.pgeo"
 

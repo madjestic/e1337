@@ -14,7 +14,6 @@ out vec4 fragColor;
 
 void main()
 {
-  //fragColor = vec4(texture(tex_00, vec2(uv.x, uv.y)).rgb*N, 1.0);
 	fragColor = vec4( N.x*0.5+0.5
 					, N.y*0.5+0.5
 					,-N.z*0.5+0.5

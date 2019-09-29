@@ -37,8 +37,8 @@ instance FromGeo (IO Drawable) where
     let stride = 14 -- TODO : stride <- attr sizes
     --(vs, idx) <- (indexedVAO ids' as' cds' ns' uv' ps' stride) :: IO ([GLfloat],[GLuint])
     vs <- (toVAO ids' as' cds' ns' uv' ps') :: IO [GLfloat]
-    _ <- DT.trace ("vs: "   ++ show vs) $ return ()
-    _ <- DT.trace ("ids': " ++ show ids') $ return ()
+    -- _ <- DT.trace ("vs: "   ++ show vs) $ return ()
+    -- _ <- DT.trace ("ids': " ++ show ids') $ return ()
     --return (Drawable vs ids')
     return (Drawable vs uid)
       where
