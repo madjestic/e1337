@@ -8,6 +8,9 @@ import sys
 from itertools import chain
 # from itertools import izip
 
+def concat(mlist):
+    return list(chain.from_iterable(mlist))
+
 def toDict (jsonFile):
     i        = iter (jsonFile)
     jsonDict = dict (zip (i, i))
@@ -25,7 +28,7 @@ def sortArrayByIndex (array, indices):
         result.append (array [i])
     return result
 
-def restoreArrayFromIndex (array, indices):
+def restoreArrayFromIndex (array, indices): 
     result = []
     for i in indices:
         result.append (array [i])
@@ -65,6 +68,7 @@ def parseJSON(jsonFile):
     # print("N: "    , vtxAttrs [2])
     # print("uv: "   , vtxAttrs [3])
     # print("P: "    , ptAttrs  [0])
+    # print("Prim: "   , ptAttrs  [0])
 
     # vertex attributes list
     vtxAttrs          = attrs ["vertexattributes"]
@@ -82,27 +86,39 @@ def parseJSON(jsonFile):
     vtxAttrCdTuples   = toDict (vtxAttrCdDictVals) ["tuples"]    
 
     # Normal
-    vtxAttrN         = vtxAttrs[2]
-    vtxAttrNDict     = toDict (vtxAttrN [1])
-    vtxAttrNDictVals = vtxAttrNDict ["values"]
+    vtxAttrN          = vtxAttrs[2]
+    vtxAttrNDict      = toDict (vtxAttrN [1])
+    vtxAttrNDictVals  = vtxAttrNDict ["values"]
     vtxAttrNTuples        = toDict (vtxAttrNDictVals) ["tuples"]    
 
     # UV
-    vtxAttrUV      = vtxAttrs [3]
+    vtxAttrUV         = vtxAttrs [3]
     vtxAttrUVDict     = toDict (vtxAttrUV [1])
     vtxAttrUVDictVals = vtxAttrUVDict ["values"]
-    vtxAttrUVTuples     = toDict (vtxAttrUVDictVals) ["tuples"]    
+    vtxAttrUVTuples   = toDict (vtxAttrUVDictVals) ["tuples"]    
 
     # Point Attributes
-    ptAttrs          = attrs ["pointattributes"]
+    ptAttrs           = attrs ["pointattributes"]
     
     # Position point attr
-    ptAttrP       = ptAttrs [0]
-    ptAttrPDict      = toDict (ptAttrP [1])
-    ptAttrPDictVals  = ptAttrPDict ["values"] # Point Attr Dictionary Values
-    ptAttrPTuples      = toDict (ptAttrPDictVals) ["tuples"]
+    ptAttrP           = ptAttrs [0]
+    ptAttrPDict       = toDict (ptAttrP[1])
+    ptAttrPDictVals   = ptAttrPDict ["values"] # Point Attr Dictionary Values
+    ptAttrPTuples     = toDict (ptAttrPDictVals) ["tuples"]
     # print ("pTuples: ", ptAttrPTuples, "\n")
 
+    # Primitive Attributes
+    prAttrs           = attrs ["primitiveattributes"]
+
+    # Material prim attr
+    prAttrMat         = prAttrs[0]
+    prAttrMatDict     = toDict(prAttrMat[1])
+    prAttrMatStrings  = prAttrMatDict["strings"]
+    prAttrMatIndices  = toDict(prAttrMatDict["indices"])["arrays"]
+
+    print(prAttrMatStrings)
+    print(prAttrMatIndices)
+    
     ### FORMAT JSON ###
     data    = {}
 
@@ -156,3 +172,9 @@ Usage: $ python geoParser.py inputFile.geo outputFile.pgeo")
     else:
         print("Parsing %s" % sys.argv[1])
         Main(sys.argv[1], sys.argv[2])
+
+# for i in list(set(concat(foo))):
+# ...  list(filter(lambda x: x == i, concat(foo)))
+# ... 
+# [0, 0, 0]
+# [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]

@@ -1,0 +1,6 @@
+[ "Square"
+, "800"
+, "600"
+, "models/square.pgeo"
+, "shaders/box/shader.vert"
+, "shaders/box/shader.frag" ]

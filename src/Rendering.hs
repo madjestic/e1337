@@ -1,5 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
+
 module Rendering
   ( openWindow
   , closeWindow
@@ -93,9 +96,9 @@ initUniforms game =
     -- | Shaders
     program <- loadShaders [
       ShaderInfo VertexShader
-        (FileSource (vertShader . material . object $ game)),
+        (FileSource (vertShader $ (material $ (object $ game)!!0)!!0)),
       ShaderInfo FragmentShader
-        (FileSource (fragShader . material . object $ game))
+        (FileSource (fragShader $ (material $ (object $ game)!!0)!!0))
       ]
     currentProgram $= Just program
 
@@ -108,8 +111,8 @@ initUniforms game =
     
     location1         <- get (uniformLocation program "u_resolution")
     let u_res         = Vector2 (toEnum resX) (toEnum resY) :: Vector2 GLfloat
-           where resX = fromEnum $ fst (resolution . options $ game)
-                 resY = fromEnum $ snd (resolution . options $ game)
+           where resX = fromEnum $ (resx . options $ game)
+                 resY = fromEnum $ (resy . options $ game)
     uniform location1 $= u_res
 
     ticks             <- SDL.ticks
@@ -121,8 +124,8 @@ initUniforms game =
           fmap realToFrac . concat $ fmap DF.toList . DF.toList -- convert to GLfloat
           --               FOV    Aspect    Near   Far
           $ LP.perspective (pi/2) (resX/resY) (0.01) 1.5 :: [GLfloat]
-                     where resX = toEnum $ fromEnum $ fst (resolution . options $ game)
-                           resY = toEnum $ fromEnum $ snd (resolution . options $ game)
+                     where resX = toEnum $ fromEnum $ (resx . options $ game)
+                           resY = toEnum $ fromEnum $ (resy . options $ game)
 
     persp             <- GL.newMatrix RowMajor proj :: IO (GLmatrix GLfloat)
     location3         <- get (uniformLocation program "persp")
@@ -149,20 +152,25 @@ initUniforms game =
 
     return () -- $ Descriptor vao (fromIntegral numIndices)    
 
-instance ToDrawable Geo where
-  toDrawable =
-    (\x -> case x of
+instance ToDrawable FilePath where
+  toDrawable modelPath = do
+    geo <- (\x -> case (reverse . take 4 . reverse $ x) of
+                    "pgeo" -> readPGeo   x
+                    "vgeo" -> readVBOGeo x ) modelPath
+
+    drw <- (\x -> case x of
              Geo indices alpha color normal uv positions
                -> fromGeo (Geo indices alpha color normal uv positions)
              GLGeo vs idx
                -> return $ Drawable vs is'
                where
-                 is'  = (map fromIntegral idx) :: [GLuint])
+                 is'  = (map fromIntegral idx) :: [GLuint]) geo
+    return drw
 
 initBufferObjects :: Game -> IO Descriptor
 initBufferObjects game =  
   do
-    (Drawable vs idx) <- toDrawable $ (geometry . object) game
+    (Drawable vs idx) <- toDrawable $ geoPath $ (object game)!!0
 
     -- | VAO
     vao <- genObjectName

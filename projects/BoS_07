@@ -1,0 +1,6 @@
+[ "BoS_07"
+, "300"
+, "300"
+, "models/plane.pgeo"
+, "shaders/BookOfShaders/07/shader.vert"
+, "shaders/BookOfShaders/07/BoS_07.frag" ]

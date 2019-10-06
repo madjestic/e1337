@@ -1,0 +1,20 @@
+{
+    "project": {
+	"name"  : "Planet Earth",
+	"resx"  : 800,
+	"resy"  : 600,
+	"models": [
+            {
+		"path": "models/earth.vgeo",
+		"materials": [
+		    {
+			"vert": "shaders/planet_earth/normal.vert",
+			"frag": "shaders/planet_earth/normal.frag",
+			"textures": [
+			]
+		    }
+		]
+            }
+	]
+    }
+}

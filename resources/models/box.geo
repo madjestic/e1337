@@ -5,8 +5,8 @@
 	"vertexcount",36,
 	"primitivecount",12,
 	"info",{
-		"date":"2019-09-26 12:17:22",
-		"timetocook":0.000149999999999999987,
+		"date":"2019-10-06 22:23:17",
+		"timetocook":0.000840999999999999951,
 		"software":"Houdini 17.5.333",
 		"artist":"madjestic",
 		"hostname":"nu",
@@ -189,7 +189,7 @@
 				[
 					"size",1,
 					"storage","int32",
-					"strings",["/obj/geo1/uvquickshade1/shop_definition/texture_material"
+					"strings",["/obj/geo1/BOX/uvquickshade1/shop_definition/texture_material"
 					],
 					"indices",[
 						"size",1,

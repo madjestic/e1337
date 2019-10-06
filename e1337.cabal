@@ -1,6 +1,6 @@
 name:          e1337
 version:       0.1.0.0
-synopsis:      A 1984 Elite-inspired space-sim game
+synopsis:      A Shader-Toy on steroids and a space-sim game, inspired by Strugatski brothers "Noon, XXII cent."
 description:   Please see the README on GitHub at <https://github.com/madjestic/e1337#readme>
 homepage:      https://github.com/madjestic/e1337
 license:       BSD3
@@ -13,8 +13,8 @@ build-type:    Simple
 cabal-version: >=1.10
 
 extra-source-files:
-               ChangeLog.md
-               README.md
+                   ChangeLog.md
+                   README.md
 
 source-repository head
   type:        git
@@ -24,37 +24,37 @@ library
   hs-source-dirs:
                  src
   build-depends:
-                 base       >=4.7 && <5
-               , aeson      >= 1.3.1.1
-               , bytestring >=0.10.8.1
-               , OpenGL     >=3.0.2.2
-               , Yampa      >=0.13
-               , sdl2       >=2.4.1.0
-               , text       >=1.2.2.2
-               , linear     >=1.20.8
-               , GLUtil     >=0.10.3
-               , split      >=0.2.3.3
-               , ilist      >=0.2.0.0
-               , containers >=0.6.0.1
+                base       >=4.7 && <5
+              , aeson      >= 1.3.1.1
+              , bytestring >=0.10.8.1
+              , OpenGL     >=3.0.2.2
+              , Yampa      >=0.13
+              , sdl2       >=2.4.1.0
+              , text       >=1.2.2.2
+              , linear     >=1.20.8
+              , GLUtil     >=0.10.3
+              , split      >=0.2.3.3
+              , ilist      >=0.2.0.0
+              , containers >=0.6.0.1
   exposed-modules:
-                 Input
-               , Geometry
-               , Game
-               , Rendering
-               , Drawable
-               , Shape2D
-               , FromVector
+                  Input
+                , Geometry
+                , Game
+                , Rendering
+                , Drawable
+                , Shape2D
+                , FromVector
   other-modules:
-                 Paths_e1337
-               , LoadShaders
-               , Object
-               , Camera
-               , Keyboard
-               , Mouse
-               , Controllable
+                Paths_e1337
+              , LoadShaders
+              , Object
+              , Camera
+              , Keyboard
+              , Mouse
+              , Controllable
   default-language:
-                 Haskell2010
-                                        
+                   Haskell2010
+                                                           
 executable e1337
   main-is:       Main.hs
   hs-source-dirs:
@@ -62,37 +62,39 @@ executable e1337
                , src
   ghc-options:         -threaded -O2
   build-depends:
-                 e1337
-               , base       >=4.7 && <5
-               , aeson      >=1.3.1.1
-               , text       >=1.2.2.2
-               , Yampa      >=0.13
-               , OpenGL     >=3.0.2.2
-               , filepath   >=0.4.14
-               , bytestring >=0.10.8.1
-               , sdl2       >=2.4.1.0
-               , linear     >=1.20.8
-               , GLUtil     >=0.10.3
-               , split      >=0.2.3.3
-               , ilist      >=0.2.0.0
-               , containers >=0.6.0.1
-               , lens       >=4.17
+                e1337
+              , base       >=4.7 && <5
+              , aeson      >=1.3.1.1
+              , text       >=1.2.2.2
+              , Yampa      >=0.13
+              , OpenGL     >=3.0.2.2
+              , filepath   >=0.4.14
+              , bytestring >=0.10.8.1
+              , sdl2       >=2.4.1.0
+              , linear     >=1.20.8
+              , GLUtil     >=0.10.3
+              , split      >=0.2.3.3
+              , ilist      >=0.2.0.0
+              , containers >=0.6.0.1
+              , lens       >=4.17
   other-modules:
-                 Paths_e1337
-               , Game
-               , Geometry
-               , Input
-               , NGL.LoadShaders
-               , Rendering
-               , Drawable
-               , FromVector
-               , LoadShaders
-               , Shape2D
-               , Object
-               , Camera
-               , Keyboard
-               , Mouse
-               , Controllable
-               , Material
+                Paths_e1337
+              , Game
+              , Project
+              , Project.Parser
+              , Geometry
+              , Input
+              , NGL.LoadShaders
+              , Rendering
+              , Drawable
+              , FromVector
+              , LoadShaders
+              , Shape2D
+              , Object
+              , Camera
+              , Keyboard
+              , Mouse
+              , Controllable
+              , Material
   default-language:
-                 Haskell2010
+                   Haskell2010

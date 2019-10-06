@@ -12,11 +12,20 @@ import Geometry
 import Keyboard
 import Material
 
+data Object
+  =  Object
+     { scalar     :: Double
+     , geoPath    :: FilePath
+     , material   :: [Material]
+     , velocity   :: V4 Double
+     , driver     :: Controllable
+     } deriving Show
+
 defaultObj 
   = Object
     0.0
-    (Geo [] [] [] [] [] [])
-    defaultMat
+    "models/box.pgeo" --(Geo [] [] [] [] [] [])
+    [defaultMat]
     (V4 0 0 0 0)
     ( Controllable
       (0,0)
@@ -38,12 +47,3 @@ defaultObj
             nYaw   = V3 ( 0  )(-999)( 0  )   -- negative  yaw
             pRoll  = V3 ( 0  )(  0 )( 999)   -- positive  roll
             nRoll  = V3 ( 0  )(  0 )(-999)   -- negative  roll
-
-data Object
-  =  Object
-     { scalar     :: Double
-     , geometry   :: Geo
-     , material   :: Material
-     , velocity   :: V4 Double
-     , driver     :: Controllable
-     } deriving Show

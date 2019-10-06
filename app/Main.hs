@@ -31,12 +31,16 @@ import Data.Text                (pack)
 import System.Environment (getArgs)
        
 import Camera        as Cam
-import Game          
+import Game
+--import Game.Parser   as GameP
+--import Object.Parser as ObjectP
+import Project
+import Project.Parser as P
 import Keyboard
-import Object        as Obj
+import Object         as Obj
 import Controllable  
 import Geometry
-import Input         as Inp
+import Input          as Inp
 import Rendering
 import Material
 
@@ -283,48 +287,6 @@ instance VectorSpace (V3 Double) Double where
 
 handleExit :: SF AppInput Bool
 handleExit = quitEvent >>^ isEvent
-
--- < Project Loading > --------------------------------------------------------
-loadProject :: FilePath -> IO [String]
-loadProject file = 
-  do
-    d <- decodeFileStrict file :: IO (Maybe [String])
-    --print d
-    return $
-      case d of
-        Just d -> d
-        Nothing -> []
-
-initGame :: [String] -> IO Game 
-initGame d =
-  do
-    geo <- (\x -> case (reverse . take 4 . reverse $ x) of
-                 "pgeo" -> readPGeo   x
-                 "vgeo" -> readVBOGeo x ) modelPath
-
-    let initGame =
-          Game
-            ( Options
-              (lable)
-              (unsafeCoerce ((read resX :: Int )
-                            ,(read resY :: Int)) :: (CInt, CInt)))
-              GamePlaying
-              defaultObj
-              { geometry = geo
-              , material =
-                  Material
-                  vertShaderPath
-                  fragShaderPath
-                  [] }       
-              initCam
-    return initGame
-      where
-        lable     = d!!0
-        resX      = d!!1
-        resY      = d!!2
-        modelPath = d!!3
-        vertShaderPath = d!!4
-        fragShaderPath = d!!5
         
 -- < Global Constants > --------------------------------------------------------
 mBlur     = 0.25 :: Float
@@ -334,16 +296,17 @@ loadDelay = 2.0  :: Double
 main :: IO ()
 main = do
   args <- getArgs
-  game <- initGame =<< loadProject (unsafeCoerce (args!!0) :: FilePath)
-  --print game
-  let
-    res = resolution . options $ game
-    resX = (fst res)
-    resY = (snd res)
+  let jsonFile  = (unsafeCoerce (args!!0) :: FilePath)
+  game <- initGame =<< parse (unsafeCoerce (args!!0) :: FilePath)
+
+  let title = ((pack $ Game.name . options $ game) :: Text)
+      resX  = (Game.resx . options $ game)
+      resY  = (Game.resy . options $ game)
     
   window    <- openWindow
-               ((pack $ lable . options $ game) :: Text)
+               title
                (resX, resY)
+               
   resources <- initBufferObjects game
   
   animate

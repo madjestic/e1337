@@ -57,14 +57,6 @@ class FromGeo a where
 type Vec3     = (Double, Double, Double)
 --type Vec4     =  (Double, Double, Double)
                      
--- < Reading Geo > --------------------------------------------------------
-newtype Index    = Index    [Int]   deriving Show
-newtype Alpha    = Alpha    [[[Float]]] deriving Show
-newtype Cd       = Cd       [Vec3]  deriving Show
-newtype N        = N        [Vec3]  deriving Show
-newtype UV       = UV       [Vec3]  deriving Show
-newtype Position = Position [Vec3]  deriving Show
-
 instance FromJSON Geo where
   parseJSON (Object o) =
      Geo
@@ -75,49 +67,6 @@ instance FromJSON Geo where
        <*> ((o .: "PGeo") >>= (.: "uv"))
        <*> ((o .: "PGeo") >>= (.: "position"))
   parseJSON _ = mzero
-
-instance FromJSON Index where
-    parseJSON (Object o) =
-      do
-        indices <- o .: "indices"
-        Index   <$> parseJSON indices
-    parseJSON _ = mzero    
-
-instance FromJSON Alpha where
-    parseJSON (Object o) =
-      do
-        alpha <- o .: "Alpha"
-        Alpha <$> parseJSON alpha
-    parseJSON _ = mzero    
-
-instance FromJSON Cd where
-    parseJSON (Object o) =
-      do
-        cd <- o .: "Cd"
-        Cd <$> parseJSON cd
-    parseJSON _ = mzero    
-
-instance FromJSON N where
-    parseJSON (Object o) =
-      do
-        n <- o .: "N"
-        N <$> parseJSON n
-    parseJSON _ = mzero    
-
-instance FromJSON UV where
-    parseJSON (Object o) =
-      do
-        uv  <- o .: "uv"
-        UV <$> parseJSON uv
-    parseJSON _ = mzero
-
-instance FromJSON Position where
-    parseJSON (Object o) =
-      do
-        position <- o .: "position"
-        Position <$> parseJSON position
-    parseJSON _ = mzero
-
 
 getJSON :: FilePath -> IO B.ByteString
 getJSON  = B.readFile
