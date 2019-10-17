@@ -5,8 +5,25 @@
 
 import json
 import sys
+import subprocess
 from itertools import chain
+
 # from itertools import izip
+
+
+def rpcShuffler(arg=[]):
+    print("initializing RPC process...")
+    with open('./rpcShuffler/.p2h', 'w') as f:
+        f.write(str(arg))
+
+    print("calling rpcshuffler")
+    subprocess.run(["rpcShuffler/rpcshuffler"])
+
+    with open('./rpcShuffler/.h2p', 'r') as f:
+        result = f.read()
+
+    return(result)
+
 
 def concat(mlist):
     return list(chain.from_iterable(mlist))
@@ -34,15 +51,16 @@ def restoreArrayFromIndex (array, indices):
         result.append (array [i])
     return result
 
-def readJSON(fileIn, fileOut):
+def readJSON(fileIn):
     # in:  fileIn
     # out: jsonFile
     # fileIn  = "models/model.geo"
     # fileOut = "models/model.pgeo" # pgeo - processed geo, in JSON format
 
-    outfile = open(fileIn, "r")
-    jsonFile = json.loads (outfile.read ())
-    outfile.close()
+    inFile  = open(fileIn, "r")
+    #outFile = open(fileOut, "w")
+    jsonFile = json.loads(inFile.read())
+    inFile.close()
 
     return jsonFile
 
@@ -62,63 +80,73 @@ def parseJSON(jsonFile):
     ### ATTRIBUTES ###
     attrs         = toDict (jsonDict ["attributes"])
 
-    # DEBUG:
-    # print("Alpha: ", vtxAttrs [0])
-    # print("Cd: "   , vtxAttrs [1])
-    # print("N: "    , vtxAttrs [2])
-    # print("uv: "   , vtxAttrs [3])
-    # print("P: "    , ptAttrs  [0])
-    # print("Prim: "   , ptAttrs  [0])
-
     # vertex attributes list
     vtxAttrs          = attrs ["vertexattributes"]
+
+    #print(vtxAttrs[0])
+    #print(toDict(vtxAttrs))
     
-    # Alpha vtx attr
+    ### Alpha vtx attr
     vtxAttrAlpha         = vtxAttrs [0]
     vtxAttrAlphaDict     = toDict (vtxAttrAlpha [1])
     vtxAttrAlphaDictVals = vtxAttrAlphaDict ["values"]
     vtxAttrAlphaArrays   = toDict (vtxAttrAlphaDictVals) ["arrays"]
 
-    # Color
+    ### Color
     vtxAttrCd         = vtxAttrs [1]
     vtxAttrCdDict     = toDict (vtxAttrCd [1])
     vtxAttrCdDictVals = vtxAttrCdDict ["values"]
     vtxAttrCdTuples   = toDict (vtxAttrCdDictVals) ["tuples"]    
 
-    # Normal
+    ### Normal
     vtxAttrN          = vtxAttrs[2]
     vtxAttrNDict      = toDict (vtxAttrN [1])
     vtxAttrNDictVals  = vtxAttrNDict ["values"]
-    vtxAttrNTuples        = toDict (vtxAttrNDictVals) ["tuples"]    
+    vtxAttrNTuples    = toDict (vtxAttrNDictVals) ["tuples"]
 
-    # UV
-    vtxAttrUV         = vtxAttrs [3]
+    # TODO : matIndices, shop_materialpath -> dir where materials live,
+    # basic material = vertex shader, fragment shader, a list of textures
+    ### Material
+    vtxAttrMat         = vtxAttrs [3]
+    vtxAttrMatDict     = toDict (vtxAttrMat [1])
+    vtxAttrMatDictVals = vtxAttrMatDict ["strings"] # material paths strings
+    vtxAttrMatIndices  = toDict (vtxAttrMatDict["indices"])["arrays"]
+
+
+    ### UV
+    vtxAttrUV         = vtxAttrs [4]
     vtxAttrUVDict     = toDict (vtxAttrUV [1])
     vtxAttrUVDictVals = vtxAttrUVDict ["values"]
     vtxAttrUVTuples   = toDict (vtxAttrUVDictVals) ["tuples"]    
 
-    # Point Attributes
+    ### Point Attributes
     ptAttrs           = attrs ["pointattributes"]
     
-    # Position point attr
+    ### Position point attr
     ptAttrP           = ptAttrs [0]
     ptAttrPDict       = toDict (ptAttrP[1])
     ptAttrPDictVals   = ptAttrPDict ["values"] # Point Attr Dictionary Values
     ptAttrPTuples     = toDict (ptAttrPDictVals) ["tuples"]
     # print ("pTuples: ", ptAttrPTuples, "\n")
 
-    # Primitive Attributes
-    prAttrs           = attrs ["primitiveattributes"]
+    # # Primitive Attributes
+    # prAttrs           = attrs ["primitiveattributes"]
 
-    # Material prim attr
-    prAttrMat         = prAttrs[0]
-    prAttrMatDict     = toDict(prAttrMat[1])
-    prAttrMatStrings  = prAttrMatDict["strings"]
-    prAttrMatIndices  = toDict(prAttrMatDict["indices"])["arrays"]
+    # # Material prim attr
+    # prAttrMat         = prAttrs[0]
+    # prAttrMatDict     = toDict(prAttrMat[1])
+    # prAttrMatStrings  = prAttrMatDict["strings"]
+    # prAttrMatIndices  = toDict(prAttrMatDict["indices"])["arrays"]
 
-    print(prAttrMatStrings)
-    print(prAttrMatIndices)
-    
+    # DEBUG:
+    # print("Alpha: ", vtxAttrs [0])
+    # print("Cd: "   , vtxAttrs [1])
+    # print("N: "    , vtxAttrs [2])
+    # print("mat: "  , vtxAttrs [3])
+    # print("uv: "   , vtxAttrs [4])
+    # print("P: "    , ptAttrs  [0])
+    #print("Prim: "   , ptAttrs  [0])
+
     ### FORMAT JSON ###
     data    = {}
 
@@ -126,9 +154,16 @@ def parseJSON(jsonFile):
     data.update (geoEntry)
 
     # indices.reverse()
-    jsonEntry = {'indices' : indices}
+
+    jsonEntry = {'material' : vtxAttrMatIndices}
+    value = jsonEntry["material"]
+    print("initial value  :", value)
+    value = concat(value)
+    value = rpcShuffler(value)
+    print("shuffled value :", value)
+    jsonEntry = {'indices' : value}
     data.get('PGeo').update(jsonEntry)
-    # print (jsonEntry)
+    # print (jsonEntry)0
 
     # print(vtxTuples)
     #jsonEntry = {'Alpha' : vtxAttrAlphaArrays}
@@ -141,13 +176,22 @@ def parseJSON(jsonFile):
     jsonEntry = {'N' : vtxAttrNTuples}
     data.get('PGeo').update(jsonEntry)
 
+    jsonEntry = {'material' : vtxAttrMatDictVals}
+    # print("*********************************")
+    # print(jsonEntry)
+    # value = jsonEntry["material"]
+    # print("initial value  :", value)
+    # value = concat(value)
+    # value = rpcShuffler(value)
+    # print("shuffled value :", value)
+    # jsonEntry["material"] = value
+    data.get('PGeo').update(jsonEntry)
+
     jsonEntry = {'uv' : vtxAttrUVTuples}
     data.get('PGeo').update(jsonEntry)
 
     jsonEntry = {'position' : ptAttrPTuples}
-    # print ("pTuples: ", ptTuples, "\n")
     data.get('PGeo').update(jsonEntry)
-    # print ("jsonEntry: ", jsonEntry)
 
     return data
 
@@ -155,16 +199,18 @@ def parseJSON(jsonFile):
 def Main(fileIn = "models/model.geo", fileOut = "models/model.pgeo"):
     
     #jsonFile = readJSON(fileIn)
-    data = parseJSON(readJSON(fileIn, fileOut))
+    data = parseJSON(readJSON(fileIn))
+    # print(data)
 
     # Write the data into a json fileIn
     with open(fileOut, 'w') as outfile:
         json.dump(data, outfile)
 
 if __name__ == "__main__":
-    print("This application converts Houdini geo format to a pgeo format.\n\
+    print("This application converts Houdini geo format to a pgeo, intermediary format.\n\
+It's using IPC to talk to a haskell process to do the value shuffling, because I know no better :P.\n\
 PGeo is homeomorphic json geo container, suitable for standard haskell.\n\
-Usage: $ python geoParser.py inputFile.geo outputFile.pgeo")
+Usage: $ python geoParser.py inputFile.geo outputFile.pgeo\n")
     
     if len(sys.argv) <= 1:
         print("Parsing default ./models/model.geo")
