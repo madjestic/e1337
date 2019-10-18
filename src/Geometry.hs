@@ -29,6 +29,8 @@ import Graphics.Rendering.OpenGL as GL        (Vertex4(..))
 
 import FromVector
 
+import Debug.Trace   as DT
+
 instance FromVector Vec3 where
   toVertex4 :: Vec3 -> Vertex4 Double
   toVertex4 (k, l, m) = Vertex4 k l m 1.0  
@@ -36,17 +38,18 @@ instance FromVector Vec3 where
 data Geo
   =  Geo
      {
-       indices   :: [Int]  
+       indices   :: [[Int]]  
      , alpha     :: [Float] -- 1
      , color     :: [Vec3]  -- 3
      , normal    :: [Vec3]  -- 3
      , uv        :: [Vec3]  -- 3
-     , positions :: [Vec3]  -- 3 -> 13+1 -> 14 stride
+     , position  :: [Vec3]  -- 3 -> 13+1 -> 14 stride
+     , materials :: [String]
      }
   | GLGeo
      {
        vs  :: [Float] -- all attrs as a flat list
-     , is  :: [Int]   -- indices
+     , is  :: [[Int]]   -- indices
      } 
   deriving Show
 
@@ -66,35 +69,39 @@ instance FromJSON Geo where
        <*> ((o .: "PGeo") >>= (.: "N"))
        <*> ((o .: "PGeo") >>= (.: "uv"))
        <*> ((o .: "PGeo") >>= (.: "position"))
+       <*> ((o .: "PGeo") >>= (.: "material"))
   parseJSON _ = mzero
 
 getJSON :: FilePath -> IO B.ByteString
 getJSON  = B.readFile
 
+-- TODO : read P/VBOGeo should return grouped list of materials
 readVBOGeo :: FilePath -> IO Geo
 readVBOGeo file = 
   do
-    d <- decodeFileStrict file :: IO (Maybe ([Float],[Int]))
+    d <- decodeFileStrict file :: IO (Maybe ([Float],[[Int]]))
     return $ case d of
                Just d -> GLGeo (fst d) (snd d)
-               Nothing  -> GLGeo [] []
+               Nothing  -> GLGeo [] [[]]
 
 readPGeo :: FilePath -> IO Geo
 readPGeo jsonFile =
   do
+    _ <- DT.trace ("trace 1_0_1: " ++ show jsonFile) $ return ()
     d <- (eitherDecode <$> getJSON jsonFile) :: IO (Either String Geo)
-    --print d
+    print d
     let ids = (indices   . fromEitherDecode) d
         as  = (alpha     . fromEitherDecode) d
         cds = (color     . fromEitherDecode) d
         ns  = (normal    . fromEitherDecode) d
         uvs = (uv        . fromEitherDecode) d
-        ps  = (positions . fromEitherDecode) d
-    
-    return $ Geo ids as cds ns uvs ps 
+        ps  = (position  . fromEitherDecode) d
+        ms  = (materials . fromEitherDecode) d
+    _ <- DT.trace ("trace 1_0_2: " ++ show ids) $ return ()
+    return $ Geo ids as cds ns uvs ps ms
 
       where
-        fromEitherDecode = fromMaybe (Geo [] [] [] [] [] []) . fromEither
+        fromEitherDecode = fromMaybe (Geo [[]] [] [] [] [] [] []) . fromEither
         fromEither d =
           case d of
             Left err -> Nothing

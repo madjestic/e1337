@@ -5,8 +5,10 @@ module Material
 
 defaultMat
   = Material
-    "shaders/shader.vert"
-    "shaders/shader.frag"
+    "mat/const/const.vert"
+    "mat/const/const.frag"
+    -- "shaders/shader.vert"
+    -- "shaders/shader.frag"
     []
   
 

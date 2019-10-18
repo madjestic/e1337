@@ -7,6 +7,7 @@ import json
 import sys
 import subprocess
 from itertools import chain
+from numpy import argsort,array
 
 # from itertools import izip
 
@@ -83,9 +84,6 @@ def parseJSON(jsonFile):
     # vertex attributes list
     vtxAttrs          = attrs ["vertexattributes"]
 
-    #print(vtxAttrs[0])
-    #print(toDict(vtxAttrs))
-    
     ### Alpha vtx attr
     vtxAttrAlpha         = vtxAttrs [0]
     vtxAttrAlphaDict     = toDict (vtxAttrAlpha [1])
@@ -127,16 +125,7 @@ def parseJSON(jsonFile):
     ptAttrPDict       = toDict (ptAttrP[1])
     ptAttrPDictVals   = ptAttrPDict ["values"] # Point Attr Dictionary Values
     ptAttrPTuples     = toDict (ptAttrPDictVals) ["tuples"]
-    # print ("pTuples: ", ptAttrPTuples, "\n")
 
-    # # Primitive Attributes
-    # prAttrs           = attrs ["primitiveattributes"]
-
-    # # Material prim attr
-    # prAttrMat         = prAttrs[0]
-    # prAttrMatDict     = toDict(prAttrMat[1])
-    # prAttrMatStrings  = prAttrMatDict["strings"]
-    # prAttrMatIndices  = toDict(prAttrMatDict["indices"])["arrays"]
 
     # DEBUG:
     # print("Alpha: ", vtxAttrs [0])
@@ -145,7 +134,7 @@ def parseJSON(jsonFile):
     # print("mat: "  , vtxAttrs [3])
     # print("uv: "   , vtxAttrs [4])
     # print("P: "    , ptAttrs  [0])
-    #print("Prim: "   , ptAttrs  [0])
+    # print("Prim: "   , ptAttrs  [0])
 
     ### FORMAT JSON ###
     data    = {}
@@ -154,19 +143,24 @@ def parseJSON(jsonFile):
     data.update (geoEntry)
 
     # indices.reverse()
+    jsonEntry = {'indices' : indices}
+    # print("jsonEntry: ", jsonEntry["indices"])
+    idx = jsonEntry["indices"]
 
     jsonEntry = {'material' : vtxAttrMatIndices}
     value = jsonEntry["material"]
     print("initial value  :", value)
     value = concat(value)
-    value = rpcShuffler(value)
-    print("shuffled value :", value)
+    value = eval(rpcShuffler(value))
+    print("material indices:", vtxAttrMatIndices)
+    print("shuffled value :", type(value))
+    print("idx :", type(idx))
+    value = array(idx)[(array(value))]
+    value = value.tolist()
+    print("shuffled result :", value)
     jsonEntry = {'indices' : value}
     data.get('PGeo').update(jsonEntry)
-    # print (jsonEntry)0
 
-    # print(vtxTuples)
-    #jsonEntry = {'Alpha' : vtxAttrAlphaArrays}
     jsonEntry = {'Alpha' : list(chain.from_iterable(vtxAttrAlphaArrays))}    
     data.get('PGeo').update(jsonEntry)
     
@@ -177,14 +171,6 @@ def parseJSON(jsonFile):
     data.get('PGeo').update(jsonEntry)
 
     jsonEntry = {'material' : vtxAttrMatDictVals}
-    # print("*********************************")
-    # print(jsonEntry)
-    # value = jsonEntry["material"]
-    # print("initial value  :", value)
-    # value = concat(value)
-    # value = rpcShuffler(value)
-    # print("shuffled value :", value)
-    # jsonEntry["material"] = value
     data.get('PGeo').update(jsonEntry)
 
     jsonEntry = {'uv' : vtxAttrUVTuples}

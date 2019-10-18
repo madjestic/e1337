@@ -32,10 +32,8 @@ import System.Environment (getArgs)
        
 import Camera        as Cam
 import Game
---import Game.Parser   as GameP
---import Object.Parser as ObjectP
 import Project
-import Project.Parser as P
+import Project.Parser
 import Keyboard
 import Object         as Obj
 import Controllable  
@@ -43,6 +41,7 @@ import Geometry
 import Input          as Inp
 import Rendering
 import Material
+import Drawable
 
 import Unsafe.Coerce
 
@@ -297,17 +296,26 @@ main :: IO ()
 main = do
   args <- getArgs
   let jsonFile  = (unsafeCoerce (args!!0) :: FilePath)
-  game <- initGame =<< parse (unsafeCoerce (args!!0) :: FilePath)
+  --print jsonFile
+  game <- initGame =<< Project.Parser.parse (unsafeCoerce (args!!0) :: FilePath)
+  --print game
+  -- print ((object game)!!0) 
+  -- (toDrawable $ geoPath $ (object game)!!0) >>= print
+  --print game
 
   let title = ((pack $ Game.name . options $ game) :: Text)
       resX  = (Game.resx . options $ game)
       resY  = (Game.resy . options $ game)
+
+  _ <- DT.trace ("trace 0: " ++ show title ++ show resX ++ show resY) $ return ()
     
   window    <- openWindow
                title
                (resX, resY)
-               
+
+  _ <- DT.trace ("trace 1: ") $ return ()
   resources <- initBufferObjects game
+  _ <- DT.trace ("trace 2: ") $ return ()
   
   animate
     window

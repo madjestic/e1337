@@ -1,4 +1,5 @@
 {-# LANGUAGE InstanceSigs #-}
+
 module Main where
 
 import Data.Text.Lazy            (Text)
@@ -31,5 +32,6 @@ main = do
       fileOut =  (unsafeCoerce (args!!1) :: FilePath)
 
   geo <- readPGeo fileIn
-  (Drawable vs idx) <- toDrawable geo -- $ (geometry . object) game
+  --print geo
+  (Drawable vs idx) <- toDrawable fileIn -- $ (geometry . object) game
   I.writeFile fileOut (encodeToLazyText (vs, idx))

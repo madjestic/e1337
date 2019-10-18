@@ -9,6 +9,7 @@ module Rendering
   , draw
   , initBufferObjects
   , initUniforms
+  , toDrawable
   , Descriptor(..)
   , Drawable(..)
   ) where
@@ -159,26 +160,29 @@ instance ToDrawable FilePath where
                     "vgeo" -> readVBOGeo x ) modelPath
 
     drw <- (\x -> case x of
-             Geo indices alpha color normal uv positions
-               -> fromGeo (Geo indices alpha color normal uv positions)
+             Geo indices alpha color normal uv positions materials
+               -> fromGeo (Geo indices alpha color normal uv positions materials)
              GLGeo vs idx
                -> return $ Drawable vs is'
                where
-                 is'  = (map fromIntegral idx) :: [GLuint]) geo
+                 is'  = [(map fromIntegral (idx!!0))] :: [[GLuint]]) geo
     return drw
 
 initBufferObjects :: Game -> IO Descriptor
 initBufferObjects game =  
   do
+    print game
+    _ <- DT.trace ("trace 1_0: " ++ show (geoPath $ (object game)!!0)) $ return ()
     (Drawable vs idx) <- toDrawable $ geoPath $ (object game)!!0
-
     -- | VAO
     vao <- genObjectName
     bindVertexArrayObject $= Just vao 
+    _ <- DT.trace ("trace 1_1: " ++ show vs ++ show " " ++ show idx) $ return ()
 
     -- | VBO
     vertexBuffer <- genObjectName
     bindBuffer ArrayBuffer $= Just vertexBuffer
+    _ <- DT.trace ("trace 1_2: " ++ show vs) $ return ()
     withArray vs $ \ptr ->
       do
         let sizev = fromIntegral ((length vs) * sizeOf (head vs))
@@ -187,10 +191,11 @@ initBufferObjects game =
     -- | EBO
     elementBuffer <- genObjectName
     bindBuffer ElementArrayBuffer $= Just elementBuffer
-    let numIndices = length idx
-    withArray idx $ \ptr ->
+    _ <- DT.trace ("trace 1_3: " ++ show idx) $ return ()
+    let numIndices = length (idx!!0)
+    withArray (idx!!0) $ \ptr ->
       do
-        let indicesSize = fromIntegral (numIndices * sizeOf (head idx))
+        let indicesSize = fromIntegral (numIndices * sizeOf (head (idx!!0)))
         bufferData ElementArrayBuffer $= (indicesSize, ptr, StaticDraw)
         
     -- | Bind the pointer to the vertex attribute data

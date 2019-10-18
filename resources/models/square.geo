@@ -5,15 +5,15 @@
 	"vertexcount",6,
 	"primitivecount",2,
 	"info",{
-		"date":"2019-10-01 23:58:54",
-		"timetocook":0.000151999999999999981,
+		"date":"2019-10-18 22:54:13",
+		"timetocook":0.000908999999999999977,
 		"software":"Houdini 17.5.333",
 		"artist":"madjestic",
 		"hostname":"nu",
 		"time":0,
 		"bounds":[-0.5,0.5,-0.5,0.5,-0.166999996,-0.166999996],
 		"primcount_summary":"          2 Polygons\n",
-		"attribute_summary":"     4 vertex attributes:\tN, uv, Cd, Alpha\n     1 point attributes:\tP\n     1 primitive attributes:\tshop_materialpath\n"
+		"attribute_summary":"     5 vertex attributes:\tN, uv, shop_materialpath, Cd, Alpha\n     1 point attributes:\tP\n"
 	},
 	"topology",[
 		"pointref",[
@@ -106,6 +106,27 @@
 			[
 				[
 					"scope","public",
+					"type","string",
+					"name","shop_materialpath",
+					"options",{
+					}
+				],
+				[
+					"size",1,
+					"storage","int32",
+					"strings",["/mat/square/constant_A","/mat/square/constant_B"
+					],
+					"indices",[
+						"size",1,
+						"storage","int32",
+						"arrays",[[0,0,0,1,1,1]
+						]
+					]
+				]
+			],
+			[
+				[
+					"scope","public",
 					"type","numeric",
 					"name","uv",
 					"options",{
@@ -157,29 +178,6 @@
 						"size",3,
 						"storage","fpreal32",
 						"tuples",[[-0.5,-0.5,-0.166999996],[0.5,-0.5,-0.166999996],[-0.5,0.5,-0.166999996],[0.5,0.5,-0.166999996]
-						]
-					]
-				]
-			]
-		],
-		"primitiveattributes",[
-			[
-				[
-					"scope","public",
-					"type","string",
-					"name","shop_materialpath",
-					"options",{
-					}
-				],
-				[
-					"size",1,
-					"storage","int32",
-					"strings",["/mat/constant_A","/mat/constant_B"
-					],
-					"indices",[
-						"size",1,
-						"storage","int32",
-						"arrays",[[0,1]
 						]
 					]
 				]

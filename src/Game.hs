@@ -63,16 +63,17 @@ initGame project =
               resY'
             )
               GamePlaying
-              [ defaultObj
-                { geoPath = modelPath'
-                , material =
-                    [ Material
-                      vertShaderPath'
-                      fragShaderPath'
-                      []
-                    ]
-                }
-              ] -- :: Object     
+              [ defaultObj ]
+              -- [ defaultObj
+              --   { geoPath = modelPath'
+              --   , material =
+              --       [ Material
+              --         vertShaderPath'
+              --         fragShaderPath'
+              --         []
+              --       ]
+              --   }
+              -- ] -- :: Object     
               initCam
     return initGame
       where
@@ -80,5 +81,7 @@ initGame project =
         resX'           = (unsafeCoerce $ Project.resx $ project) :: CInt
         resY'           = (unsafeCoerce $ Project.resy $ project) :: CInt
         modelPath'      = (unsafeCoerce $ Project.path $ (Project.models $ project)!!0) :: FilePath
-        vertShaderPath' = (unsafeCoerce $ Material.vertShader $(Project.materials $ (Project.models $ project)!!0)!!0) :: FilePath
-        fragShaderPath' = (unsafeCoerce $ Material.fragShader $(Project.materials $ (Project.models $ project)!!0)!!0) :: FilePath
+        vertShaderPath' = "mat/box_2mats/constant_A/shader.vert" :: FilePath -- (unsafeCoerce $ Material.vertShader $(Project.materials $ (Project.models $ project)!!0)!!0) :: FilePath
+        fragShaderPath' = "mat/box_2mats/constant_A/shader.frag" :: FilePath -- (unsafeCoerce $ Material.fragShader $(Project.materials $ (Project.models $ project)!!0)!!0) :: FilePath
+
+--initObject :: Object -> Object

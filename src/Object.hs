@@ -24,7 +24,7 @@ data Object
 defaultObj 
   = Object
     0.0
-    "models/box.pgeo" --(Geo [] [] [] [] [] [])
+    "models/square.pgeo" --(Geo [[]] [] [] [] [] [])
     [defaultMat]
     (V4 0 0 0 0)
     ( Controllable
