@@ -5,6 +5,8 @@ module Material
 
 defaultMat
   = Material
+    -- "mat/mandelbrot/shader.vert"
+    -- "mat/mandelbrot/shader.frag"
     "mat/const/const.vert"
     "mat/const/const.frag"
     -- "shaders/shader.vert"

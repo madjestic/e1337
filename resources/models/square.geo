@@ -1,23 +1,23 @@
 [
 	"fileversion","17.5.333",
 	"hasindex",false,
-	"pointcount",4,
-	"vertexcount",6,
-	"primitivecount",2,
+	"pointcount",3,
+	"vertexcount",3,
+	"primitivecount",1,
 	"info",{
-		"date":"2019-10-18 22:54:13",
-		"timetocook":0.000908999999999999977,
+		"date":"2019-10-19 15:12:20",
+		"timetocook":8.49999999999999926e-05,
 		"software":"Houdini 17.5.333",
 		"artist":"madjestic",
 		"hostname":"nu",
 		"time":0,
-		"bounds":[-0.5,0.5,-0.5,0.5,-0.166999996,-0.166999996],
-		"primcount_summary":"          2 Polygons\n",
-		"attribute_summary":"     5 vertex attributes:\tN, uv, shop_materialpath, Cd, Alpha\n     1 point attributes:\tP\n"
+		"bounds":[-0.5,0.5,-0.5,0.5,0,0],
+		"primcount_summary":"          1 Polygon\n",
+		"attribute_summary":"     5 vertex attributes:\tN, uv, Alpha, shop_materialpath, Cd\n     1 point attributes:\tP\n"
 	},
 	"topology",[
 		"pointref",[
-			"indices",[0,1,3,3,2,0]
+			"indices",[0,1,2]
 		]
 	],
 	"attributes",[
@@ -41,7 +41,7 @@
 					"values",[
 						"size",1,
 						"storage","fpreal32",
-						"arrays",[[0.999000013,0.999000013,0.999000013,0.999000013,0.999000013,0.999000013]
+						"arrays",[[0.999000013,0.999000013,0.999000013]
 						]
 					]
 				]
@@ -69,8 +69,7 @@
 					"values",[
 						"size",3,
 						"storage","fpreal32",
-						"tuples",[[0.641600609,0.81477952,0.0808047056],[0.800463796,0.763874292,0.314645648],[0.510895014,0.792067647,0.708448887],[0.894846559,0.123585939,0.376660347],[0.72838676,0.0209606886,0.658269048],[0.879798412,
-								0.789041281,0.531899691]
+						"tuples",[[0.111000001,0.111000001,0.111000001],[0.111000001,0.111000001,0.111000001],[0.111000001,0.111000001,0.111000001]
 						]
 					]
 				]
@@ -98,7 +97,7 @@
 					"values",[
 						"size",3,
 						"storage","fpreal32",
-						"tuples",[[0,0,-1],[0,0,-1],[0,0,-1],[0,0,-1],[0,0,-1],[0,0,-1]
+						"tuples",[[0,0,-1],[0,0,-1],[0,0,-1]
 						]
 					]
 				]
@@ -114,12 +113,12 @@
 				[
 					"size",1,
 					"storage","int32",
-					"strings",["/mat/square/constant_A","/mat/square/constant_B"
+					"strings",["/mat/square/mandelbrot"
 					],
 					"indices",[
 						"size",1,
 						"storage","int32",
-						"arrays",[[0,0,0,1,1,1]
+						"arrays",[[0,0,0]
 						]
 					]
 				]
@@ -147,7 +146,7 @@
 					"values",[
 						"size",3,
 						"storage","fpreal32",
-						"tuples",[[0,0,0.5],[1,0,0.5],[1,1,0.5],[1,1,0.5],[0,1,0.5],[0,0,0.5]
+						"tuples",[[0,0,0.5],[1,0,0.5],[1,1,0.5]
 						]
 					]
 				]
@@ -177,7 +176,7 @@
 					"values",[
 						"size",3,
 						"storage","fpreal32",
-						"tuples",[[-0.5,-0.5,-0.166999996],[0.5,-0.5,-0.166999996],[-0.5,0.5,-0.166999996],[0.5,0.5,-0.166999996]
+						"tuples",[[-0.5,-0.5,0],[0.5,-0.5,0],[0.5,0.5,0]
 						]
 					]
 				]
@@ -191,8 +190,8 @@
 			],
 			[
 				"startvertex",0,
-				"nprimitives",2,
-				"nvertices",[3,3]
+				"nprimitives",1,
+				"nvertices",[3]
 			]
 		]
 	]

@@ -97,7 +97,8 @@ readPGeo jsonFile =
         uvs = (uv        . fromEitherDecode) d
         ps  = (position  . fromEitherDecode) d
         ms  = (materials . fromEitherDecode) d
-    _ <- DT.trace ("trace 1_0_2: " ++ show ids) $ return ()
+    _ <- DT.trace ("trace 1_0_2: ids:" ++ show ids) $ return ()
+    _ <- DT.trace ("trace 1_0_2: ps:" ++ show ps) $ return ()
     return $ Geo ids as cds ns uvs ps ms
 
       where

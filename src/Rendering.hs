@@ -159,6 +159,7 @@ instance ToDrawable FilePath where
                     "pgeo" -> readPGeo   x
                     "vgeo" -> readVBOGeo x ) modelPath
 
+    _ <- DT.trace ("toDrawable: geo:" ++ show geo) $ return ()
     drw <- (\x -> case x of
              Geo indices alpha color normal uv positions materials
                -> fromGeo (Geo indices alpha color normal uv positions materials)
@@ -166,6 +167,7 @@ instance ToDrawable FilePath where
                -> return $ Drawable vs is'
                where
                  is'  = [(map fromIntegral (idx!!0))] :: [[GLuint]]) geo
+    _ <- DT.trace ("toDrawable: drw:" ++ show drw) $ return ()
     return drw
 
 initBufferObjects :: Game -> IO Descriptor
@@ -191,7 +193,7 @@ initBufferObjects game =
     -- | EBO
     elementBuffer <- genObjectName
     bindBuffer ElementArrayBuffer $= Just elementBuffer
-    _ <- DT.trace ("trace 1_3: " ++ show idx) $ return ()
+    _ <- DT.trace ("trace 1_3: " ++ show (idx!!0)) $ return ()
     let numIndices = length (idx!!0)
     withArray (idx!!0) $ \ptr ->
       do

@@ -63,16 +63,19 @@ toVAO
   -> [Vertex4 Double]
   -> IO [GLfloat]
 toVAO idx as cds ns ts ps =
-  return $ concat $
-    fmap (\i ->
-            (\x -> [x])                                            (as !!(fromIntegral       i)) ++ -- 1
-            (\(Vertex3   r g b)   -> fmap realToFrac [r,g,b])      (cds!!(fromIntegral       i)) ++ -- 3
-            (\(Vertex3   x y z)   -> fmap realToFrac [x,y,z])      (ns !!(fromIntegral       i)) ++ -- 3
-            (\(TexCoord3 u v w)   -> fmap realToFrac [u, v, w])    (ts !!(fromIntegral       i)) ++ -- 3
-            (\(Vertex4   x y z w) -> fmap realToFrac [x, y, z, w]) (ps !!(fromIntegral ((idx!!0)!!i)))   -- 4 -> stride 14
-         ) iter
-      where
-        iter = [0..(length idx)-1]
+  do
+    _ <- DT.trace ("toVAO: idx:" ++ show (idx!!0)) $ return ()
+    _ <- DT.trace ("toVAO: ps:" ++ show ps) $ return ()
+    return $ concat $
+      fmap (\i ->
+              (\x -> [x])                                            (as !!(fromIntegral       i)) ++ -- 1
+              (\(Vertex3   r g b)   -> fmap realToFrac [r,g,b])      (cds!!(fromIntegral       i)) ++ -- 3
+              (\(Vertex3   x y z)   -> fmap realToFrac [x,y,z])      (ns !!(fromIntegral       i)) ++ -- 3
+              (\(TexCoord3 u v w)   -> fmap realToFrac [u, v, w])    (ts !!(fromIntegral       i)) ++ -- 3
+              (\(Vertex4   x y z w) -> fmap realToFrac [x, y, z, w]) (ps !!(fromIntegral ((idx!!0)!!i)))   -- 4 -> stride 14
+           ) iter
+        where
+          iter = [0..(length (idx!!0))-1]
 
 toIdxVAO
   :: [[GLuint]]
