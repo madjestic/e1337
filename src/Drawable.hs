@@ -38,16 +38,17 @@ instance FromGeo (IO Drawable) where
   fromGeo geo = do
     let stride = 14 -- TODO : stride <- attr sizes
     _ <- DT.trace ("ids': " ++ show ids') $ return ()
+    _ <- DT.trace ("uid : " ++ show uid ) $ return ()
     vs <- (toVAO ids' as' cds' ns' uv' ps') :: IO [GLfloat]
     --(vs, idx) <- (toIdxVAO ids' as' cds' ns' uv' ps' stride) :: IO ([GLfloat],[GLuint])
     -- _ <- DT.trace ("vs: "   ++ show vs) $ return ()
     -- _ <- DT.trace ("ids': " ++ show ids') $ return ()
     --return (Drawable vs idx)
-    --return (Drawable vs [uid])
-    return (Drawable vs ids')
+    return (Drawable vs [uid])
+    --return (Drawable vs ids')
       where
         ids' = (fmap . fmap) fromIntegral $ indices geo                        -- index
-        uid  = (map fromIntegral [0..((length ids')-1)] :: [GLuint]) -- index per pt, as in uncompressed, needed for non-indexed geo to work
+        uid  = (map fromIntegral [0..((length (ids'!!0))-1)] :: [GLuint]) -- index per pt, as in uncompressed, needed for non-indexed geo to work
         as'  = alpha geo
         cds' = map (\ (r, g, b) -> Vertex3   r g b) $ color  geo
         ns'  = map (\ (x, y, z) -> Vertex3   x y z) $ normal geo

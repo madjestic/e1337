@@ -7,7 +7,7 @@ module Rendering
   ( openWindow
   , closeWindow
   , draw
-  , initBufferObjects
+  , initVAO'
   , initUniforms
   , toDrawable
   , Descriptor(..)
@@ -17,8 +17,8 @@ module Rendering
 import Control.Monad
 import Data.Text                              (Text)
 import Foreign.C
-import Foreign.Marshal.Array                  (withArray)
-import Foreign.Ptr                            (plusPtr, nullPtr, Ptr)
+import Foreign.Marshal.Array                  (withArray, newArray)
+import Foreign.Ptr                            (plusPtr, nullPtr, alignPtr, Ptr)
 import Foreign.Storable                       (sizeOf)
 import Graphics.Rendering.OpenGL as GL hiding (positions, color, normal, Size)
 import SDL                             hiding (Point, Event, Timer, (^+^), (*^), (^-^), dot)
@@ -74,7 +74,7 @@ closeWindow window = do
 
 -- < OpenGL > -------------------------------------------------------------
 data Descriptor =
-     Descriptor VertexArrayObject NumArrayIndices
+     Descriptor VertexArrayObject NumArrayIndices 
 
 draw :: SDL.Window -> Descriptor -> IO ()
 draw window (Descriptor vao numIndices) =
@@ -89,7 +89,6 @@ draw window (Descriptor vao numIndices) =
     depthFunc $= Just Less
 
     SDL.glSwapWindow window
-
     
 initUniforms :: Game -> IO ()
 initUniforms game =  
@@ -97,7 +96,7 @@ initUniforms game =
     -- | Shaders
     program <- loadShaders [
       ShaderInfo VertexShader
-        (FileSource (vertShader $ (material $ (object $ game)!!0)!!0)),
+        (FileSource (vertShader $ (material $ (object $ game)!!0)!!0)), -- inito for first object: TODO: replace with fmap or whatever.
       ShaderInfo FragmentShader
         (FileSource (fragShader $ (material $ (object $ game)!!0)!!0))
       ]
@@ -170,12 +169,12 @@ instance ToDrawable FilePath where
     _ <- DT.trace ("toDrawable: drw:" ++ show drw) $ return ()
     return drw
 
-initBufferObjects :: Game -> IO Descriptor
-initBufferObjects game =  
+initVAO :: Game -> IO Descriptor
+initVAO game =  
   do
     print game
     _ <- DT.trace ("trace 1_0: " ++ show (geoPath $ (object game)!!0)) $ return ()
-    (Drawable vs idx) <- toDrawable $ geoPath $ (object game)!!0
+    (Drawable vs idx) <- toDrawable $ geoPath $ (object game)!!0 -- take first object, TODO: replace with fmap or whatever.
     -- | VAO
     vao <- genObjectName
     bindVertexArrayObject $= Just vao 
@@ -200,53 +199,92 @@ initBufferObjects game =
         let indicesSize = fromIntegral (numIndices * sizeOf (head (idx!!0)))
         bufferData ElementArrayBuffer $= (indicesSize, ptr, StaticDraw)
         
-    -- | Bind the pointer to the vertex attribute data
-    let floatSize  = (fromIntegral $ sizeOf (0.0::GLfloat)) :: GLsizei
-        stride     =  14 * floatSize -- TODO : stride value should come from a single location
-
-    -- | Alpha
-    let alpha       = AttribLocation 0
-        alphaOffset = 0 * floatSize
-    vertexAttribPointer alpha  $=
-        (ToFloat, VertexArrayDescriptor 1 Float stride (bufferOffset alphaOffset))
-    vertexAttribArray alpha    $= Enabled
-    
-    -- | Colors
-    let color       = AttribLocation 1
-        colorOffset = 1 * floatSize
-    vertexAttribPointer color  $=
-        (ToFloat, VertexArrayDescriptor 3 Float stride (bufferOffset colorOffset))
-    vertexAttribArray color    $= Enabled
-
-    -- | Normals
-    let normal       = AttribLocation 2
-        normalOffset = 4 * floatSize
-    vertexAttribPointer normal  $=
-        (ToFloat, VertexArrayDescriptor 3 Float stride (bufferOffset normalOffset))
-    vertexAttribArray normal    $= Enabled
-    
-    -- | UV
-    let uvCoords   = AttribLocation 3
-        uvOffset   = 7 * floatSize
-    vertexAttribPointer uvCoords  $=
-        (ToFloat, VertexArrayDescriptor 3 Float stride (bufferOffset uvOffset))
-    vertexAttribArray uvCoords    $= Enabled
-    
-    -- | Positions
-    let vPosition  = AttribLocation 4
-        posOffset  = 10 * floatSize
-    vertexAttribPointer vPosition $=
-        (ToFloat, VertexArrayDescriptor 4 Float stride (bufferOffset posOffset))
-    vertexAttribArray vPosition   $= Enabled
-
-    -- | Assign Textures
-    activeTexture            $= TextureUnit 0
-    let tex_00 = "textures/4096_earth_clouds.jpg"
-    tx0 <- loadTex tex_00
-    texture Texture2D        $= Enabled
-    textureBinding Texture2D $= Just tx0
-
+        -- | Bind the pointer to the vertex attribute data
+        let floatSize  = (fromIntegral $ sizeOf (0.0::GLfloat)) :: GLsizei
+            stride     =  14 * floatSize -- TODO : stride value should come from a single location
+        
+        -- | Alpha
+        vertexAttribPointer (AttribLocation 0) $= (ToFloat, VertexArrayDescriptor 1 Float stride ((plusPtr nullPtr . fromIntegral) (0 * floatSize)))
+        vertexAttribArray   (AttribLocation 0) $= Enabled
+        -- | Colors
+        vertexAttribPointer (AttribLocation 1) $= (ToFloat, VertexArrayDescriptor 3 Float stride ((plusPtr nullPtr . fromIntegral) (1 * floatSize)))
+        vertexAttribArray   (AttribLocation 1) $= Enabled
+        -- | Normals
+        vertexAttribPointer (AttribLocation 2) $= (ToFloat, VertexArrayDescriptor 3 Float stride ((plusPtr nullPtr . fromIntegral) (4 * floatSize)))
+        vertexAttribArray   (AttribLocation 2) $= Enabled
+        -- | UV
+        vertexAttribPointer (AttribLocation 3) $= (ToFloat, VertexArrayDescriptor 3 Float stride ((plusPtr nullPtr . fromIntegral) (7 * floatSize)))
+        vertexAttribArray   (AttribLocation 3) $= Enabled
+        -- | Positions
+        vertexAttribPointer (AttribLocation 4) $= (ToFloat, VertexArrayDescriptor 4 Float stride ((plusPtr nullPtr . fromIntegral) (10 * floatSize)))
+        vertexAttribArray   (AttribLocation 4) $= Enabled
+        
+        -- | Assign Textures
+        activeTexture            $= TextureUnit 0
+        texture Texture2D        $= Enabled
+        tx0 <- loadTex "textures/4096_earth_clouds.jpg"
+        textureBinding Texture2D $= Just tx0
+        
     return $ Descriptor vao (fromIntegral numIndices)
+
+initVAO' :: Object -> IO Descriptor
+initVAO' obj =  
+  do
+    print obj
+    _ <- DT.trace ("trace 1_0: " ++ show (geoPath obj)) $ return ()
+    (Drawable vs idx) <- toDrawable $ geoPath obj -- take first object, TODO: replace with fmap or whatever.
+    -- | VAO
+    vao <- genObjectName
+    bindVertexArrayObject $= Just vao 
+    _ <- DT.trace ("trace 1_1: " ++ show vs ++ show " " ++ show idx) $ return ()
+
+    -- | VBO
+    vertexBuffer <- genObjectName
+    bindBuffer ArrayBuffer $= Just vertexBuffer
+    _ <- DT.trace ("trace 1_2: " ++ show vs) $ return ()
+    withArray vs $ \ptr ->
+      do
+        let sizev = fromIntegral ((length vs) * sizeOf (head vs))
+        bufferData ArrayBuffer $= (sizev, ptr, StaticDraw)
+
+    -- | EBO
+    elementBuffer <- genObjectName
+    bindBuffer ElementArrayBuffer $= Just elementBuffer
+    _ <- DT.trace ("trace 1_3: " ++ show (idx!!0)) $ return ()
+    let numIndices = length (idx!!0)
+    withArray (idx!!0) $ \ptr ->
+      do
+        let indicesSize = fromIntegral (numIndices * sizeOf (head (idx!!0)))
+        bufferData ElementArrayBuffer $= (indicesSize, ptr, StaticDraw)
+        
+        -- | Bind the pointer to the vertex attribute data
+        let floatSize  = (fromIntegral $ sizeOf (0.0::GLfloat)) :: GLsizei
+            stride     =  14 * floatSize -- TODO : stride value should come from a single location
+        
+        -- | Alpha
+        vertexAttribPointer (AttribLocation 0) $= (ToFloat, VertexArrayDescriptor 1 Float stride ((plusPtr nullPtr . fromIntegral) (0 * floatSize)))
+        vertexAttribArray   (AttribLocation 0) $= Enabled
+        -- | Colors
+        vertexAttribPointer (AttribLocation 1) $= (ToFloat, VertexArrayDescriptor 3 Float stride ((plusPtr nullPtr . fromIntegral) (1 * floatSize)))
+        vertexAttribArray   (AttribLocation 1) $= Enabled
+        -- | Normals
+        vertexAttribPointer (AttribLocation 2) $= (ToFloat, VertexArrayDescriptor 3 Float stride ((plusPtr nullPtr . fromIntegral) (4 * floatSize)))
+        vertexAttribArray   (AttribLocation 2) $= Enabled
+        -- | UV
+        vertexAttribPointer (AttribLocation 3) $= (ToFloat, VertexArrayDescriptor 3 Float stride ((plusPtr nullPtr . fromIntegral) (7 * floatSize)))
+        vertexAttribArray   (AttribLocation 3) $= Enabled
+        -- | Positions
+        vertexAttribPointer (AttribLocation 4) $= (ToFloat, VertexArrayDescriptor 4 Float stride ((plusPtr nullPtr . fromIntegral) (10 * floatSize)))
+        vertexAttribArray   (AttribLocation 4) $= Enabled
+        
+        -- | Assign Textures
+        activeTexture            $= TextureUnit 0
+        texture Texture2D        $= Enabled
+        tx0 <- loadTex "textures/4096_earth_clouds.jpg"
+        textureBinding Texture2D $= Just tx0
+        
+    return $ Descriptor vao (fromIntegral numIndices)
+    
     
 bufferOffset :: Integral a => a -> Ptr b
 bufferOffset = plusPtr nullPtr . fromIntegral

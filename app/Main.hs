@@ -65,7 +65,7 @@ type WinInput = Event SDL.EventPayload
 type WinOutput = (Game, Bool)
 
 animate :: SDL.Window
-        -> Descriptor
+        -> [Descriptor]
         -> SF WinInput WinOutput  -- ^ signal function to animate
         -> IO ()
 animate window resources sf =
@@ -88,7 +88,7 @@ animate window resources sf =
         renderOutput _ (game, shouldExit) =
           do
             uniforms <- initUniforms game
-            draw window resources
+            draw window (resources!!0)
             return shouldExit
 
 
@@ -314,10 +314,14 @@ main = do
                (resX, resY)
 
   _ <- DT.trace ("trace 1: ") $ return ()
-  resources <- initBufferObjects game
+  descriptor <- initVAO' ((object game)!!0)
+  let resources = [descriptor]
   _ <- DT.trace ("trace 2: ") $ return ()
   
   animate
     window
     resources
     (parseWinInput >>> (mainGame game &&& handleExit))
+
+gameDescriptors :: Game -> [Descriptor]
+gameDescriptors game = undefined
