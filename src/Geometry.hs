@@ -87,9 +87,9 @@ readVBOGeo file =
 readPGeo :: FilePath -> IO Geo
 readPGeo jsonFile =
   do
-    _ <- DT.trace ("trace 1_0_1: " ++ show jsonFile) $ return ()
+    --_ <- DT.trace ("trace 1_0_1: " ++ show jsonFile) $ return ()
     d <- (eitherDecode <$> getJSON jsonFile) :: IO (Either String Geo)
-    print d
+    -- print d
     let ids = (indices   . fromEitherDecode) d
         as  = (alpha     . fromEitherDecode) d
         cds = (color     . fromEitherDecode) d
@@ -97,8 +97,8 @@ readPGeo jsonFile =
         uvs = (uv        . fromEitherDecode) d
         ps  = (position  . fromEitherDecode) d
         ms  = (materials . fromEitherDecode) d
-    _ <- DT.trace ("trace 1_0_2: ids:" ++ show ids) $ return ()
-    _ <- DT.trace ("trace 1_0_2: ps:" ++ show ps) $ return ()
+    -- _ <- DT.trace ("trace 1_0_2: ids:" ++ show ids) $ return ()
+    -- _ <- DT.trace ("trace 1_0_2: ps:" ++ show ps) $ return ()
     return $ Geo ids as cds ns uvs ps ms
 
       where

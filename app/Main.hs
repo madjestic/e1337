@@ -165,10 +165,9 @@ loopControlable ctl0 =
             ( Devices
               ( Keyboard kkeys (keyVecs (keyboard (devices ctl))) )
               ( Mouse Nothing Nothing pos0 [] ) ) )
-              --( Mouse Nothing Nothing (3.14, 2.71) [] ) ) )
         returnA -< 
           ( result
-          , catEvents (mev:kevs) --(kevs ++ [mevs]) (DT.trace (show pos0) $ mev)
+          , catEvents (mev:kevs)
             $> result) -- :: (Controllable, Event Controllable)
       cont result = loopControlable result
 
@@ -296,27 +295,19 @@ main :: IO ()
 main = do
   args <- getArgs
   let jsonFile  = (unsafeCoerce (args!!0) :: FilePath)
-  --print jsonFile
   game <- initGame =<< Project.Parser.parse (unsafeCoerce (args!!0) :: FilePath)
-  --print game
-  -- print ((object game)!!0) 
-  -- (toDrawable $ geoPath $ (object game)!!0) >>= print
-  --print game
 
   let title = ((pack $ Game.name . options $ game) :: Text)
       resX  = (Game.resx . options $ game)
       resY  = (Game.resy . options $ game)
 
-  _ <- DT.trace ("trace 0: " ++ show title ++ show resX ++ show resY) $ return ()
-    
   window    <- openWindow
                title
                (resX, resY)
 
-  _ <- DT.trace ("trace 1: ") $ return ()
-  descriptor <- initVAO' ((object game)!!0)
+  print game
+  descriptor <- initVAO ((object game)!!0)
   let resources = [descriptor]
-  _ <- DT.trace ("trace 2: ") $ return ()
   
   animate
     window

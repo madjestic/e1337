@@ -37,8 +37,6 @@ instance FromGeo (IO Drawable) where
   fromGeo :: Geo -> IO Drawable
   fromGeo geo = do
     let stride = 14 -- TODO : stride <- attr sizes
-    _ <- DT.trace ("ids': " ++ show ids') $ return ()
-    _ <- DT.trace ("uid : " ++ show uid ) $ return ()
     vs <- (toVAO ids' as' cds' ns' uv' ps') :: IO [GLfloat]
     --(vs, idx) <- (toIdxVAO ids' as' cds' ns' uv' ps' stride) :: IO ([GLfloat],[GLuint])
     -- _ <- DT.trace ("vs: "   ++ show vs) $ return ()
@@ -65,8 +63,8 @@ toVAO
   -> IO [GLfloat]
 toVAO idx as cds ns ts ps =
   do
-    _ <- DT.trace ("toVAO: idx:" ++ show (idx!!0)) $ return ()
-    _ <- DT.trace ("toVAO: ps:" ++ show ps) $ return ()
+    -- _ <- DT.trace ("toVAO: idx:" ++ show (idx!!0)) $ return ()
+    -- _ <- DT.trace ("toVAO: ps:" ++ show ps) $ return ()
     return $ concat $
       fmap (\i ->
               (\x -> [x])                                            (as !!(fromIntegral       i)) ++ -- 1

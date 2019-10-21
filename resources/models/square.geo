@@ -5,8 +5,8 @@
 	"vertexcount",6,
 	"primitivecount",2,
 	"info",{
-		"date":"2019-10-20 01:30:31",
-		"timetocook":8.70000000000000005e-05,
+		"date":"2019-10-21 14:38:51",
+		"timetocook":0.000916999999999999955,
 		"software":"Houdini 17.5.333",
 		"artist":"madjestic",
 		"hostname":"nu",
@@ -114,12 +114,12 @@
 				[
 					"size",1,
 					"storage","int32",
-					"strings",["/mat/square/mandelbrot"
+					"strings",["/mat/square/constant_A","/mat/square/constant_B"
 					],
 					"indices",[
 						"size",1,
 						"storage","int32",
-						"arrays",[[0,0,0,0,0,0]
+						"arrays",[[0,0,0,1,1,1]
 						]
 					]
 				]

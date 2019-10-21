@@ -7,7 +7,7 @@ module Rendering
   ( openWindow
   , closeWindow
   , draw
-  , initVAO'
+  , initVAO
   , initUniforms
   , toDrawable
   , Descriptor(..)
@@ -141,7 +141,6 @@ initUniforms game =
     let mtx =
           fmap realToFrac . concat $ fmap DF.toList . DF.toList $
           (identity::M44 Double) :: [GLfloat]
-    --_ <- DT.trace ("mtx: " ++ show mtx) $ return ()
     transform         <- GL.newMatrix RowMajor mtx :: IO (GLmatrix GLfloat)
     location5         <- get (uniformLocation program "transform")
     uniform location5 $= transform
@@ -158,7 +157,6 @@ instance ToDrawable FilePath where
                     "pgeo" -> readPGeo   x
                     "vgeo" -> readVBOGeo x ) modelPath
 
-    _ <- DT.trace ("toDrawable: geo:" ++ show geo) $ return ()
     drw <- (\x -> case x of
              Geo indices alpha color normal uv positions materials
                -> fromGeo (Geo indices alpha color normal uv positions materials)
@@ -166,91 +164,26 @@ instance ToDrawable FilePath where
                -> return $ Drawable vs is'
                where
                  is'  = [(map fromIntegral (idx!!0))] :: [[GLuint]]) geo
-    _ <- DT.trace ("toDrawable: drw:" ++ show drw) $ return ()
     return drw
 
-initVAO :: Game -> IO Descriptor
-initVAO game =  
+
+initVAO :: Object -> IO Descriptor
+initVAO obj =  
   do
-    print game
-    _ <- DT.trace ("trace 1_0: " ++ show (geoPath $ (object game)!!0)) $ return ()
-    (Drawable vs idx) <- toDrawable $ geoPath $ (object game)!!0 -- take first object, TODO: replace with fmap or whatever.
-    -- | VAO
-    vao <- genObjectName
-    bindVertexArrayObject $= Just vao 
-    _ <- DT.trace ("trace 1_1: " ++ show vs ++ show " " ++ show idx) $ return ()
-
-    -- | VBO
-    vertexBuffer <- genObjectName
-    bindBuffer ArrayBuffer $= Just vertexBuffer
-    _ <- DT.trace ("trace 1_2: " ++ show vs) $ return ()
-    withArray vs $ \ptr ->
-      do
-        let sizev = fromIntegral ((length vs) * sizeOf (head vs))
-        bufferData ArrayBuffer $= (sizev, ptr, StaticDraw)
-
-    -- | EBO
-    elementBuffer <- genObjectName
-    bindBuffer ElementArrayBuffer $= Just elementBuffer
-    _ <- DT.trace ("trace 1_3: " ++ show (idx!!0)) $ return ()
-    let numIndices = length (idx!!0)
-    withArray (idx!!0) $ \ptr ->
-      do
-        let indicesSize = fromIntegral (numIndices * sizeOf (head (idx!!0)))
-        bufferData ElementArrayBuffer $= (indicesSize, ptr, StaticDraw)
-        
-        -- | Bind the pointer to the vertex attribute data
-        let floatSize  = (fromIntegral $ sizeOf (0.0::GLfloat)) :: GLsizei
-            stride     =  14 * floatSize -- TODO : stride value should come from a single location
-        
-        -- | Alpha
-        vertexAttribPointer (AttribLocation 0) $= (ToFloat, VertexArrayDescriptor 1 Float stride ((plusPtr nullPtr . fromIntegral) (0 * floatSize)))
-        vertexAttribArray   (AttribLocation 0) $= Enabled
-        -- | Colors
-        vertexAttribPointer (AttribLocation 1) $= (ToFloat, VertexArrayDescriptor 3 Float stride ((plusPtr nullPtr . fromIntegral) (1 * floatSize)))
-        vertexAttribArray   (AttribLocation 1) $= Enabled
-        -- | Normals
-        vertexAttribPointer (AttribLocation 2) $= (ToFloat, VertexArrayDescriptor 3 Float stride ((plusPtr nullPtr . fromIntegral) (4 * floatSize)))
-        vertexAttribArray   (AttribLocation 2) $= Enabled
-        -- | UV
-        vertexAttribPointer (AttribLocation 3) $= (ToFloat, VertexArrayDescriptor 3 Float stride ((plusPtr nullPtr . fromIntegral) (7 * floatSize)))
-        vertexAttribArray   (AttribLocation 3) $= Enabled
-        -- | Positions
-        vertexAttribPointer (AttribLocation 4) $= (ToFloat, VertexArrayDescriptor 4 Float stride ((plusPtr nullPtr . fromIntegral) (10 * floatSize)))
-        vertexAttribArray   (AttribLocation 4) $= Enabled
-        
-        -- | Assign Textures
-        activeTexture            $= TextureUnit 0
-        texture Texture2D        $= Enabled
-        tx0 <- loadTex "textures/4096_earth_clouds.jpg"
-        textureBinding Texture2D $= Just tx0
-        
-    return $ Descriptor vao (fromIntegral numIndices)
-
-initVAO' :: Object -> IO Descriptor
-initVAO' obj =  
-  do
-    print obj
-    _ <- DT.trace ("trace 1_0: " ++ show (geoPath obj)) $ return ()
     (Drawable vs idx) <- toDrawable $ geoPath obj -- take first object, TODO: replace with fmap or whatever.
     -- | VAO
     vao <- genObjectName
     bindVertexArrayObject $= Just vao 
-    _ <- DT.trace ("trace 1_1: " ++ show vs ++ show " " ++ show idx) $ return ()
-
     -- | VBO
     vertexBuffer <- genObjectName
     bindBuffer ArrayBuffer $= Just vertexBuffer
-    _ <- DT.trace ("trace 1_2: " ++ show vs) $ return ()
     withArray vs $ \ptr ->
       do
         let sizev = fromIntegral ((length vs) * sizeOf (head vs))
         bufferData ArrayBuffer $= (sizev, ptr, StaticDraw)
-
     -- | EBO
     elementBuffer <- genObjectName
     bindBuffer ElementArrayBuffer $= Just elementBuffer
-    _ <- DT.trace ("trace 1_3: " ++ show (idx!!0)) $ return ()
     let numIndices = length (idx!!0)
     withArray (idx!!0) $ \ptr ->
       do
