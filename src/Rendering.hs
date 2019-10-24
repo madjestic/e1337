@@ -158,9 +158,9 @@ instance ToDrawable FilePath where
                     "vgeo" -> readVBOGeo x ) modelPath
 
     drw <- (\x -> case x of
-             Geo indices alpha color normal uv positions materials
-               -> fromGeo (Geo indices alpha color normal uv positions materials)
-             GLGeo vs idx
+             PGeo indices alpha color normal uv positions materials
+               -> fromGeo (PGeo indices alpha color normal uv positions materials)
+             VBOGeo vs idx
                -> return $ Drawable vs is'
                where
                  is'  = [(map fromIntegral (idx!!0))] :: [[GLuint]]) geo

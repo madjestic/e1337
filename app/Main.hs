@@ -101,6 +101,44 @@ animate window resources sf =
 -- Y88b  d88P   888  d8888888888    888    888       888   "   888 d8888888888Y88b  d88P888    888  888  888   Y8888888        
 --  "Y8888P"    888 d88P     888    888    8888888888888       888d88P     888 "Y8888P" 888    8888888888888    Y8888888888888 
 
+-- < Init Game > ----------------------------------------------------------
+
+-- Dir Path -> Material
+initMaterials :: [String] -> [Material]
+initMaterials s = [defaultMat]--undefined
+
+initObjects :: Project -> IO [Object]
+initObjects project =
+  do
+    (PGeo _ _ _ _ _ _ ms) <- readPGeo $ path ((models $ project)!!0)
+    let result = 
+          (fmap (\modelPath -> defaultObj { geoPath = modelPath
+                                          , material = initMaterials ms })
+            $ (fmap path) . models $ project :: [Object])
+    return result
+
+
+initGame :: Project -> IO Game
+initGame project =
+  do
+    -- print d
+    objs <- (initObjects project)
+    let initGame =
+          Game
+          ( Options
+            name'
+            resX'
+            resY'
+          )
+          GamePlaying
+          objs
+          initCam
+    return initGame
+      where
+        name'           = Project.name $ project
+        resX'           = (unsafeCoerce $ Project.resx $ project) :: CInt
+        resY'           = (unsafeCoerce $ Project.resy $ project) :: CInt
+
 -- < Game Logic > ---------------------------------------------------------
 mainGame :: Game -> SF AppInput Game
 mainGame initGame = 

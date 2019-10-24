@@ -36,7 +36,7 @@ instance FromVector Vec3 where
   toVertex4 (k, l, m) = Vertex4 k l m 1.0  
 
 data Geo
-  =  Geo
+  =  PGeo
      {
        indices   :: [[Int]]  
      , alpha     :: [Float] -- 1
@@ -46,7 +46,7 @@ data Geo
      , position  :: [Vec3]  -- 3 -> 13+1 -> 14 stride
      , materials :: [String]
      }
-  | GLGeo
+  | VBOGeo
      {
        vs  :: [Float] -- all attrs as a flat list
      , is  :: [[Int]]   -- indices
@@ -62,7 +62,7 @@ type Vec3     = (Double, Double, Double)
                      
 instance FromJSON Geo where
   parseJSON (Object o) =
-     Geo
+     PGeo
        <$> ((o .: "PGeo") >>= (.: "indices"))
        <*> ((o .: "PGeo") >>= (.: "Alpha"))
        <*> ((o .: "PGeo") >>= (.: "Cd"))
@@ -81,8 +81,8 @@ readVBOGeo file =
   do
     d <- decodeFileStrict file :: IO (Maybe ([Float],[[Int]]))
     return $ case d of
-               Just d -> GLGeo (fst d) (snd d)
-               Nothing  -> GLGeo [] [[]]
+               Just d -> VBOGeo (fst d) (snd d)
+               Nothing  -> VBOGeo [] [[]]
 
 readPGeo :: FilePath -> IO Geo
 readPGeo jsonFile =
@@ -99,10 +99,10 @@ readPGeo jsonFile =
         ms  = (materials . fromEitherDecode) d
     -- _ <- DT.trace ("trace 1_0_2: ids:" ++ show ids) $ return ()
     -- _ <- DT.trace ("trace 1_0_2: ps:" ++ show ps) $ return ()
-    return $ Geo ids as cds ns uvs ps ms
+    return $ PGeo ids as cds ns uvs ps ms
 
       where
-        fromEitherDecode = fromMaybe (Geo [[]] [] [] [] [] [] []) . fromEither
+        fromEitherDecode = fromMaybe (PGeo [[]] [] [] [] [] [] []) . fromEither
         fromEither d =
           case d of
             Left err -> Nothing

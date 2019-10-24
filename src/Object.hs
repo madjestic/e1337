@@ -1,7 +1,14 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Object
   ( Object (..)
   , defaultObj
   ) where
+
+-- import Control.Monad             (mzero)
+-- import Data.Aeson           as A
+-- import Data.ByteString.Lazy as B
+-- import Data.Maybe                (fromMaybe)
 
 import Linear.V4
 import Linear.Matrix (M44, M33, identity)
@@ -11,6 +18,10 @@ import Controllable
 import Geometry
 import Keyboard
 import Material
+
+  
+--------------------------------------------------------------------------------
+-- < Object > ------------------------------------------------------------------
 
 data Object
   =  Object
@@ -22,7 +33,7 @@ data Object
      } deriving Show
 
 defaultObj 
-  = Object
+  = Object.Object
     0.0
     "models/square.pgeo" --(Geo [[]] [] [] [] [] [])
     [defaultMat]
@@ -47,3 +58,54 @@ defaultObj
             nYaw   = V3 ( 0  )(-999)( 0  )   -- negative  yaw
             pRoll  = V3 ( 0  )(  0 )( 999)   -- positive  roll
             nRoll  = V3 ( 0  )(  0 )(-999)   -- negative  roll
+
+-- initObjects :: Project -> [Object]
+-- initObjects project =
+--   fmap path (models project)
+
+-- given file path, return an Object:
+-- initObject :: String -> Object
+-- initObject model = undefined
+
+-- --------------------------------------------------------------------------------
+-- -- < Parser > ------------------------------------------------------------------
+
+-- parse :: FilePath -> IO Object.Object
+-- parse filePath =
+--   do
+--     d <- (eitherDecode <$> B.readFile filePath) :: IO (Either String Object.Object)
+--     --let geometry' = (geometry . fromEitherDecode) d
+--     return $ defaultObj { geoPath = "" }
+--       where
+--         fromEitherDecode = fromMaybe (defaultObj) . fromEither
+--         fromEither d =
+--           case d of
+--             Left err -> Nothing
+--             Right pt -> Just pt
+
+-- -- newtype GeoPath = GeoPath String deriving Show
+
+-- instance FromJSON Object.Object where
+--   parseJSON (A.Object o) =
+--     Object.Object
+--       <$> ((o .: "project") >>= (.: "object") >>= (.: "path"))
+--       <*> ((o .: "project") >>= (.: "object") >>= (.: "path"))
+--       <*> ((o .: "project") >>= (.: "object") >>= (.: "path"))
+--       <*> ((o .: "project") >>= (.: "object") >>= (.: "path"))
+--       <*> ((o .: "project") >>= (.: "object") >>= (.: "path"))
+--   parseJSON _ = mzero
+
+-- instance FromJSON GeoPath where
+--   parseJSON (A.Object o) =
+--     do
+--       geoPath <- o .: "path"
+--       GeoPath <$> parseJSON geoPath
+--   parseJSON _ = mzero
+
+-- instance FromJSON Material where
+--   parseJSON (A.Object o) =
+--     Material
+--       <$> o .: "vert"
+--       <*> o .: "frag"
+--       <*> o .: "textures"
+--   parseJSON _ = mzero

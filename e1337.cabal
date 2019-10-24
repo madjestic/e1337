@@ -84,6 +84,7 @@ executable e1337
               , Game
               , Project
               , Project.Parser
+              --, Object.Parser
               , Geometry
               , Input
               , NGL.LoadShaders
