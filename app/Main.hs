@@ -103,17 +103,14 @@ animate window resources sf =
 
 -- < Init Game > ----------------------------------------------------------
 
--- Dir Path -> Material
-initMaterials :: [String] -> [Material]
-initMaterials s = [defaultMat]--undefined
-
 initObjects :: Project -> IO [Object]
 initObjects project =
   do
     (PGeo _ _ _ _ _ _ ms) <- readPGeo $ path ((models $ project)!!0)
+    mats                  <- mapM readMaterial ms
     let result = 
           (fmap (\modelPath -> defaultObj { geoPath = modelPath
-                                          , material = initMaterials ms })
+                                          , material = mats })
             $ (fmap path) . models $ project :: [Object])
     return result
 
@@ -174,9 +171,9 @@ gamePlay game =
 updateGame :: Game -> SF AppInput Game
 updateGame game = 
   proc input -> do
-    let obj = object game
-    cam     <- updateCamera $ camera game -< input
-    returnA -< Game (options game) GamePlaying obj cam
+    let objs = objects game
+    cam      <- updateCamera $ camera game -< input
+    returnA  -< Game (options game) GamePlaying objs cam
 
 updateCamera :: Camera -> SF AppInput Camera
 updateCamera cam = 
@@ -344,8 +341,10 @@ main = do
                (resX, resY)
 
   print game
-  descriptor <- initVAO ((object game)!!0)
+  -- basically needs a descriptor per render target |
+  descriptor <- initVAO ((objects game)!!0)
   let resources = [descriptor]
+  --resources <- initResources $ objects game
   
   animate
     window

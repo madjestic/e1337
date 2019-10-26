@@ -7,6 +7,7 @@
 module Material
   ( Material (..)
   , defaultMat
+  , readMaterial
   ) where  
 
 import Control.Monad (mzero)
@@ -14,9 +15,6 @@ import Data.Aeson
 import Data.Maybe                             (fromMaybe)
 import qualified Data.ByteString.Lazy as B
 
-
--- readMaterial "mat/square/constant_A"
--- Material {name = "constant_A", vertShader = "/mat/square/Constant_A/shader.vert", fragShader = "/mat/square/Constant_A/shader.frag", textures = [""]}
 data Material
   =  Material
      {
@@ -29,6 +27,7 @@ data Material
 
 defaultMat
   = Material
+    "foobar"
     -- "mat/mandelbrot/shader.vert"
     -- "mat/mandelbrot/shader.frag"
     "mat/const/const.vert"
@@ -47,6 +46,8 @@ instance FromJSON Material where
        <*> ((o .: "Material") >>= (.: "textures"))
   parseJSON _ = mzero
 
+-- readMaterial "mat/square/constant_A"
+-- Material {name = "constant_A", vertShader = "/mat/square/Constant_A/shader.vert", fragShader = "/mat/square/Constant_A/shader.frag", textures = [""]}
 readMaterial :: FilePath -> IO Material
 readMaterial jsonFile =
   do

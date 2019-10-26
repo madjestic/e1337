@@ -29,10 +29,19 @@ def rpcShuffler(arg=[]):
 def concat(mlist):
     return list(chain.from_iterable(mlist))
 
+# Fix `/` in a file path
+def fixPaths(vtxAttrMatDictVals):
+    result = []
+    for i in vtxAttrMatDictVals:
+        result.append(i[1:])
+    return result
+
+
 def toDict (jsonFile):
     i        = iter (jsonFile)
     jsonDict = dict (zip (i, i))
     return jsonDict
+
 
 def makeDict (jsonFile):
     if type(jsonFile) is list:
@@ -40,17 +49,20 @@ def makeDict (jsonFile):
     else:
         return {jsonFile : []}
 
+    
 def sortArrayByIndex (array, indices):
     result = []
     for i in indices:
         result.append (array [i])
     return result
 
+
 def restoreArrayFromIndex (array, indices): 
     result = []
     for i in indices:
         result.append (array [i])
     return result
+
 
 def readJSON(fileIn):
     # in:  fileIn
@@ -170,6 +182,9 @@ def parseJSON(jsonFile):
     jsonEntry = {'N' : vtxAttrNTuples}
     data.get('PGeo').update(jsonEntry)
 
+    # Fix `/` in a file path
+    vtxAttrMatDictVals = fixPaths(vtxAttrMatDictVals)
+    
     jsonEntry = {'material' : vtxAttrMatDictVals}
     data.get('PGeo').update(jsonEntry)
 

@@ -28,6 +28,7 @@ data Object
      { scalar     :: Double
      , geoPath    :: FilePath
      , material   :: [Material]
+     --, transform  :: GLmatrix GLfloat
      , velocity   :: V4 Double
      , driver     :: Controllable
      } deriving Show

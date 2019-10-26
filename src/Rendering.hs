@@ -8,6 +8,7 @@ module Rendering
   , closeWindow
   , draw
   , initVAO
+  , initResources
   , initUniforms
   , toDrawable
   , Descriptor(..)
@@ -96,9 +97,9 @@ initUniforms game =
     -- | Shaders
     program <- loadShaders [
       ShaderInfo VertexShader
-        (FileSource (vertShader $ (material $ (object $ game)!!0)!!0)), -- inito for first object: TODO: replace with fmap or whatever.
+        (FileSource (vertShader $ (material $ (objects $ game)!!0)!!0)), -- inito for first objects: TODO: replace with fmap or whatever.
       ShaderInfo FragmentShader
-        (FileSource (fragShader $ (material $ (object $ game)!!0)!!0))
+        (FileSource (fragShader $ (material $ (objects $ game)!!0)!!0))
       ]
     currentProgram $= Just program
 
@@ -166,11 +167,31 @@ instance ToDrawable FilePath where
                  is'  = [(map fromIntegral (idx!!0))] :: [[GLuint]]) geo
     return drw
 
+-- instance ToDrawable Material where
+--   toDrawable mat = undefined
+
+initResources :: [Object] -> IO [Descriptor]
+initResources objs =
+  do
+    let matIdxRng = fromObject (objs!!0) :: [[GLuint]]
+    descr <- mapM fromMaterial matIdxRng
+    return descr
+
+-- | Object -> [MaterialIndices]
+fromObject :: Object -> [[GLuint]]
+fromObject obj = undefined
+    
+
+        -- | Material -> Descriptor
+fromMaterial :: [GLuint] -> IO Descriptor
+fromMaterial _ = undefined
 
 initVAO :: Object -> IO Descriptor
 initVAO obj =  
   do
-    (Drawable vs idx) <- toDrawable $ geoPath obj -- take first object, TODO: replace with fmap or whatever.
+    _ <- DT.trace ("obj: " ++ show obj) $ return ()
+    (Drawable vs idx) <- toDrawable $ geoPath obj -- take first objects, TODO: replace with fmap or whatever.
+    _ <- DT.trace ("idx: " ++ show idx) $ return ()
     -- | VAO
     vao <- genObjectName
     bindVertexArrayObject $= Just vao 
@@ -185,6 +206,7 @@ initVAO obj =
     elementBuffer <- genObjectName
     bindBuffer ElementArrayBuffer $= Just elementBuffer
     let numIndices = length (idx!!0)
+    --_ <- DT.trace ("idx: " ++ show idx) $ return ()
     withArray (idx!!0) $ \ptr ->
       do
         let indicesSize = fromIntegral (numIndices * sizeOf (head (idx!!0)))
