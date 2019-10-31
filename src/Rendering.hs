@@ -77,6 +77,9 @@ closeWindow window = do
 data Descriptor =
      Descriptor VertexArrayObject NumArrayIndices 
 
+-- draw' :: SDL.Window -> Descriptor -> Material -> M44 Double -> IO ()
+-- draw' window (Descriptor vao numIndices) mat tr = undefined
+
 draw :: SDL.Window -> Descriptor -> IO ()
 draw window (Descriptor vao numIndices) =
   do
@@ -90,6 +93,19 @@ draw window (Descriptor vao numIndices) =
     depthFunc $= Just Less
 
     SDL.glSwapWindow window
+
+draw' :: Descriptor -> IO ()
+draw' (Descriptor vao numIndices) =
+  do
+    GL.clearColor $= Color4 0.5 0.5 1.0 1.0
+    GL.clear [ColorBuffer, DepthBuffer]
+    bindVertexArrayObject $= Just vao
+    drawElements Triangles numIndices GL.UnsignedInt nullPtr
+    GL.pointSize $= 10
+
+    cullFace  $= Just Back
+    depthFunc $= Just Less
+    
     
 initUniforms :: Game -> IO ()
 initUniforms game =  
@@ -161,7 +177,7 @@ instance ToDrawable FilePath where
     drw <- (\x -> case x of
              PGeo indices alpha color normal uv positions materials
                -> fromGeo (PGeo indices alpha color normal uv positions materials)
-             VBOGeo vs idx
+             VGeo vs idx
                -> return $ Drawable vs is'
                where
                  is'  = [(map fromIntegral (idx!!0))] :: [[GLuint]]) geo

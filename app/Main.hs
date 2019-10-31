@@ -88,7 +88,16 @@ animate window resources sf =
         renderOutput _ (game, shouldExit) =
           do
             uniforms <- initUniforms game
+            -- :: Game -> [Objects] 
+            -- :: [Object] -> [Decriptor]
+            -- :: [Object] -> [Material]
+            -- :: [Object] -> [(Descriptor, Material)]
+            -- draw :: Window -> [(Descriptor, Material)] -> IO ()
+            -- or
+            -- resources = [(Descriptor, Material, Transform)]
+
             draw window (resources!!0)
+            -- SDL.glSwapWindow window
             return shouldExit
 
 
@@ -341,10 +350,29 @@ main = do
                (resX, resY)
 
   print game
-  -- basically needs a descriptor per render target |
+  -- basically needs a descriptor per mesh
+  print ((objects game)!!0)
+
+  -- :: Object -> [Drawable] -- Object to a set of [(Mesh with a single material)]
+
+  -- fromObject :: Object   -> [Object] -- An Object with many materials -> Many objects with a single material.
+  -- fromObjects :: [Object] -> [Decriptor]
+  -- fromObjects xs = 
+  -- mapM (\x -> initVAO x) xs :: [Decriptor]
+
+  -- transformsFromObjects :: [Object] -> [Transform]
+  -- transformsFromObjects xs =
+
+  -- :: [Object] -> [Decriptor]
+  -- :: [Object] -> [Material]
+  -- :: [Object] -> [Transform]
+  -- :: [Object] -> [(Descriptor, Material)]
+  -- :: [Object] -> [(Descriptor, Material, Transform)]
+  
+  
   descriptor <- initVAO ((objects game)!!0)
   let resources = [descriptor]
-  --resources <- initResources $ objects game
+  -- resources <- initResources $ objects game
   
   animate
     window

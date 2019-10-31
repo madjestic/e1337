@@ -26,9 +26,16 @@ import Debug.Trace as DT
 -- TODO: ids :: [GLuint] -> ids :: [[GLuint]], a list of index lists per material index
 data Drawable
   =  Drawable
-    { verts  :: [GLfloat]
-    , ids    :: [[GLuint]] -- [[GLuint]]
-    } deriving Show
+     { verts  :: [GLfloat]
+     , ids    :: [[GLuint]] -- [[GLuint]]
+     } deriving Show
+
+-- data Drawable'
+--   =  Drawable'
+--      { descriptor :: Descriptor
+--      , material   :: Material
+--      , transform  :: M44 Double
+--      } deriving Show
 
 class ToDrawable a where
   toDrawable :: a -> IO Drawable

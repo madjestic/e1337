@@ -46,7 +46,7 @@ data Geo
      , position  :: [Vec3]  -- 3 -> 13+1 -> 14 stride
      , materials :: [String]
      }
-  | VBOGeo
+  | VGeo
      {
        vs  :: [Float] -- all attrs as a flat list
      , is  :: [[Int]]   -- indices
@@ -75,14 +75,14 @@ instance FromJSON Geo where
 getJSON :: FilePath -> IO B.ByteString
 getJSON  = B.readFile
 
--- TODO : read P/VBOGeo should return grouped list of materials
+-- TODO : read P/VGeo should return grouped list of materials
 readVBOGeo :: FilePath -> IO Geo
 readVBOGeo file = 
   do
     d <- decodeFileStrict file :: IO (Maybe ([Float],[[Int]]))
     return $ case d of
-               Just d -> VBOGeo (fst d) (snd d)
-               Nothing  -> VBOGeo [] [[]]
+               Just d -> VGeo (fst d) (snd d)
+               Nothing  -> VGeo [] [[]]
 
 readPGeo :: FilePath -> IO Geo
 readPGeo jsonFile =
