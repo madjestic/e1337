@@ -1,24 +1,24 @@
-{-# LANGUAGE InstanceSigs #-}
-{-# LANGUAGE NamedFieldPuns #-}
+-- {-# LANGUAGE InstanceSigs #-}
+-- {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeSynonymInstances #-}
+-- {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE OverloadedStrings, Arrows #-}
-{-# LANGUAGE MultiWayIf #-}
+-- {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TemplateHaskell #-}
+-- {-# LANGUAGE TemplateHaskell #-}
 
 module Main where 
 
-import Data.Foldable as DF       (toList)
-import GHC.Generics
+-- import Data.Foldable as DF       (toList)
+-- import GHC.Generics
 import Control.Concurrent
 import Control.Lens       hiding (transform, indexed)
 import Data.Text                 (Text)
-import Foreign.C          
+import Foreign.C
 import FRP.Yampa          hiding (identity)
 import Data.Functor              (($>))
 
-import Linear.Matrix      (M44, M33, identity)
+-- import Linear.Matrix      (M44, M33, identity)
 import SDL                hiding ( Point
                                  , M44
                                  , M33
@@ -26,49 +26,49 @@ import SDL                hiding ( Point
                                  , Mouse
                                  , (^+^)
                                  , (*^))
-import Data.Aeson               (decodeFileStrict)
+-- import Data.Aeson               (decodeFileStrict)
 import Data.Text                (pack)
-import System.Environment (getArgs)
+import System.Environment       (getArgs)
        
-import Camera        as Cam
+import Camera         as Cam
 import Game
-import Project
+import Project 
 import Project.Parser
 import Keyboard
-import Object         as Obj
+import Object         --as Obj
 import Controllable  
 import Geometry
 import Input          as Inp
 import Rendering
 import Material
-import Drawable
+import Descriptor
 
 import Unsafe.Coerce
 
--- Tests
-import Data.List.Split (chunksOf)
-import Data.List.Index (indexed)
+-- -- Tests
+-- import Data.List.Split (chunksOf)
+-- import Data.List.Index (indexed)
 
-import Debug.Trace   as DT
+-- import Debug.Trace   as DT
 
---        d8888888b    8888888888888b     d888       d8888888888888888888888888 
---       d888888888b   888  888  8888b   d8888      d88888    888    888        
---      d88P88888888b  888  888  88888b.d88888     d88P888    888    888        
---     d88P 888888Y88b 888  888  888Y88888P888    d88P 888    888    8888888    
---    d88P  888888 Y88b888  888  888 Y888P 888   d88P  888    888    888        
---   d88P   888888  Y88888  888  888  Y8P  888  d88P   888    888    888        
---  d8888888888888   Y8888  888  888   "   888 d8888888888    888    888        
--- d88P     888888    Y8888888888888       888d88P     888    888    8888888888 
+-- --        d8888888b    8888888888888b     d888       d8888888888888888888888888 
+-- --       d888888888b   888  888  8888b   d8888      d88888    888    888        
+-- --      d88P88888888b  888  888  88888b.d88888     d88P888    888    888        
+-- --     d88P 888888Y88b 888  888  888Y88888P888    d88P 888    888    8888888    
+-- --    d88P  888888 Y88b888  888  888 Y888P 888   d88P  888    888    888        
+-- --   d88P   888888  Y88888  888  888  Y8P  888  d88P   888    888    888        
+-- --  d8888888888888   Y8888  888  888   "   888 d8888888888    888    888        
+-- -- d88P     888888    Y8888888888888       888d88P     888    888    8888888888 
 
--- < Animate > ------------------------------------------------------------
+-- -- < Animate > ------------------------------------------------------------
 type WinInput = Event SDL.EventPayload
 type WinOutput = (Game, Bool)
 
 animate :: SDL.Window
-        -> [Descriptor]
+        -> [[Descriptor]]
         -> SF WinInput WinOutput  -- ^ signal function to animate
         -> IO ()
-animate window resources sf =
+animate window ds sf =
   do
     reactimate (return NoEvent)
                senseInput
@@ -88,36 +88,49 @@ animate window resources sf =
         renderOutput _ (game, shouldExit) =
           do
             uniforms <- initUniforms game
-            -- resources = [[(Descriptor, Material)]]
+            -- ds = [[(Descriptor, Material)]]
             -- draw :: Window -> [[(Descriptor, Material)]] -> IO ()
 
-            draw window (resources!!0)
-            -- SDL.glSwapWindow window
+            mapM (draw window) (concat ds)
+            SDL.glSwapWindow window
             return shouldExit
 
 
---  .d8888b.88888888888    d8888888888888888888888888888b     d888       d8888 .d8888b. 888    8888888888888b    8888888888888 
--- d88P  Y88b   888       d88888    888    888       8888b   d8888      d88888d88P  Y88b888    888  888  8888b   888888        
--- Y88b.        888      d88P888    888    888       88888b.d88888     d88P888888    888888    888  888  88888b  888888        
---  "Y888b.     888     d88P 888    888    8888888   888Y88888P888    d88P 888888       8888888888  888  888Y88b 8888888888    
---     "Y88b.   888    d88P  888    888    888       888 Y888P 888   d88P  888888       888    888  888  888 Y88b888888        
---       "888   888   d88P   888    888    888       888  Y8P  888  d88P   888888    888888    888  888  888  Y88888888        
--- Y88b  d88P   888  d8888888888    888    888       888   "   888 d8888888888Y88b  d88P888    888  888  888   Y8888888        
---  "Y8888P"    888 d88P     888    888    8888888888888       888d88P     888 "Y8888P" 888    8888888888888    Y8888888888888 
+-- --  .d8888b.88888888888    d8888888888888888888888888888b     d888       d8888 .d8888b. 888    8888888888888b    8888888888888 
+-- -- d88P  Y88b   888       d88888    888    888       8888b   d8888      d88888d88P  Y88b888    888  888  8888b   888888        
+-- -- Y88b.        888      d88P888    888    888       88888b.d88888     d88P888888    888888    888  888  88888b  888888        
+-- --  "Y888b.     888     d88P 888    888    8888888   888Y88888P888    d88P 888888       8888888888  888  888Y88b 8888888888    
+-- --     "Y88b.   888    d88P  888    888    888       888 Y888P 888   d88P  888888       888    888  888  888 Y88b888888        
+-- --       "888   888   d88P   888    888    888       888  Y8P  888  d88P   888888    888888    888  888  888  Y88888888        
+-- -- Y88b  d88P   888  d8888888888    888    888       888   "   888 d8888888888Y88b  d88P888    888  888  888   Y8888888        
+-- --  "Y8888P"    888 d88P     888    888    8888888888888       888d88P     888 "Y8888P" 888    8888888888888    Y8888888888888 
 
--- < Init Game > ----------------------------------------------------------
+-- -- < Init Game > ----------------------------------------------------------
+
+(<$.>) :: (a -> b) -> [a] -> [b]
+(<$.>) = map
+
+(<*.>) :: [a -> b] -> [a] -> [b]
+(<*.>) = zipWith ($)
 
 initObjects :: Project -> IO [Object]
-initObjects project =
+initObjects project = 
   do
-    (PGeo _ _ _ _ _ _ ms) <- readPGeo $ path ((models $ project)!!0)
-    mats                  <- mapM readMaterial ms
-    let result = 
-          (fmap (\modelPath -> defaultObj { geoPath = modelPath
-                                          , material = mats })
+    -- (PGeo _ _ _ _ _ _ matPaths) <- readPGeo $ path ((models $ project)!!0)
+    (VGeo idxs st vaos matPaths) <- readVGeo $ path ((models project)!!0)
+    mats                         <- mapM readMaterial matPaths
+    --ds <- initVAO
+    --mapM initVAO 
+    -- VGeo -> [Descriptors]
+    let args = (\idx' st' vao' mat' ->  (idx', st', vao', mat')) <$.> idxs <*.> st <*.> vaos <*.> mats
+    ds <- mapM initVAO args
+    --print $ "args :" ++ show args
+    let objects = 
+          (fmap (\modelPath -> defaultObj { descriptors = ds --geoPath = modelPath -- TODO: add descriptor initialize here
+                                          , material    = mats })
             $ (fmap path) . models $ project :: [Object])
-    return result
-
+    --let result = undefined
+    return objects
 
 initGame :: Project -> IO Game
 initGame project =
@@ -136,13 +149,20 @@ initGame project =
           initCam
     return initGame
       where
-        name'           = Project.name $ project
+        name'           = Project.name  $ project
         resX'           = (unsafeCoerce $ Project.resx $ project) :: CInt
         resY'           = (unsafeCoerce $ Project.resy $ project) :: CInt
 
 -- < Game Logic > ---------------------------------------------------------
+
+-- mainGame :: Game -> SF AppInput Game
+-- mainGame suka =
+--   proc (input, game) -> do
+--     returnA -< undefined
+
+
 mainGame :: Game -> SF AppInput Game
-mainGame initGame = 
+mainGame initGame =
   loopPre initGame $ 
   proc (input, game) -> do
     gs <- case gStg game of
@@ -300,12 +320,6 @@ updateControllable ctl0 =
                         uVel   = (keyVecs.keyboard.devices $ ctl0)!!4  -- right     velocity
                         dVel   = (keyVecs.keyboard.devices $ ctl0)!!5  -- right     velocity
 
-keyEvent :: Bool -> Event () -> Event () -> Bool
-keyEvent state pressed released
-  | isEvent pressed  = True
-  | isEvent released = False
-  | otherwise = state
-
 keyEvents :: SDL.Scancode -> (Keys -> Bool) -> Controllable -> SF AppInput (Bool, Event ())
 keyEvents code keyFunc ctl = 
   proc input -> do
@@ -316,6 +330,12 @@ keyEvents code keyFunc ctl =
         event  = lMerge keyPressed keyReleased
     returnA -< (result, event)
 
+keyEvent :: Bool -> Event () -> Event () -> Bool
+keyEvent state pressed released
+  | isEvent pressed  = True
+  | isEvent released = False
+  | otherwise = state
+
 instance VectorSpace (V3 Double) Double where
   zeroVector                   = (V3 0 0 0)
   (*^) s (V3 x y z)            = (V3 (s*x) (s*y) (s*z))
@@ -325,7 +345,7 @@ instance VectorSpace (V3 Double) Double where
 handleExit :: SF AppInput Bool
 handleExit = quitEvent >>^ isEvent
         
--- < Global Constants > --------------------------------------------------------
+-- -- < Global Constants > --------------------------------------------------------
 mBlur     = 0.25 :: Float
 loadDelay = 2.0  :: Double
 
@@ -333,8 +353,8 @@ loadDelay = 2.0  :: Double
 main :: IO ()
 main = do
   args <- getArgs
-  let jsonFile  = (unsafeCoerce (args!!0) :: FilePath)
-  game <- initGame =<< Project.Parser.parse (unsafeCoerce (args!!0) :: FilePath)
+  proj <- Project.Parser.parse (unsafeCoerce (args!!0) :: FilePath)
+  game <- initGame proj -- =<< Project.Parser.parse (unsafeCoerce (args!!0) :: FilePath)
 
   let title = ((pack $ Game.name . options $ game) :: Text)
       resX  = (Game.resx . options $ game)
@@ -345,27 +365,12 @@ main = do
                (resX, resY)
 
   print game
-  -- basically needs a descriptor per mesh
-  print ((objects game)!!0)
-
-  -- :: Object -> [Drawable] -- Object to a set of [(Mesh with a single material)]
-
-  -- fromObject :: Object   -> [Object] -- An Object with many materials -> Many objects with a single material.
-  -- :: [Object] -> [[Drawable]]
-  -- :: [Object] -> [[Material]]
-  -- :: [[Drawable]] -> [[Decriptor]]
-  -- :: ([Object] -> [[Drawable]] -> [[Material]]) -> [[(Descriptor, Material)]]
-  
--- resources = [(Descriptor, Material)]
-  
-  descriptor <- initVAO ((objects game)!!0)
-  let resources = [descriptor]
-  -- resources <- initResources $ objects game
+  let ds = gameDescriptors game :: [[Descriptor]] -- TODO: Game -> Objects -> [[Descriptor]]
   
   animate
     window
-    resources
+    ds
     (parseWinInput >>> (mainGame game &&& handleExit))
 
-gameDescriptors :: Game -> [Descriptor]
+gameDescriptors :: Game -> [[Descriptor]]
 gameDescriptors game = undefined

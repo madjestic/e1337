@@ -40,7 +40,7 @@ data Game =
      {
        options  :: Options
      , gStg     :: Stage
-     , objects   :: [Object]
+     , objects  :: [Object]
      , camera   :: Camera
      } deriving Show
 

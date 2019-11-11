@@ -15,28 +15,28 @@ import Linear.Matrix (M44, M33, identity)
 import Linear (V3(..))
 
 import Controllable
-import Geometry
+-- import Geometry
 import Keyboard
 import Material
-
+import Descriptor
   
 --------------------------------------------------------------------------------
 -- < Object > ------------------------------------------------------------------
 
 data Object
   =  Object
-     { scalar     :: Double
-     , geoPath    :: FilePath
-     , material   :: [Material]
+     { scalar      :: Double
+     , descriptors :: [Descriptor]
+     , material    :: [Material]
      --, transform  :: GLmatrix GLfloat
-     , velocity   :: V4 Double
-     , driver     :: Controllable
+     , velocity    :: V4 Double
+     , driver      :: Controllable
      } deriving Show
 
 defaultObj 
   = Object.Object
     0.0
-    "models/square.pgeo" --(Geo [[]] [] [] [] [] [])
+    []                        --"models/square.pgeo" --(Geo [[]] [] [] [] [] [])
     [defaultMat]
     (V4 0 0 0 0)
     ( Controllable

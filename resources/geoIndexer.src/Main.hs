@@ -21,9 +21,21 @@ import Unsafe.Coerce
 import System.Environment        (getArgs)
 
 import Geometry
-import Drawable
-import Shape2D
-import Rendering
+import Utils
+
+import Debug.Trace as DT
+
+    -- | PGeo -> VGeo
+    -- | Stride might be necessary to come out of Houdini material info, rather than be fixed for all materials like now.
+    -- * TODO : replace hardcoded stride value with Houdini material data driven value.       
+toVGeo :: Geo -> Geo
+toVGeo (PGeo idx as cs ns uv ps ms) = (VGeo idxs st vaos ms)
+  where
+    stride = 13
+    --_ = (DT.trace ("idx :" ++ show $ fromList idx) ())
+    --vao = DT.trace ("toVAO :" ++ show (toVAO idx as cs ns uv ps)) $ (toVAO idx as cs ns uv ps)
+    (idxs, vaos) = unzip $ fmap (toIdxVAO stride) (toVAO idx as cs ns uv ps)
+    st           = take (length vaos) $ repeat stride
 
 main :: IO ()
 main = do
@@ -31,7 +43,12 @@ main = do
   let fileIn  =  (unsafeCoerce (args!!0) :: FilePath)
       fileOut =  (unsafeCoerce (args!!1) :: FilePath)
 
-  geo <- readPGeo fileIn
-  --print geo
-  (Drawable vs idx) <- toDrawable fileIn -- $ (geometry . object) game
-  I.writeFile fileOut (encodeToLazyText (vs, idx))
+  
+  pgeo <- readPGeo fileIn
+  let vgeo = toVGeo pgeo
+  print $ "is :" ++ (show $ is vgeo)
+  
+  I.writeFile fileOut (encodeToLazyText ( is vgeo
+                                        , st vgeo
+                                        , vs vgeo
+                                        , ms vgeo))

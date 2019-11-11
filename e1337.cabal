@@ -13,16 +13,16 @@ build-type:    Simple
 cabal-version: >=1.10
 
 extra-source-files:
-                   ChangeLog.md
-                   README.md
+                ChangeLog.md
+                README.md
 
 source-repository head
-  type:        git
-  location: https://github.com/madjestic/e1337
+  type:         git
+  location:     https://github.com/madjestic/e1337
 
 library
   hs-source-dirs:
-                 src
+                src
   build-depends:
                 base       >=4.7 && <5
               , aeson      >= 1.3.1.1
@@ -38,13 +38,14 @@ library
               , containers >=0.6.0.1
               , extra      >=1.6.15
   exposed-modules:
-                  Input
-                , Geometry
-                , Game
-                , Rendering
-                , Drawable
-                , Shape2D
-                , FromVector
+                Input
+              , Geometry
+              , Game
+              , Rendering
+              , Descriptor
+              , Shape2D
+              , FromVector
+              , Utils
   other-modules:
                 Paths_e1337
               , LoadShaders
@@ -59,8 +60,8 @@ library
 executable e1337
   main-is:       Main.hs
   hs-source-dirs:
-                 app
-               , src
+                app
+              , src
   ghc-options:         -threaded -O2
   build-depends:
                 e1337
@@ -84,12 +85,12 @@ executable e1337
               , Game
               , Project
               , Project.Parser
-              --, Object.Parser
+              --, Object.Parser 
               , Geometry
               , Input
               , NGL.LoadShaders
               , Rendering
-              , Drawable
+              , Descriptor
               , FromVector
               , LoadShaders
               , Shape2D
@@ -99,5 +100,6 @@ executable e1337
               , Mouse
               , Controllable
               , Material
+              , Utils
   default-language:
-                   Haskell2010
+                Haskell2010

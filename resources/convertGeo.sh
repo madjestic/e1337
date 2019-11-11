@@ -12,11 +12,11 @@ convertGeo(){
     if [ -e "$SOURCE" ]
     then
 	python geoParser.py $SOURCE $PDG
-	./geoIndexer.src/geoIndexer $PDG $TARGET
+	./geoIndexer $PDG $TARGET
 	cp $PDG $PDGCPY
     else
 	python geoParser.py
-	./geoIndexer.src/geoIndexer ./models/model.geo ../models/model.vgeo
+	./geoIndexer ./models/model.geo ../models/model.vgeo
 	cp 
     fi
 }

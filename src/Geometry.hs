@@ -18,7 +18,7 @@ module Geometry
   , Vec3(..)
   , getJSON
   , readPGeo
-  , readVBOGeo
+  , readVGeo
   ) where
 
 import Control.Monad (mzero)
@@ -48,17 +48,20 @@ data Geo
      }
   | VGeo
      {
-       vs  :: [Float] -- all attrs as a flat list
-     , is  :: [[Int]]   -- indices
+       is :: [[Int]]   -- indices
+     , st :: [Int]     -- stride
+     , vs :: [[Float]] -- all attrs as a flat list
+     , ms :: [FilePath]  -- materials
      } 
   deriving Show
 
 class FromGeo a where
-  fromGeo :: Geo -> a
+  fromPGeo :: Geo -> a
+  fromPGeo' :: Geo -> [a]
 
 -- | TODO : replace Vec3 -> Vec4
 type Vec3     = (Double, Double, Double)
---type Vec4     =  (Double, Double, Double)
+type Vec4     = (Double, Double, Double, Double)
                      
 instance FromJSON Geo where
   parseJSON (Object o) =
@@ -76,13 +79,13 @@ getJSON :: FilePath -> IO B.ByteString
 getJSON  = B.readFile
 
 -- TODO : read P/VGeo should return grouped list of materials
-readVBOGeo :: FilePath -> IO Geo
-readVBOGeo file = 
+readVGeo :: FilePath -> IO Geo
+readVGeo file = 
   do
-    d <- decodeFileStrict file :: IO (Maybe ([Float],[[Int]]))
+    d <- decodeFileStrict file :: IO (Maybe ([[Int]],[Int],[[Float]],[String]))
     return $ case d of
-               Just d -> VGeo (fst d) (snd d)
-               Nothing  -> VGeo [] [[]]
+               Just d@(idxs, st, vaos, mats) -> VGeo idxs st vaos mats
+               Nothing  -> VGeo [[]] [] [[]] []
 
 readPGeo :: FilePath -> IO Geo
 readPGeo jsonFile =
@@ -107,5 +110,3 @@ readPGeo jsonFile =
           case d of
             Left err -> Nothing
             Right pt -> Just pt
-            
-    
