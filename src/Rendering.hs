@@ -169,7 +169,25 @@ initUniforms game =
     return () -- $ Descriptor vao (fromIntegral numIndices)    
 
 instance ToDrawable FilePath where
+  toDrawable :: FilePath -> IO Drawable
   toDrawable modelPath = do
+    -- :: Geo
+    geo <- (\x -> case (reverse . take 4 . reverse $ x) of
+                    "pgeo" -> readPGeo   x
+                    "vgeo" -> readVBOGeo x ) modelPath
+    -- :: Drawable
+    drw <- (\x -> case x of
+             PGeo indices alpha color normal uv positions materials
+               -> fromGeo (PGeo indices alpha color normal uv positions materials)
+             VGeo vs idx
+               -> return $ Drawable vs is'
+               where
+                 is'  = (map fromIntegral (idx!!0)) :: [GLuint]
+           ) geo
+    return drw
+
+  toDrawables :: FilePath -> IO [Drawable]
+  toDrawables modelPath = do
     geo <- (\x -> case (reverse . take 4 . reverse $ x) of
                     "pgeo" -> readPGeo   x
                     "vgeo" -> readVBOGeo x ) modelPath
@@ -180,12 +198,10 @@ instance ToDrawable FilePath where
              VGeo vs idx
                -> return $ Drawable vs is'
                where
-                 is'  = [(map fromIntegral (idx!!0))] :: [[GLuint]]) geo
-    return drw
-
--- instance ToDrawable Material where
---   toDrawable mat = undefined
-
+                 is'  = (map fromIntegral (idx!!0)) :: [GLuint]
+           ) geo
+    return [drw]
+    
 initResources :: [Object] -> IO [Descriptor]
 initResources objs =
   do
@@ -221,11 +237,11 @@ initVAO obj =
     -- | EBO
     elementBuffer <- genObjectName
     bindBuffer ElementArrayBuffer $= Just elementBuffer
-    let numIndices = length (idx!!0)
+    let numIndices = length (idx)
     --_ <- DT.trace ("idx: " ++ show idx) $ return ()
-    withArray (idx!!0) $ \ptr ->
+    withArray (idx) $ \ptr ->
       do
-        let indicesSize = fromIntegral (numIndices * sizeOf (head (idx!!0)))
+        let indicesSize = fromIntegral (numIndices * sizeOf (head (idx)))
         bufferData ElementArrayBuffer $= (indicesSize, ptr, StaticDraw)
         
         -- | Bind the pointer to the vertex attribute data

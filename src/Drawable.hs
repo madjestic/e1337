@@ -27,7 +27,7 @@ import Debug.Trace as DT
 data Drawable
   =  Drawable
      { verts  :: [GLfloat]
-     , ids    :: [[GLuint]] -- [[GLuint]]
+     , ids    :: [GLuint] -- [[GLuint]]
      } deriving Show
 
 -- data Drawable'
@@ -39,6 +39,10 @@ data Drawable
 
 class ToDrawable a where
   toDrawable :: a -> IO Drawable
+  toDrawables :: a -> IO [Drawable]
+
+-- class ToDrawables [a] where
+--   toDrawable :: a -> IO Drawable
 
 instance FromGeo (IO Drawable) where  
   fromGeo :: Geo -> IO Drawable
@@ -52,7 +56,7 @@ instance FromGeo (IO Drawable) where
     _ <- DT.trace ("fromGeo uid: " ++ show uid) $ return ()
     -- _ <- DT.trace ("ps': " ++ show ps') $ return ()
     --return (Drawable vs idx)
-    return (Drawable vs [uid])
+    return (Drawable vs uid)
     --return (Drawable vs ids')
       where
         ids' = (fmap . fmap) fromIntegral $ indices geo                        -- index
