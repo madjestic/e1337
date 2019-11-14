@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 --  .d8888b.        d8888888b     d8888888888888 
 -- d88P  Y88b      d888888888b   d8888888        
 -- 888    888     d88P88888888b.d88888888        
@@ -5,13 +6,17 @@
 -- 888  88888   d88P  888888 Y888P 888888        
 -- 888    888  d88P   888888  Y8P  888888        
 -- Y88b  d88P d8888888888888   "   888888        
---  "Y8888P88d88P     888888       8888888888888 
+--  "Y8888P88d88P     888888       8888888888888
 
 module Game
   ( Game    (..)
   , Stage   (..) 
   , Options (..)
---  , initGame
+  , options
+  , name
+  , resx
+  , resy
+  , objects
   ) where
 
 import Foreign.C                              (CInt)
@@ -19,14 +24,27 @@ import Unsafe.Coerce
 import Control.Monad                          (mzero)
 import Data.Maybe                             (fromMaybe)
 import qualified Data.ByteString.Lazy as B
+import Control.Lens
 
 import Camera
-import Geometry
 import Object
-import Material
-import Project
 
--- meta game state
+data Game =
+     Game
+     {
+       _options  :: Options
+     , _gStg     :: Stage
+     , _objects  :: [Object]
+     , _camera   :: Camera
+     } deriving Show
+
+data Options
+   = Options
+   { _name  :: String
+   , _resx  :: CInt
+   , _resy  :: CInt
+   } deriving Show
+
 data Stage =
      GameIntro
    | GamePlaying
@@ -34,19 +52,18 @@ data Stage =
    | GameMenu
    deriving Show
 
--- game state
-data Game =
-     Game
-     {
-       options  :: Options
-     , gStg     :: Stage
-     , objects  :: [Object]
-     , camera   :: Camera
-     } deriving Show
+options :: Lens' Game Options
+options = lens _options (\game newOptions -> Game { _options = newOptions })
 
-data Options
-   = Options
-   { name  :: String
-   , resx  :: CInt
-   , resy  :: CInt
-   } deriving Show
+name :: Lens' Options String
+name = lens _name (\options newName -> Options { _name = newName })
+
+resx :: Lens' Options CInt
+resx = lens _resx (\options newX -> Options { _resx = newX })
+
+resy :: Lens' Options CInt
+resy = lens _resy (\options newY -> Options { _resy = newY })
+
+objects :: Lens' Game [Object]
+objects = lens _objects (\game newObjects -> Game { _objects = newObjects})
+

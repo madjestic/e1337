@@ -49,7 +49,7 @@ import Unsafe.Coerce
 -- import Data.List.Split (chunksOf)
 -- import Data.List.Index (indexed)
 
--- import Debug.Trace   as DT
+import Debug.Trace   as DT
 
 -- --        d8888888b    8888888888888b     d888       d8888888888888888888888888 
 -- --       d888888888b   888  888  8888b   d8888      d88888    888    888        
@@ -65,10 +65,12 @@ type WinInput = Event SDL.EventPayload
 type WinOutput = (Game, Bool)
 
 animate :: SDL.Window
-        -> [[Descriptor]]
+        -> Descriptor
+        -> Game --[[Descriptor]]
         -> SF WinInput WinOutput  -- ^ signal function to animate
         -> IO ()
-animate window ds sf =
+--animate window ds sf =
+animate window ds game' sf =
   do
     reactimate (return NoEvent)
                senseInput
@@ -90,9 +92,17 @@ animate window ds sf =
             uniforms <- initUniforms game
             -- ds = [[(Descriptor, Material)]]
             -- draw :: Window -> [[(Descriptor, Material)]] -> IO ()
-
-            mapM (draw window) (concat ds)
-            SDL.glSwapWindow window
+            --let ds = toListOf (objects . traverse . descriptors ) game'
+            --_ <- DT.trace ("ds: " ++ show ((ds!!0)!!0)) $ return ()
+            --let objs = toListOf objects game'
+            --_ <- DT.trace ("objs: " ++ show (objs)) $ return ()
+            -- ds' <- initVAO'
+            --_ <- DT.trace ("ds': " ++ show (ds')) $ return ()
+            -- --draw window ((ds!!0)!!0)
+            draw window ds
+            --draw window ds
+            --mapM (draw window) (concat ds)
+            -- SDL.glSwapWindow window
             return shouldExit
 
 
@@ -126,8 +136,8 @@ initObjects project =
     ds <- mapM initVAO args
     --print $ "args :" ++ show args
     let objects = 
-          (fmap (\modelPath -> defaultObj { descriptors = ds --geoPath = modelPath -- TODO: add descriptor initialize here
-                                          , material    = mats })
+          (fmap (\modelPath -> defaultObj { _descriptors = ds --geoPath = modelPath -- TODO: add descriptor initialize here
+                                          , _materials   = mats })
             $ (fmap path) . models $ project :: [Object])
     --let result = undefined
     return objects
@@ -165,7 +175,7 @@ mainGame :: Game -> SF AppInput Game
 mainGame initGame =
   loopPre initGame $ 
   proc (input, game) -> do
-    gs <- case gStg game of
+    gs <- case _gStg game of
             GameIntro   -> gameIntro   -< (input, game)
             GamePlaying -> gamePlay initGame -< input
     returnA -< (gs, gs)
@@ -176,7 +186,7 @@ gameIntro =
      where sf =
              proc (input, game) -> do
                introState <- returnA -< game
-               playState  <- returnA -< game { gStg =  GamePlaying }
+               playState  <- returnA -< game { _gStg =  GamePlaying }
                skipE      <- keyInput SDL.ScancodeSpace "Pressed" -< input
                waitE      <- after loadDelay () -< ()
                returnA    -< (introState, (skipE `lMerge` waitE) $> playState)
@@ -195,9 +205,10 @@ gamePlay game =
 updateGame :: Game -> SF AppInput Game
 updateGame game = 
   proc input -> do
-    let objs = objects game
-    cam      <- updateCamera $ camera game -< input
-    returnA  -< Game (options game) GamePlaying objs cam
+    let objs = _objects game
+    cam      <- updateCamera $ _camera game -< input
+    --returnA  -< Game (_options game) GamePlaying objs cam
+    returnA  -< Game (view options game) GamePlaying (view objects game) cam
 
 updateCamera :: Camera -> SF AppInput Camera
 updateCamera cam = 
@@ -356,20 +367,28 @@ main = do
   proj <- Project.Parser.parse (unsafeCoerce (args!!0) :: FilePath)
   game <- initGame proj -- =<< Project.Parser.parse (unsafeCoerce (args!!0) :: FilePath)
 
-  let title = ((pack $ Game.name . options $ game) :: Text)
-      resX  = (Game.resx . options $ game)
-      resY  = (Game.resy . options $ game)
+  let title = pack $ view (options . Game.name) game --((pack $ Game._name . _options $ game) :: Text)
+      resX  = view (options . Game.resx) game --(_resx . _options $ game)
+      resY  = view (options . Game.resx) game --(_resy . _options $ game)
 
   window    <- openWindow
                title
                (resX, resY)
 
-  print game
-  let ds = gameDescriptors game :: [[Descriptor]] -- TODO: Game -> Objects -> [[Descriptor]]
+  -- print game
+  -- print $ view (options . Game.name) game
+  -- print $ toListOf (objects . traverse . scalar) game
+  -- print $ toListOf (objects . traverse . Object.materials . traverse . Material.name) game
+  -- let ds = toListOf (objects . traverse . descriptors ) game
+  
+  -- print ds
+  -- let ds = gameDescriptors game :: [[Descriptor]] -- TODO: Game -> Objects -> [[Descriptor]]
+  ds <- initVAO'
   
   animate
     window
     ds
+    game
     (parseWinInput >>> (mainGame game &&& handleExit))
 
 gameDescriptors :: Game -> [[Descriptor]]

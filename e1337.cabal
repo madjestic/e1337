@@ -36,6 +36,8 @@ library
               , split      >=0.2.3.3
               , ilist      >=0.2.0.0
               , containers >=0.6.0.1
+              , lens       >=4.17
+              , data-lens-template >=2.1.9
               , extra      >=1.6.15
   exposed-modules:
                 Input
@@ -79,6 +81,7 @@ executable e1337
               , ilist      >=0.2.0.0
               , containers >=0.6.0.1
               , lens       >=4.17
+              , data-lens-template >=2.1.9
               , extra      >=1.6.15
   other-modules:
                 Paths_e1337

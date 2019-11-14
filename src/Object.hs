@@ -3,6 +3,9 @@
 module Object
   ( Object (..)
   , defaultObj
+  , scalar
+  , materials
+  , descriptors
   ) where
 
 -- import Control.Monad             (mzero)
@@ -13,6 +16,7 @@ module Object
 import Linear.V4
 import Linear.Matrix (M44, M33, identity)
 import Linear (V3(..))
+import Control.Lens
 
 import Controllable
 -- import Geometry
@@ -25,13 +29,22 @@ import Descriptor
 
 data Object
   =  Object
-     { scalar      :: Double
-     , descriptors :: [Descriptor]
-     , material    :: [Material]
+     { _scalar      :: Double
+     , _descriptors :: [Descriptor]
+     , _materials   :: [Material]
      --, transform  :: GLmatrix GLfloat
-     , velocity    :: V4 Double
-     , driver      :: Controllable
+     , _velocity    :: V4 Double
+     , _driver      :: Controllable
      } deriving Show
+
+scalar :: Lens' Object Double
+scalar = lens _scalar (\object newScalar -> Object { _scalar = newScalar })
+
+descriptors :: Lens' Object [Descriptor]
+descriptors = lens _descriptors (\object newDescriptors -> Object { _descriptors = newDescriptors })
+
+materials :: Lens' Object [Material]
+materials = lens _materials (\object newMaterial -> Object { _materials = newMaterial })
 
 defaultObj 
   = Object.Object
