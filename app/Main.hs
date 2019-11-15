@@ -66,11 +66,13 @@ type WinOutput = (Game, Bool)
 
 animate :: SDL.Window
         -> Descriptor
+        -> [[Descriptor]]
         -> Game --[[Descriptor]]
+        -> Project
         -> SF WinInput WinOutput  -- ^ signal function to animate
         -> IO ()
 --animate window ds sf =
-animate window ds game' sf =
+animate window ds dss game' proj sf =
   do
     reactimate (return NoEvent)
                senseInput
@@ -90,19 +92,13 @@ animate window ds game' sf =
         renderOutput _ (game, shouldExit) =
           do
             uniforms <- initUniforms game
-            -- ds = [[(Descriptor, Material)]]
-            -- draw :: Window -> [[(Descriptor, Material)]] -> IO ()
-            --let ds = toListOf (objects . traverse . descriptors ) game'
-            --_ <- DT.trace ("ds: " ++ show ((ds!!0)!!0)) $ return ()
-            --let objs = toListOf objects game'
-            --_ <- DT.trace ("objs: " ++ show (objs)) $ return ()
-            -- ds' <- initVAO'
-            --_ <- DT.trace ("ds': " ++ show (ds')) $ return ()
-            -- --draw window ((ds!!0)!!0)
-            draw window ds
-            --draw window ds
-            --mapM (draw window) (concat ds)
-            -- SDL.glSwapWindow window
+            --ds'' <- initVAO'
+            game <- initGame proj
+            let dss' = toListOf (objects . traverse . descriptors ) game
+            draw window ds --works
+            --draw window ((dss'!!0)!!0) --works
+            --mapM (draw window) (concat dss')
+            SDL.glSwapWindow window
             return shouldExit
 
 
@@ -384,11 +380,14 @@ main = do
   -- print ds
   -- let ds = gameDescriptors game :: [[Descriptor]] -- TODO: Game -> Objects -> [[Descriptor]]
   ds <- initVAO'
+  let ds' = toListOf (objects . traverse . descriptors ) game
   
   animate
     window
     ds
+    ds' --((ds'!!0)!!0)--ds
     game
+    proj
     (parseWinInput >>> (mainGame game &&& handleExit))
 
 gameDescriptors :: Game -> [[Descriptor]]

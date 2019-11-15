@@ -96,7 +96,7 @@ draw window (Descriptor vao numIndices) =
     cullFace  $= Just Back
     depthFunc $= Just Less
 
-    SDL.glSwapWindow window
+    --SDL.glSwapWindow window
 
 -- draw' :: Descriptor -> IO ()
 -- draw' (Descriptor vao numIndices) =
@@ -365,8 +365,8 @@ initVAO' =
   do
     --_ <- DT.trace ("obj: " ++ show obj) $ return ()
     (Drawable vs idx) <- toDrawable $ "models/square.vgeo" -- take first objects, TODO: replace with fmap or whatever.
-    -- _ <- DT.trace ("idx: " ++ show idx) $ return ()
-    -- _ <- DT.trace ("vs:  " ++ show vs) $ return ()
+    _ <- DT.trace ("idx: " ++ show idx) $ return ()
+    _ <- DT.trace ("vs:  " ++ show vs) $ return ()
     -- | VAO
     vao <- genObjectName
     bindVertexArrayObject $= Just vao 
@@ -413,25 +413,19 @@ initVAO' =
         tx0 <- loadTex "textures/4096_earth_clouds.jpg"
         textureBinding Texture2D $= Just tx0
 
-    -- _ <- DT.trace ("vao: " ++ show vao) $ return ()            -- trace vao, numIndices
-    -- _ <- DT.trace ("numIndices: " ++ show numIndices) $ return ()
+    _ <- DT.trace ("vao: " ++ show vao) $ return ()            -- trace vao, numIndices
+    _ <- DT.trace ("numIndices: " ++ show numIndices) $ return ()
     return $ Descriptor vao (fromIntegral numIndices)
 
 
        -- | Indices -> Stride -> ListOfFloats -> Material -> Descriptor
 initVAO :: ([Int], Int, [Float], Material) -> IO Descriptor
-initVAO (idx, stride, vs, matPath) =  
+initVAO (idx, st, vs, matPath) =  
   do
-    -- _ <- DT.trace ("obj: " ++ show obj) $ return ()
-    -- (Drawable vs idx) <- (toDrawables obj) -- take first _objects, TODO: replace with fmap or whatever.
-    -- ds <- (toDrawables obj)
-    let
-      --ds  = toDrawables obj
-      --vs  = verts (ds!!0)
-      --idx = ids   (ds!!0)
-    -- _ <- DT.trace ("idx: "    ++ show idx)    $ return ()
-    -- _ <- DT.trace ("stride: " ++ show stride) $ return ()
-    -- _ <- DT.trace ("vs: "     ++ show vs)     $ return ()
+    _ <- DT.trace ("idx: "     ++ show idx)    $ return ()
+    _ <- DT.trace ("stride: "  ++ show st) $ return ()
+    _ <- DT.trace ("vs: "      ++ show vs)     $ return ()
+    _ <- DT.trace ("matPath: " ++ show matPath)     $ return ()
     -- | VAO
     vao <- genObjectName
     bindVertexArrayObject $= Just vao 
@@ -454,7 +448,7 @@ initVAO (idx, stride, vs, matPath) =
         
         -- | Bind the pointer to the vertex attribute data
         let floatSize  = (fromIntegral $ sizeOf (0.0::GLfloat)) :: GLsizei
-            stride     =  14 * floatSize -- TODO : stride value should come from a single location
+            stride     = (fromIntegral st) * floatSize -- TODO : stride value should come from a single location
         
         -- | Alpha
         vertexAttribPointer (AttribLocation 0) $= (ToFloat, VertexArrayDescriptor 1 Float stride ((plusPtr nullPtr . fromIntegral) (0 * floatSize)))
@@ -477,7 +471,9 @@ initVAO (idx, stride, vs, matPath) =
         texture Texture2D        $= Enabled
         tx0 <- loadTex "textures/4096_earth_clouds.jpg"
         textureBinding Texture2D $= Just tx0
-        
+
+    _ <- DT.trace ("vao: " ++ show vao) $ return ()            -- trace vao, numIndices
+    _ <- DT.trace ("numIndices: " ++ show numIndices) $ return ()
     return $ Descriptor vao (fromIntegral numIndices)
     
 -- bufferOffset :: Integral a => a -> Ptr b
