@@ -95,8 +95,9 @@ animate window ds dss game' proj sf =
             --ds'' <- initVAO'
             game <- initGame proj
             let dss' = toListOf (objects . traverse . descriptors ) game
-            draw window ds --works
-            --draw window ((dss'!!0)!!0) --works
+            --draw window ds -- works
+            --draw window ((dss!!0)!!0)  -- does not work
+            --draw window ((dss'!!0)!!0) -- works
             --mapM (draw window) (concat dss')
             SDL.glSwapWindow window
             return shouldExit
@@ -380,12 +381,12 @@ main = do
   -- print ds
   -- let ds = gameDescriptors game :: [[Descriptor]] -- TODO: Game -> Objects -> [[Descriptor]]
   ds <- initVAO'
-  let ds' = toListOf (objects . traverse . descriptors ) game
+  let dss = toListOf (objects . traverse . descriptors ) game
   
   animate
     window
     ds
-    ds' --((ds'!!0)!!0)--ds
+    dss --((dss!!0)!!0)--ds
     game
     proj
     (parseWinInput >>> (mainGame game &&& handleExit))
