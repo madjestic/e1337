@@ -9,6 +9,7 @@ module Rendering
   , draw
   , initVAO
   , initVAO'
+  , initVAO''
   -- , initResources
   , initUniforms
 --  , toDrawables
@@ -449,6 +450,63 @@ initVAO (idx, st, vs, matPath) =
         -- | Bind the pointer to the vertex attribute data
         let floatSize  = (fromIntegral $ sizeOf (0.0::GLfloat)) :: GLsizei
             stride     = (fromIntegral st) * floatSize -- TODO : stride value should come from a single location
+        
+        -- | Alpha
+        vertexAttribPointer (AttribLocation 0) $= (ToFloat, VertexArrayDescriptor 1 Float stride ((plusPtr nullPtr . fromIntegral) (0 * floatSize)))
+        vertexAttribArray   (AttribLocation 0) $= Enabled
+        -- | Colors
+        vertexAttribPointer (AttribLocation 1) $= (ToFloat, VertexArrayDescriptor 3 Float stride ((plusPtr nullPtr . fromIntegral) (1 * floatSize)))
+        vertexAttribArray   (AttribLocation 1) $= Enabled
+        -- | Normals
+        vertexAttribPointer (AttribLocation 2) $= (ToFloat, VertexArrayDescriptor 3 Float stride ((plusPtr nullPtr . fromIntegral) (4 * floatSize)))
+        vertexAttribArray   (AttribLocation 2) $= Enabled
+        -- | UV
+        vertexAttribPointer (AttribLocation 3) $= (ToFloat, VertexArrayDescriptor 3 Float stride ((plusPtr nullPtr . fromIntegral) (7 * floatSize)))
+        vertexAttribArray   (AttribLocation 3) $= Enabled
+        -- | Positions
+        vertexAttribPointer (AttribLocation 4) $= (ToFloat, VertexArrayDescriptor 3 Float stride ((plusPtr nullPtr . fromIntegral) (10 * floatSize)))
+        vertexAttribArray   (AttribLocation 4) $= Enabled
+        
+        -- | Assign Textures
+        activeTexture            $= TextureUnit 0
+        texture Texture2D        $= Enabled
+        tx0 <- loadTex "textures/4096_earth_clouds.jpg"
+        textureBinding Texture2D $= Just tx0
+
+    _ <- DT.trace ("vao: " ++ show vao) $ return ()            -- trace vao, numIndices
+    _ <- DT.trace ("numIndices: " ++ show numIndices) $ return ()
+    return $ Descriptor vao (fromIntegral numIndices)
+
+initVAO'' :: ([Int], Int, [Float], Material) -> IO Descriptor
+initVAO'' (idx, st, vs, matPath) =  
+  do
+    --_ <- DT.trace ("obj: " ++ show obj) $ return ()
+    (Drawable vs idx) <- toDrawable $ "models/square.vgeo" -- take first objects, TODO: replace with fmap or whatever.
+    _ <- DT.trace ("idx: " ++ show idx) $ return ()
+    _ <- DT.trace ("vs:  " ++ show vs) $ return ()
+    -- | VAO
+    vao <- genObjectName
+    bindVertexArrayObject $= Just vao 
+    -- | VBO
+    vertexBuffer <- genObjectName
+    bindBuffer ArrayBuffer $= Just vertexBuffer
+    withArray vs $ \ptr ->
+      do
+        let sizev = fromIntegral ((length vs) * sizeOf (head vs))
+        bufferData ArrayBuffer $= (sizev, ptr, StaticDraw)
+    -- | EBO
+    elementBuffer <- genObjectName
+    bindBuffer ElementArrayBuffer $= Just elementBuffer
+    let numIndices = length idx
+    --_ <- DT.trace ("idx: " ++ show idx) $ return ()
+    withArray idx $ \ptr ->
+      do
+        let indicesSize = fromIntegral (numIndices * sizeOf (head (idx)))
+        bufferData ElementArrayBuffer $= (indicesSize, ptr, StaticDraw)
+        
+        -- | Bind the pointer to the vertex attribute data
+        let floatSize  = (fromIntegral $ sizeOf (0.0::GLfloat)) :: GLsizei
+            stride     =  13 * floatSize -- TODO : stride value should come from a single location
         
         -- | Alpha
         vertexAttribPointer (AttribLocation 0) $= (ToFloat, VertexArrayDescriptor 1 Float stride ((plusPtr nullPtr . fromIntegral) (0 * floatSize)))

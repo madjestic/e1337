@@ -65,14 +65,10 @@ type WinInput = Event SDL.EventPayload
 type WinOutput = (Game, Bool)
 
 animate :: SDL.Window
-        -> Descriptor
-        -> [[Descriptor]]
-        -> Game --[[Descriptor]]
-        -> Project
+        -> Game
         -> SF WinInput WinOutput  -- ^ signal function to animate
         -> IO ()
---animate window ds sf =
-animate window ds dss game' proj sf =
+animate window game' sf =
   do
     reactimate (return NoEvent)
                senseInput
@@ -92,13 +88,8 @@ animate window ds dss game' proj sf =
         renderOutput _ (game, shouldExit) =
           do
             uniforms <- initUniforms game
-            --ds'' <- initVAO'
-            game <- initGame proj
-            let dss' = toListOf (objects . traverse . descriptors ) game
-            --draw window ds -- works
-            --draw window ((dss!!0)!!0)  -- does not work
-            --draw window ((dss'!!0)!!0) -- works
-            --mapM (draw window) (concat dss')
+            let ds = toListOf (objects . traverse . descriptors ) game
+            mapM (draw window) (concat ds)
             SDL.glSwapWindow window
             return shouldExit
 
@@ -126,17 +117,18 @@ initObjects project =
     -- (PGeo _ _ _ _ _ _ matPaths) <- readPGeo $ path ((models $ project)!!0)
     (VGeo idxs st vaos matPaths) <- readVGeo $ path ((models project)!!0)
     mats                         <- mapM readMaterial matPaths
-    --ds <- initVAO
-    --mapM initVAO 
-    -- VGeo -> [Descriptors]
+    
     let args = (\idx' st' vao' mat' ->  (idx', st', vao', mat')) <$.> idxs <*.> st <*.> vaos <*.> mats
     ds <- mapM initVAO args
-    --print $ "args :" ++ show args
+    --ds <- mapM initVAO'' args
+    --ds' <- initVAO'-- args
+    --let ds = [ds']
+    
     let objects = 
           (fmap (\modelPath -> defaultObj { _descriptors = ds --geoPath = modelPath -- TODO: add descriptor initialize here
                                           , _materials   = mats })
             $ (fmap path) . models $ project :: [Object])
-    --let result = undefined
+          
     return objects
 
 initGame :: Project -> IO Game
@@ -362,33 +354,20 @@ main :: IO ()
 main = do
   args <- getArgs
   proj <- Project.Parser.parse (unsafeCoerce (args!!0) :: FilePath)
-  game <- initGame proj -- =<< Project.Parser.parse (unsafeCoerce (args!!0) :: FilePath)
 
-  let title = pack $ view (options . Game.name) game --((pack $ Game._name . _options $ game) :: Text)
-      resX  = view (options . Game.resx) game --(_resx . _options $ game)
-      resY  = view (options . Game.resx) game --(_resy . _options $ game)
+  let title = pack $ Project.name $ proj
+      resX  = (unsafeCoerce $ Project.resx $ proj) :: CInt
+      resY  = (unsafeCoerce $ Project.resy $ proj) :: CInt
 
   window    <- openWindow
                title
                (resX, resY)
 
-  -- print game
-  -- print $ view (options . Game.name) game
-  -- print $ toListOf (objects . traverse . scalar) game
-  -- print $ toListOf (objects . traverse . Object.materials . traverse . Material.name) game
-  -- let ds = toListOf (objects . traverse . descriptors ) game
-  
-  -- print ds
-  -- let ds = gameDescriptors game :: [[Descriptor]] -- TODO: Game -> Objects -> [[Descriptor]]
-  ds <- initVAO'
-  let dss = toListOf (objects . traverse . descriptors ) game
+  game <- initGame proj
   
   animate
     window
-    ds
-    dss --((dss!!0)!!0)--ds
     game
-    proj
     (parseWinInput >>> (mainGame game &&& handleExit))
 
 gameDescriptors :: Game -> [[Descriptor]]
