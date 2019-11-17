@@ -73,8 +73,8 @@ closeWindow window = do
 draw :: SDL.Window -> Descriptor -> IO ()
 draw window (Descriptor vao numIndices) =
   do
-    GL.clearColor $= Color4 0.5 0.5 1.0 1.0
-    GL.clear [ColorBuffer, DepthBuffer]
+    -- GL.clearColor $= Color4 0.5 0.5 1.0 1.0
+    -- GL.clear [ColorBuffer, DepthBuffer]
     
     bindVertexArrayObject $= Just vao
     drawElements Triangles numIndices GL.UnsignedInt nullPtr
@@ -84,7 +84,7 @@ draw window (Descriptor vao numIndices) =
     cullFace  $= Just Back
     depthFunc $= Just Less
 
-    SDL.glSwapWindow window
+    --SDL.glSwapWindow window
 
 initUniforms :: Game -> IO ()
 initUniforms game =  

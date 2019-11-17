@@ -36,7 +36,8 @@ import Geometry
 import Input          as Inp
 import Rendering
 import Material
-import Descriptor
+
+import Graphics.Rendering.OpenGL as GL hiding (color, normal, Size)
 
 import Unsafe.Coerce
 
@@ -79,10 +80,14 @@ animate window game' sf =
         renderOutput _ (game, shouldExit) =
           do
             uniforms <- initUniforms game
+            
+            GL.clearColor $= Color4 0.5 0.5 1.0 1.0
+            GL.clear [ColorBuffer, DepthBuffer]
+            
             let ds = toListOf (objects . traverse . descriptors ) game'
             mapM_ (draw window) (concat ds)
-            --draw window ((ds!!0)!!0)
-            --SDL.glSwapWindow window
+            
+            SDL.glSwapWindow window
             return shouldExit
 
 
