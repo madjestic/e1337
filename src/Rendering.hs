@@ -9,6 +9,8 @@ module Rendering
   , draw
   , initVAO
   , initUniforms
+  , render
+  , Backend (..)
   ) where
 
 import Control.Monad
@@ -33,7 +35,12 @@ import Data.Foldable     as DF (toList)
 import Linear.Projection as LP (perspective)
 
 import Unsafe.Coerce
+
+import Control.Lens       hiding (transform, indexed)
 --import Debug.Trace as DT
+
+data Backend
+  = OpenGL | Vulkan
 
 openWindow :: Text -> (CInt, CInt) -> IO SDL.Window
 openWindow title (sizex,sizey) = do
@@ -70,12 +77,21 @@ closeWindow window = do
 
 -- -- < OpenGL > -------------------------------------------------------------
 
+render :: Backend -> SDL.Window -> Game -> IO ()
+render Rendering.OpenGL window game =
+  do
+    GL.clearColor $= Color4 0.5 0.5 1.0 1.0
+    GL.clear [ColorBuffer, DepthBuffer]
+
+    let ds = toListOf (objects . traverse . descriptors ) game
+    mapM_ (draw window) (concat ds)
+
+    SDL.glSwapWindow window
+render Vulkan _ _ = undefined
+
 draw :: SDL.Window -> Descriptor -> IO ()
 draw window (Descriptor vao numIndices) =
   do
-    -- GL.clearColor $= Color4 0.5 0.5 1.0 1.0
-    -- GL.clear [ColorBuffer, DepthBuffer]
-    
     bindVertexArrayObject $= Just vao
     drawElements Triangles numIndices GL.UnsignedInt nullPtr
     
@@ -83,8 +99,6 @@ draw window (Descriptor vao numIndices) =
 
     cullFace  $= Just Back
     depthFunc $= Just Less
-
-    --SDL.glSwapWindow window
 
 initUniforms :: Game -> IO ()
 initUniforms game =  

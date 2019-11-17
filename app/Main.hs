@@ -21,6 +21,7 @@ import SDL                hiding ( Point
                                  , M33
                                  , Event
                                  , Mouse
+                                 , RenderDrivers
                                  , (^+^)
                                  , (*^))
 import System.Environment       (getArgs)
@@ -80,14 +81,7 @@ animate window game' sf =
         renderOutput _ (game, shouldExit) =
           do
             uniforms <- initUniforms game
-            
-            GL.clearColor $= Color4 0.5 0.5 1.0 1.0
-            GL.clear [ColorBuffer, DepthBuffer]
-            
-            let ds = toListOf (objects . traverse . descriptors ) game'
-            mapM_ (draw window) (concat ds)
-            
-            SDL.glSwapWindow window
+            Rendering.render Rendering.OpenGL window game
             return shouldExit
 
 
