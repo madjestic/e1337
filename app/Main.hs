@@ -9,16 +9,13 @@
 
 module Main where 
 
--- import Data.Foldable as DF       (toList)
--- import GHC.Generics
 import Control.Concurrent
 import Control.Lens       hiding (transform, indexed)
-import Data.Text                 (Text)
+import Data.Text                 (pack)
 import Foreign.C
 import FRP.Yampa          hiding (identity)
 import Data.Functor              (($>))
 
--- import Linear.Matrix      (M44, M33, identity)
 import SDL                hiding ( Point
                                  , M44
                                  , M33
@@ -26,8 +23,6 @@ import SDL                hiding ( Point
                                  , Mouse
                                  , (^+^)
                                  , (*^))
--- import Data.Aeson               (decodeFileStrict)
-import Data.Text                (pack)
 import System.Environment       (getArgs)
        
 import Camera         as Cam
@@ -45,11 +40,7 @@ import Descriptor
 
 import Unsafe.Coerce
 
--- -- Tests
--- import Data.List.Split (chunksOf)
--- import Data.List.Index (indexed)
-
-import Debug.Trace   as DT
+--import Debug.Trace   as DT
 
 -- --        d8888888b    8888888888888b     d888       d8888888888888888888888888 
 -- --       d888888888b   888  888  8888b   d8888      d88888    888    888        
@@ -89,7 +80,7 @@ animate window game' sf =
           do
             uniforms <- initUniforms game
             let ds = toListOf (objects . traverse . descriptors ) game'
-            mapM (draw window) (concat ds)
+            mapM_ (draw window) (concat ds)
             --draw window ((ds!!0)!!0)
             --SDL.glSwapWindow window
             return shouldExit
@@ -121,12 +112,12 @@ initObjects project =
     
     let args = (\idx' st' vao' mat' ->  (idx', st', vao', mat')) <$.> idxs <*.> st <*.> vaos <*.> mats
     ds <- mapM initVAO args
-    --ds <- mapM initVAO' args
     
-    let objects = 
-          (fmap (\modelPath -> defaultObj { _descriptors = ds --geoPath = modelPath -- TODO: add descriptor initialize here
-                                          , _materials   = mats })
-            $ (fmap path) . models $ project :: [Object])
+    let objects =
+          fmap
+          ((\ _ -> defaultObj{_descriptors = ds, _materials = mats})
+           . path)
+          (models project) :: [Object]
           
     return objects
 
@@ -152,12 +143,6 @@ initGame project =
         resY'           = (unsafeCoerce $ Project.resy $ project) :: CInt
 
 -- < Game Logic > ---------------------------------------------------------
-
--- mainGame :: Game -> SF AppInput Game
--- mainGame suka =
---   proc (input, game) -> do
---     returnA -< undefined
-
 
 mainGame :: Game -> SF AppInput Game
 mainGame initGame =
@@ -368,6 +353,3 @@ main = do
     window
     game
     (parseWinInput >>> (mainGame game &&& handleExit))
-
-gameDescriptors :: Game -> [[Descriptor]]
-gameDescriptors game = undefined
