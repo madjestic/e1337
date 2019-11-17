@@ -37,7 +37,7 @@ import Linear.Projection as LP (perspective)
 import Unsafe.Coerce
 
 import Control.Lens       hiding (transform, indexed)
---import Debug.Trace as DT
+import Debug.Trace as DT
 
 data Backend
   = OpenGL | Vulkan
@@ -99,6 +99,25 @@ draw window (Descriptor vao numIndices) =
 
     cullFace  $= Just Back
     depthFunc $= Just Less
+
+initUniforms' :: Object -> IO ()
+initUniforms' obj =
+  do
+
+    -- | Shaders
+    -- _ <- DT.trace ("vertShader: " ++ show (_vertShader $ _materials obj )) $ return ()
+    -- _ <- DT.trace ("vertShader: " ++ show (_fragShader $ _materials obj )) $ return ()
+
+    return ()
+    
+    -- program <- loadShaders [
+    --   ShaderInfo VertexShader
+    --     (FileSource (_vertShader $ (_materials $ (_objects $ game)!!0)!!0)), -- inito for first _objects: TODO: replace with fmap or whatever.
+    --   ShaderInfo FragmentShader
+    --     (FileSource (_fragShader $ (_materials $ (_objects $ game)!!0)!!0))
+    --   ]
+    -- currentProgram $= Just program
+
 
 initUniforms :: Game -> IO ()
 initUniforms game =  

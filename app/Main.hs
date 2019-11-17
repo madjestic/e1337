@@ -1,11 +1,6 @@
--- {-# LANGUAGE InstanceSigs #-}
--- {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE FlexibleInstances #-}
--- {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE OverloadedStrings, Arrows #-}
--- {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
--- {-# LANGUAGE TemplateHaskell #-}
 
 module Main where 
 
@@ -25,24 +20,22 @@ import SDL                hiding ( Point
                                  , (^+^)
                                  , (*^))
 import System.Environment       (getArgs)
+import Unsafe.Coerce
        
 import Camera         as Cam
 import Game
 import Project 
 import Project.Parser
 import Keyboard
-import Object         --as Obj
+import Object
 import Controllable  
 import Geometry
 import Input          as Inp
 import Rendering
 import Material
 
-import Graphics.Rendering.OpenGL as GL hiding (color, normal, Size)
 
-import Unsafe.Coerce
-
---import Debug.Trace   as DT
+--import Debug.Trace    as DT
 
 -- --        d8888888b    8888888888888b     d888       d8888888888888888888888888 
 -- --       d888888888b   888  888  8888b   d8888      d88888    888    888        
@@ -80,7 +73,7 @@ animate window game' sf =
 
         renderOutput _ (game, shouldExit) =
           do
-            uniforms <- initUniforms game
+            initUniforms game
             Rendering.render Rendering.OpenGL window game
             return shouldExit
 
@@ -108,6 +101,7 @@ initObjects project =
     -- (PGeo _ _ _ _ _ _ matPaths) <- readPGeo $ path ((models $ project)!!0)
     (VGeo idxs st vaos matPaths) <- readVGeo $ path ((models project)!!0)
     mats                         <- mapM readMaterial matPaths
+    --_ <- DT.trace ("mats: " ++ show mats) $ return ()
     
     let args = (\idx' st' vao' mat' ->  (idx', st', vao', mat')) <$.> idxs <*.> st <*.> vaos <*.> mats
     ds <- mapM initVAO args
