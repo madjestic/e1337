@@ -91,7 +91,7 @@ animate window game' sf =
             let ds = toListOf (objects . traverse . descriptors ) game'
             mapM (draw window) (concat ds)
             --draw window ((ds!!0)!!0)
-            SDL.glSwapWindow window
+            --SDL.glSwapWindow window
             return shouldExit
 
 
@@ -120,8 +120,8 @@ initObjects project =
     mats                         <- mapM readMaterial matPaths
     
     let args = (\idx' st' vao' mat' ->  (idx', st', vao', mat')) <$.> idxs <*.> st <*.> vaos <*.> mats
-    --ds <- mapM initVAO args
-    ds <- mapM initVAO' args
+    ds <- mapM initVAO args
+    --ds <- mapM initVAO' args
     
     let objects = 
           (fmap (\modelPath -> defaultObj { _descriptors = ds --geoPath = modelPath -- TODO: add descriptor initialize here
