@@ -43,7 +43,8 @@ data Backend
   = OpenGL | Vulkan
 
 openWindow :: Text -> (CInt, CInt) -> IO SDL.Window
-openWindow title (sizex,sizey) = do
+openWindow title (sizex,sizey) =
+  do
     SDL.initialize [SDL.InitVideo]
     SDL.HintRenderScaleQuality $= SDL.ScaleLinear                    
     do renderQuality <- SDL.get SDL.HintRenderScaleQuality          
@@ -71,11 +72,90 @@ openWindow title (sizex,sizey) = do
     return window
 
 closeWindow :: SDL.Window -> IO ()
-closeWindow window = do
+closeWindow window =
+  do
     SDL.destroyWindow window
     SDL.quit
 
 -- -- < OpenGL > -------------------------------------------------------------
+
+-- render' :: Backend -> SDL.Window -> Game -> IO ()
+-- render' Rendering.OpenGL window game =
+--   do
+--     let uniforms = undefined
+--           :: [ ( Material
+--                , Vector2  GLfloat
+--                , Vector2  GLfloat
+--                , Float
+--                , GLmatrix GLfloat
+--                , GLmatrix GLfloat
+--                , GLmatrix GLfloat ) ]
+--         descriptors = undefined
+--           :: [ Descriptor ]
+
+--         pack = undefined --iniforms ++ descriptor
+--           :: [ ( Material
+--                , Vector2  GLfloat
+--                , Vector2  GLfloat
+--                , Float
+--                , GLmatrix GLfloat
+--                , GLmatrix GLfloat
+--                , GLmatrix GLfloat
+--                , Descriptor ) ]
+
+--     mapM_ (\(_mat _mouse _res _time _proj _cam _trans _ds) ->
+--              draw window _ds
+--              initUniforms' _mat _mouse _res _time _proj _cam _trans
+
+--         -- initUniforms per Descriptor
+--         -- render Descriptor
+             
+--     return ()
+
+-- foo
+--   :: Material
+--   -> Vector2  GLfloat -- u_mouse
+--   -> Vector2  GLfloat -- u_resolution
+--   -> Float            -- u_time
+--   -> GLmatrix GLfloat -- projection matrix (perspective distortion)
+--   -> GLmatrix GLfloat -- camera     matrix
+--   -> GLmatrix GLfloat -- transform  matrix
+--   -> Descriptor
+--   -> IO ()
+-- foo _mat _mouse _res _time _proj _cam _trans _ds =
+--   initUniforms' _mat _mouse _res _time _proj _cam _trans
+--   -- mapM_ (draw window) (concat ds)
+--   return ()
+
+data Uniforms
+  =  Uniforms
+     {
+       u_mats  :: [Material]
+     , u_mouse :: Vector2  GLfloat
+     , u_time  :: Float
+     , u_proj  :: GLmatrix GLfloat
+     , u_cam   :: GLmatrix GLfloat
+     , u_trans :: GLmatrix GLfloat
+     } deriving Show
+
+data Drawable
+  =  Drawable
+     { uniforms   :: Uniforms
+     , descriptor :: Descriptor
+     } deriving Show
+
+unpackGame :: Game -> [Drawable]
+unpackGame game = [(Drawable (Uniforms u_mats' u_mouse' u_time' u_proj' u_cam' u_trans') ds)]
+  where
+    ds       = undefined :: Descriptor
+    nObjs    = undefined -- number of objects
+    u_mats'  = undefined
+    u_mouse' = undefined 
+    u_time'  = undefined 
+    u_proj'  = undefined 
+    u_cam'   = undefined 
+    u_trans' = undefined 
+      
 
 render :: Backend -> SDL.Window -> Game -> IO ()
 render Rendering.OpenGL window game =
@@ -83,8 +163,10 @@ render Rendering.OpenGL window game =
     GL.clearColor $= Color4 0.5 0.5 1.0 1.0
     GL.clear [ColorBuffer, DepthBuffer]
 
-    let ds = toListOf (objects . traverse . descriptors ) game
-    mapM_ (draw window) (concat ds)
+    let uniforms = undefined :: [Uniforms]
+    let ds = concat $ toListOf (objects . traverse . descriptors ) game :: [Descriptor]
+    --let ds = 
+    mapM_ (draw window) ds
 
     SDL.glSwapWindow window
 render Vulkan _ _ = undefined
@@ -100,23 +182,72 @@ draw window (Descriptor vao numIndices) =
     cullFace  $= Just Back
     depthFunc $= Just Less
 
-initUniforms' :: Object -> IO ()
-initUniforms' obj =
-  do
+-- TODO : initUniforms per Object
+-- initUniforms' :: Object -> IO ()
+-- initUniforms' obj =
+--   do
 
+--     -- | Shaders
+--     -- _ <- DT.trace ("vertShader: " ++ show (_vertShader $ _materials obj )) $ return ()
+--     -- _ <- DT.trace ("vertShader: " ++ show (_fragShader $ _materials obj )) $ return ()
+
+--     return ()
+    
+--     -- program <- loadShaders [
+--     --   ShaderInfo VertexShader
+--     --     (FileSource (_vertShader $ (_materials $ (_objects $ game)!!0)!!0)), -- inito for first _objects: TODO: replace with fmap or whatever.
+--     --   ShaderInfo FragmentShader
+--     --     (FileSource (_fragShader $ (_materials $ (_objects $ game)!!0)!!0))
+--     --   ]
+--     -- currentProgram $= Just program
+
+-- initUniforms'' :: Descriptor -> Material -> IO ()
+-- initUniforms'' ds mat = undefined
+
+initUniforms'
+  :: Material
+  -> Vector2  GLfloat -- u_mouse
+  -> Vector2  GLfloat -- u_resolution
+  -> Float            -- u_time
+  -> GLmatrix GLfloat -- projection matrix (perspective distortion)
+  -> GLmatrix GLfloat -- camera     matrix
+  -> GLmatrix GLfloat -- transform  matrix
+  -> IO ()
+initUniforms' _mat _mouse _res _time _proj _cam _trans = 
+  do
     -- | Shaders
-    -- _ <- DT.trace ("vertShader: " ++ show (_vertShader $ _materials obj )) $ return ()
-    -- _ <- DT.trace ("vertShader: " ++ show (_fragShader $ _materials obj )) $ return ()
+    -- _ <- DT.trace ("vertShader: " ++ show (_vertShader $ (_materials $ (_objects $ game)!!0)!!0)) $ return ()
+    -- _ <- DT.trace ("vertShader: " ++ show (_fragShader $ (_materials $ (_objects $ game)!!0)!!0)) $ return ()
+    
+    program <- loadShaders
+      [ ShaderInfo VertexShader   (FileSource (_vertShader _mat ))
+      , ShaderInfo FragmentShader (FileSource (_fragShader _mat )) ]
+    currentProgram $= Just program
+
+    -- | Set Uniforms
+    location0         <- get (uniformLocation program "u_mouse")
+    uniform location0 $= _mouse
+    
+    location1         <- get (uniformLocation program "u_resolution")
+    uniform location1 $= _res
+
+    location2         <- get (uniformLocation program "u_time")
+    uniform location2 $= (_time :: GLfloat)
+    
+    location3         <- get (uniformLocation program "persp")
+    uniform location3 $= _proj
+    
+    location4         <- get (uniformLocation program "_camera")
+    uniform location4 $= _cam
+
+    location5         <- get (uniformLocation program "transform")
+    uniform location5 $= _trans
+    
+    -- | Unload buffers
+    bindVertexArrayObject         $= Nothing
+    bindBuffer ElementArrayBuffer $= Nothing
 
     return ()
-    
-    -- program <- loadShaders [
-    --   ShaderInfo VertexShader
-    --     (FileSource (_vertShader $ (_materials $ (_objects $ game)!!0)!!0)), -- inito for first _objects: TODO: replace with fmap or whatever.
-    --   ShaderInfo FragmentShader
-    --     (FileSource (_fragShader $ (_materials $ (_objects $ game)!!0)!!0))
-    --   ]
-    -- currentProgram $= Just program
 
 
 initUniforms :: Game -> IO ()

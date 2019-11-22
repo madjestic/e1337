@@ -3,7 +3,7 @@
 module Object
   ( Object (..)
   , defaultObj
-  , scalar
+--  , scalar
   , materials
   , descriptors
   ) where
@@ -29,16 +29,16 @@ import Descriptor
 
 data Object
   =  Object
-     { _scalar      :: Double
-     , _descriptors :: [Descriptor]
+     { --_scalar      :: Double
+       _descriptors :: [Descriptor]
      , _materials   :: [Material]
      --, transform  :: GLmatrix GLfloat
      , _velocity    :: V4 Double
      , _driver      :: Controllable
      } deriving Show
 
-scalar :: Lens' Object Double
-scalar = lens _scalar (\object newScalar -> Object { _scalar = newScalar })
+-- scalar :: Lens' Object Double
+-- scalar = lens _scalar (\object newScalar -> Object { _scalar = newScalar })
 
 descriptors :: Lens' Object [Descriptor]
 descriptors = lens _descriptors (\object newDescriptors -> Object { _descriptors = newDescriptors })
@@ -48,7 +48,7 @@ materials = lens _materials (\object newMaterial -> Object { _materials = newMat
 
 defaultObj 
   = Object.Object
-    0.0
+    -- 0.0
     []                        --"models/square.pgeo" --(Geo [[]] [] [] [] [] [])
     [defaultMat]
     (V4 0 0 0 0)

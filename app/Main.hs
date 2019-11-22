@@ -30,8 +30,8 @@ import Keyboard
 import Object
 import Controllable  
 import Geometry
-import Input          as Inp
-import Rendering
+import Input 
+import Rendering      as R
 import Material
 
 
@@ -74,7 +74,7 @@ animate window game' sf =
         renderOutput _ (game, shouldExit) =
           do
             initUniforms game
-            Rendering.render Rendering.OpenGL window game
+            R.render R.OpenGL window game
             return shouldExit
 
 
