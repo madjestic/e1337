@@ -73,7 +73,6 @@ animate window game' sf =
 
         renderOutput _ (game, shouldExit) =
           do
-            initUniforms game
             R.render R.OpenGL window game
             return shouldExit
 
@@ -179,8 +178,8 @@ updateGame game =
 updateCamera :: Camera -> SF AppInput Camera
 updateCamera cam = 
   proc input -> do
-    ctl <- loopControlable (Cam.controller $ cam) -< input
-    returnA -< Camera { Cam.controller = ctl }
+    ctl <- loopControlable (Cam._controller $ cam) -< input
+    returnA -< Camera { Cam._controller = ctl }
 
 loopControlable :: Controllable -> SF AppInput Controllable
 loopControlable ctl0 =
@@ -190,16 +189,16 @@ loopControlable ctl0 =
     where
       sf = proc input -> do
         ctl           <- updateControllable ctl0       -< ctl0
-        mtx           <- returnA          -< transform ctl
-        ypr           <- returnA          -< ypr       ctl
+        mtx           <- returnA          -< _transform ctl
+        ypr           <- returnA          -< _ypr       ctl
         (kkeys, kevs) <- updateKeys  ctl0 -< input
         (pos0, mev)   <- (mouseEventPos &&& mouseEvent) -< input
 
         result <-
           returnA -<
           ( Controllable (0,0) mtx ypr
-            ( Devices
-              ( Keyboard kkeys (keyVecs (keyboard (devices ctl))) )
+            ( Device
+              ( Keyboard kkeys (keyVecs (_keyboard (_device ctl))) )
               ( Mouse Nothing Nothing pos0 [] ) ) )
         returnA -< 
           ( result
@@ -210,7 +209,7 @@ loopControlable ctl0 =
 updateKeys :: Controllable -> SF AppInput (Keys, [Event ()])
 updateKeys ctl0 = 
   proc input -> do
-    let keys0 = keys.keyboard.devices $ ctl0
+    let keys0 = keys._keyboard._device $ ctl0
     
     (keyW_, keyWe) <- keyEvents SDL.ScancodeW keyW ctl0 -< input
     (keyS_, keySe) <- keyEvents SDL.ScancodeS keyS ctl0 -< input
@@ -239,24 +238,24 @@ updateControllable ctl0 =
     update1 :: Controllable -> Controllable -> DTime -> Controllable -> Controllable
     update1 ctl0 ctl1 dt ctl2 = ctl
       where
-        kvs = (keyVecs.keyboard.devices $ ctl0)
+        kvs = (keyVecs._keyboard._device $ ctl0)
         mvs = [ -- mouse vectors
                 (V3 )]
-        pos0 = pos.mouse.devices $ ctl2
+        pos0 = _pos._mouse._device $ ctl2
 
         ctl = (Controllable
                (0,0)
                mtx
-               ypr
-               (Devices
+               ypr'
+               (Device
                 (Keyboard keys0 kvs)
                 (Mouse Nothing Nothing pos0 [])))
           where
-            mtx0  = (transform ctl2)
-            keys0 = (keys.keyboard.devices $ ctl0)
+            mtx0  = (_transform ctl2)
+            keys0 = (keys._keyboard._device $ ctl0)
 
-            ypr :: V3 Double
-            ypr   =
+            ypr' :: V3 Double
+            ypr'   =
               (99999 * ) $
               ((V3 dt dt dt) * ) $
               foldr (+) (V3 0 0 0) $
@@ -264,23 +263,23 @@ updateControllable ctl0 =
                             [ keyUp,  keyDown, keyLeft, keyRight, keyQ,  keyE ])
                             [ pPitch, nPitch,  pYaw,    nYaw,     pRoll, nRoll ]
               where
-                pPitch = (keyVecs.keyboard.devices $ ctl0)!!6  -- positive  pitch
-                nPitch = (keyVecs.keyboard.devices $ ctl0)!!7  -- negative  pitch
-                pYaw   = (keyVecs.keyboard.devices $ ctl0)!!8  -- positive  yaw
-                nYaw   = (keyVecs.keyboard.devices $ ctl0)!!9  -- negative  yaw
-                pRoll  = (keyVecs.keyboard.devices $ ctl0)!!10 -- positive  roll
-                nRoll  = (keyVecs.keyboard.devices $ ctl0)!!11 -- negative  roll
+                pPitch = (keyVecs._keyboard._device $ ctl0)!!6  -- positive  pitch
+                nPitch = (keyVecs._keyboard._device $ ctl0)!!7  -- negative  pitch
+                pYaw   = (keyVecs._keyboard._device $ ctl0)!!8  -- positive  yaw
+                nYaw   = (keyVecs._keyboard._device $ ctl0)!!9  -- negative  yaw
+                pRoll  = (keyVecs._keyboard._device $ ctl0)!!10 -- positive  roll
+                nRoll  = (keyVecs._keyboard._device $ ctl0)!!11 -- negative  roll
             
-            mtx =
+            mtx = 
               mkTransformationMat
               rot
               tr
               where
                 rot =
                   (view _m33 mtx0)
-                  !*! fromQuaternion (axisAngle (view _x (view _m33 mtx0)) (view _x ypr)) -- yaw
-                  !*! fromQuaternion (axisAngle (view _y (view _m33 mtx0)) (view _y ypr)) -- pitch
-                  !*! fromQuaternion (axisAngle (view _z (view _m33 mtx0)) (view _z ypr)) -- roll
+                  !*! fromQuaternion (axisAngle (view _x (view _m33 mtx0)) (view _x ypr')) -- yaw
+                  !*! fromQuaternion (axisAngle (view _y (view _m33 mtx0)) (view _y ypr')) -- pitch
+                  !*! fromQuaternion (axisAngle (view _z (view _m33 mtx0)) (view _z ypr')) -- roll
 
                 tr  =
                   foldr (+) (view translation mtx0) $
@@ -290,19 +289,19 @@ updateControllable ctl0 =
                                 [keyW, keyS, keyA, keyD, keyZ, keyX])
                                 [fVel, bVel, lVel, rVel, uVel, dVel]
 
-                  where fVel   = (keyVecs.keyboard.devices $ ctl0)!!0  -- forwards  velocity
-                        bVel   = (keyVecs.keyboard.devices $ ctl0)!!1  -- backwards velocity
-                        lVel   = (keyVecs.keyboard.devices $ ctl0)!!2  -- left      velocity
-                        rVel   = (keyVecs.keyboard.devices $ ctl0)!!3  -- right     velocity
-                        uVel   = (keyVecs.keyboard.devices $ ctl0)!!4  -- right     velocity
-                        dVel   = (keyVecs.keyboard.devices $ ctl0)!!5  -- right     velocity
+                  where fVel   = (keyVecs._keyboard._device $ ctl0)!!0  -- forwards  velocity
+                        bVel   = (keyVecs._keyboard._device $ ctl0)!!1  -- backwards velocity
+                        lVel   = (keyVecs._keyboard._device $ ctl0)!!2  -- left      velocity
+                        rVel   = (keyVecs._keyboard._device $ ctl0)!!3  -- right     velocity
+                        uVel   = (keyVecs._keyboard._device $ ctl0)!!4  -- right     velocity
+                        dVel   = (keyVecs._keyboard._device $ ctl0)!!5  -- right     velocity
 
 keyEvents :: SDL.Scancode -> (Keys -> Bool) -> Controllable -> SF AppInput (Bool, Event ())
 keyEvents code keyFunc ctl = 
   proc input -> do
     keyPressed     <- keyInput code  "Pressed"  -< input
     keyReleased    <- keyInput code  "Released" -< input
-    let keys0  = keys.keyboard.devices $ ctl
+    let keys0  = keys._keyboard._device $ ctl
         result = keyEvent (keyFunc keys0) keyPressed keyReleased
         event  = lMerge keyPressed keyReleased
     returnA -< (result, event)

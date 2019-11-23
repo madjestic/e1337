@@ -1,12 +1,16 @@
 module Camera
   ( Camera (..)
   , initCam
+  , controller
   ) where
 
-import            Controllable
-import            Linear.Matrix (M44, M33, identity)
-import            Linear (V3(..))
-import            Keyboard
+import Control.Lens
+import Linear.Matrix             (M44, M33, identity)
+import Linear                    (V3(..))
+import Graphics.Rendering.OpenGL (GLmatrix, GLfloat)
+
+import Controllable
+import Keyboard
 
 initCam
   = Camera
@@ -14,7 +18,7 @@ initCam
     (0,0)
     (identity :: M44 Double)
     (V3 0 0 0)
-    (Devices (Keyboard keys0 kvs0) (Mouse Nothing Nothing (0,0) mvs0 )))
+    (Device (Keyboard keys0 kvs0) (Mouse Nothing Nothing (0,0) mvs0 )))
   where
     mvs0   = [] --undefined
     -- mvs0 - mouse vectors
@@ -38,5 +42,8 @@ initCam
 data Camera =
      Camera
      {
-       controller :: Controllable
+       _controller :: Controllable
      } deriving Show
+
+controller :: Lens' Camera Controllable
+controller = lens _controller (\camera newController -> Camera { _controller = newController })

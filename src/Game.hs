@@ -17,6 +17,7 @@ module Game
   , resx
   , resy
   , objects
+  , camera
   ) where
 
 import Foreign.C                              (CInt)
@@ -52,18 +53,16 @@ data Stage =
    | GameMenu
    deriving Show
 
-options :: Lens' Game Options
-options = lens _options (\game newOptions -> Game { _options = newOptions })
-
-name :: Lens' Options String
-name = lens _name (\options newName -> Options { _name = newName })
-
-resx :: Lens' Options CInt
-resx = lens _resx (\options newX -> Options { _resx = newX })
-
-resy :: Lens' Options CInt
-resy = lens _resy (\options newY -> Options { _resy = newY })
-
-objects :: Lens' Game [Object]
-objects = lens _objects (\game newObjects -> Game { _objects = newObjects})
+options :: Lens' Game    Options
+name    :: Lens' Options String
+resx    :: Lens' Options CInt
+resy    :: Lens' Options CInt
+objects :: Lens' Game    [Object]
+camera  :: Lens' Game    Camera
+options = lens _options (\game newOptions -> Game    { _options = newOptions })
+name    = lens _name    (\options newName -> Options { _name    = newName })
+resx    = lens _resx    (\options newX    -> Options { _resx    = newX })
+resy    = lens _resy    (\options newY    -> Options { _resy    = newY })
+objects = lens _objects (\game newObjects -> Game    { _objects = newObjects})
+camera  = lens _camera  (\game newCamera  -> Game    { _camera  = newCamera })
 
