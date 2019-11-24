@@ -35,7 +35,7 @@ import Rendering      as R
 import Material
 
 
---import Debug.Trace    as DT
+import Debug.Trace    as DT
 
 -- --        d8888888b    8888888888888b     d888       d8888888888888888888888888 
 -- --       d888888888b   888  888  8888b   d8888      d88888    888    888        
@@ -103,7 +103,9 @@ initObjects project =
     --_ <- DT.trace ("mats: " ++ show mats) $ return ()
     
     let args = (\idx' st' vao' mat' ->  (idx', st', vao', mat')) <$.> idxs <*.> st <*.> vaos <*.> mats
+    _ <- DT.trace ("args: " ++ show args) $ return ()
     ds <- mapM initVAO args
+    _ <- DT.trace ("ds: " ++ show ds) $ return ()
     
     let objects =
           fmap
@@ -126,7 +128,7 @@ initGame project =
             resY'
           )
           GamePlaying
-          objs
+          objs --(DT.trace ("objs :" ++ show objs) $ objs)
           initCam
     return initGame
       where

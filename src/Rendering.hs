@@ -99,17 +99,28 @@ data Drawable
      } deriving Show
 
 (<$.>) :: (a -> b) -> [a] -> [b]
-(<$.>) = fmap
+(<$.>) = map
 
 (<*.>) :: [a -> b] -> [a] -> [b]
 (<*.>) = zipWith ($)
 
 
 -- TODO: fill in the gaps
+-- toDrawables :: Game -> Float -> [Drawable]
+-- toDrawables game time = (DT.trace ("ds: "      ++ show (length ds)      ++ "\n" ++ 
+--                                    "n: "       ++ show n                ++ "\n" ++ 
+--                                    "u_mats: "  ++ show (length u_mats)  ++ "\n" ++ 
+--                                    "u_mouse: " ++ show (length u_mouse) ++ "\n" ++ 
+--                                    "u_time: "  ++ show (length u_time)  ++ "\n" ++ 
+--                                    "u_res: "   ++ show (length u_res)   ++ "\n" ++ 
+--                                    "u_cam: "   ++ show (length u_cam)   ++ "\n" ++ 
+--                                    "u_trans: " ++ show (length u_trans) ++ "\n"
+--                                   ) $ drs)
 toDrawables :: Game -> Float -> [Drawable]
-toDrawables game time = drs
+toDrawables game time = drs --(DT.trace ("drs: " ++ show (length drs)) $ drs)
   where
-    n        = length $ view objects game :: Int
+    ds       = concat $ toListOf (objects . traverse . descriptors) game :: [Descriptor]
+    n        = length ds :: Int
     u_mats   = concat $ toListOf (objects . traverse . materials) game :: [Material]
     u_mouse  = replicate n $ unsafeCoerce $ view (camera . controller . device . mouse . pos) game :: [(Double, Double)]
     u_time   = replicate n $ time      :: [Float]
@@ -118,13 +129,14 @@ toDrawables game time = drs
     u_res    = replicate n $ ((toEnum resX), (toEnum resY)) :: [(CInt, CInt)]
 --    u_proj   = undefined -- :: [GLmatrix GLfloat]
     u_cam    = replicate n $ view (camera . controller . Controllable.transform) game :: [M44 Double]
-    u_trans  = toListOf (objects . traverse . Object.transform) game :: [M44 Double]  -- :: [GLmatrix GLfloat]
-    ds       = concat $ toListOf (objects . traverse . descriptors) game :: [Descriptor]
+    u_trans  = concat $ replicate n $ toListOf (objects . traverse . Object.transform) game :: [M44 Double]  -- :: [GLmatrix GLfloat]
     drs      =
       (\  u_mats' u_mouse' u_time' u_res' u_cam' u_trans' ds'
         -> (Drawable (Uniforms u_mats' u_mouse' u_time' u_res' u_cam' u_trans') ds')) 
-      <$.> u_mats <*.> u_mouse <*.> u_time <*.> u_res <*.> u_cam <*.> u_trans <*.> ds
+      <$.> u_mats <*.> u_mouse <*.> u_time <*.> u_res <*.> u_cam <*.> u_trans <*.> ds --(DT.trace ("ds :" ++ show ds) $ ds)
 
+
+-- TODO : move initObjects under render and see if 2 tris are drawn
 render :: Backend -> SDL.Window -> Game -> IO ()
 render Rendering.OpenGL window game =
   do
@@ -133,8 +145,13 @@ render Rendering.OpenGL window game =
 
     ticks             <- SDL.ticks
     let currentTime = fromInteger (unsafeCoerce ticks :: Integer) :: Float
-    
-    mapM_ (draw window) $ toDrawables game currentTime
+
+    -- _ <- DT.trace ("toDrawables game currentTime: " ++ show (toDrawables game currentTime)) $ return ()
+    -- _ <- DT.trace ("game: " ++ show (game)) $ return ()
+        drs = toDrawables game currentTime
+    --_ <- DT.trace ("drs: " ++ show (length drs)) $ return ()
+    --draw window (drs!!0)
+    mapM_ (draw window) drs
 
     SDL.glSwapWindow window
 render Vulkan _ _ = undefined
@@ -142,12 +159,14 @@ render Vulkan _ _ = undefined
 draw :: SDL.Window -> Drawable -> IO ()
 draw window (Drawable
               unis --(Uniforms u_mats' u_mouse' u_time' u_res' u_proj' u_cam' u_trans')
-              (Descriptor vao' numIndices')) =
+              ds@(Descriptor vao' numIndices')) =
   do
+    --_ <- DT.trace ("ds: " ++ show (ds)) $ return ()
+    
     initUniforms unis -- u_mats' u_mouse' u_time' u_res' u_proj' u_cam' u_trans'
     
     bindVertexArrayObject $= Just vao'
-    drawElements Triangles numIndices' GL.UnsignedInt nullPtr
+    drawElements Points numIndices' GL.UnsignedInt nullPtr
     
     GL.pointSize $= 10
 
