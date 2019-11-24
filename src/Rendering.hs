@@ -137,6 +137,7 @@ toDrawables game time = drs --(DT.trace ("drs: " ++ show (length drs)) $ drs)
 
 
 -- TODO : move initObjects under render and see if 2 tris are drawn
+-- basically make ds <- mapM initVAO args work somewhere here
 render :: Backend -> SDL.Window -> Game -> IO ()
 render Rendering.OpenGL window game =
   do
