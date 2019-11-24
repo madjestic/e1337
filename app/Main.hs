@@ -189,7 +189,7 @@ loopControlable ctl0 =
     where
       sf = proc input -> do
         ctl           <- updateControllable ctl0       -< ctl0
-        mtx           <- returnA          -< _transform ctl
+        mtx           <- returnA          -< Controllable._transform ctl
         ypr           <- returnA          -< _ypr       ctl
         (kkeys, kevs) <- updateKeys  ctl0 -< input
         (pos0, mev)   <- (mouseEventPos &&& mouseEvent) -< input
@@ -251,7 +251,7 @@ updateControllable ctl0 =
                 (Keyboard keys0 kvs)
                 (Mouse Nothing Nothing pos0 [])))
           where
-            mtx0  = (_transform ctl2)
+            mtx0  = (Controllable._transform ctl2)
             keys0 = (keys._keyboard._device $ ctl0)
 
             ypr' :: V3 Double

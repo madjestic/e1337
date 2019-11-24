@@ -84,10 +84,10 @@ data Uniforms
   =  Uniforms
      {
        u_mats  :: Material
-     , u_mouse :: Vector2 GLfloat
+     , u_mouse :: (Double, Double)
      , u_time  :: Float
-     , u_res   :: Vector2 GLfloat
-     , u_proj  :: M44 Double --GLmatrix GLfloat
+     , u_res   :: (CInt, CInt)
+     --, u_proj  :: M44 Double --GLmatrix GLfloat
      , u_cam   :: M44 Double --GLmatrix GLfloat
      , u_trans :: M44 Double --GLmatrix GLfloat
      } deriving Show
@@ -110,46 +110,20 @@ toDrawables :: Game -> Float -> [Drawable]
 toDrawables game time = drs
   where
     n        = length $ view objects game :: Int
-    --let ds = toListOf (objects . traverse . descriptors ) game'
     u_mats   = concat $ toListOf (objects . traverse . materials) game :: [Material]
-    -- (pos . mouse . devices . C.controller . _camera $ game)
-    u_mouse  = replicate n $ unsafeCoerce $ view (camera . controller . device . mouse . pos) game :: [Vector2  GLfloat]
+    u_mouse  = replicate n $ unsafeCoerce $ view (camera . controller . device . mouse . pos) game :: [(Double, Double)]
     u_time   = replicate n $ time      :: [Float]
     resX     = fromEnum $ view (options . resx) game :: Int
     resY     = fromEnum $ view (options . resy) game :: Int
-    u_res    = replicate n $ Vector2 (toEnum resX) (toEnum resY) :: [Vector2 GLfloat]
-    u_proj   = undefined :: [GLmatrix GLfloat]
-    u_cam    = replicate n $ view (camera . controller . transform) game :: [M44 Double]
-    u_trans  = undefined :: [GLmatrix GLfloat]
-    ds       = undefined :: [Descriptor]
+    u_res    = replicate n $ ((toEnum resX), (toEnum resY)) :: [(CInt, CInt)]
+--    u_proj   = undefined -- :: [GLmatrix GLfloat]
+    u_cam    = replicate n $ view (camera . controller . Controllable.transform) game :: [M44 Double]
+    u_trans  = toListOf (objects . traverse . Object.transform) game :: [M44 Double]  -- :: [GLmatrix GLfloat]
+    ds       = concat $ toListOf (objects . traverse . descriptors) game :: [Descriptor]
     drs      =
-      (\
-          u_mats'
-          u_mouse'
-          u_time'
-          u_res'
-          u_proj'
-          u_cam'
-          u_trans'
-          ds'
-        -> (Drawable
-             (Uniforms
-               u_mats'
-               u_mouse'
-               u_time'
-               u_res'
-               u_proj'
-               u_cam'
-               u_trans') ds')) 
-      
-      <$.> u_mats
-      <*.> u_mouse
-      <*.> u_time
-      <*.> u_res
-      <*.> u_proj
-      <*.> u_cam
-      <*.> u_trans
-      <*.> ds
+      (\  u_mats' u_mouse' u_time' u_res' u_cam' u_trans' ds'
+        -> (Drawable (Uniforms u_mats' u_mouse' u_time' u_res' u_cam' u_trans') ds')) 
+      <$.> u_mats <*.> u_mouse <*.> u_time <*.> u_res <*.> u_cam <*.> u_trans <*.> ds
 
 render :: Backend -> SDL.Window -> Game -> IO ()
 render Rendering.OpenGL window game =
@@ -180,19 +154,8 @@ draw window (Drawable
     cullFace  $= Just Back
     depthFunc $= Just Less
 
--- draw :: SDL.Window -> Descriptor -> IO ()
--- draw window (Descriptor vao numIndices) =
---   do
---     bindVertexArrayObject $= Just vao
---     drawElements Triangles numIndices GL.UnsignedInt nullPtr
-    
---     GL.pointSize $= 10
-
---     cullFace  $= Just Back
---     depthFunc $= Just Less
-
 initUniforms :: Uniforms -> IO ()
-initUniforms (Uniforms u_mats' u_mouse' u_time' u_res' u_proj' u_cam' u_trans') = 
+initUniforms (Uniforms u_mats' u_mouse' u_time' u_res' u_cam' u_trans') = 
   do
     -- | Shaders
     -- _ <- DT.trace ("vertShader: " ++ show (_vertShader $ (_materials $ (_objects $ game)!!0)!!0)) $ return ()
@@ -204,94 +167,49 @@ initUniforms (Uniforms u_mats' u_mouse' u_time' u_res' u_proj' u_cam' u_trans') 
     currentProgram $= Just program
 
     -- | Set Uniforms
+    let u_mouse       = Vector2 (realToFrac $ fst u_mouse') (realToFrac $ snd u_mouse') :: Vector2 GLfloat
     location0         <- get (uniformLocation program "u_mouse'")
-    uniform location0 $= u_mouse'
-    
+    uniform location0 $= u_mouse
+
+    let resX = fromIntegral $ fromEnum $ fst u_res' :: Float
+        resY = fromIntegral $ fromEnum $ snd u_res' :: Float
+        
+    let u_res         = Vector2 resX resY :: Vector2 GLfloat
+           
     location1         <- get (uniformLocation program "u_resolution")
-    uniform location1 $= u_res'
+    uniform location1 $= u_res
 
     location2         <- get (uniformLocation program "u_time'")
     uniform location2 $= (u_time' :: GLfloat)
-    
-    location3         <- get (uniformLocation program "persp")
-    uniform location3 $= u_proj'
-    
-    location4         <- get (uniformLocation program "_camera")
-    uniform location4 $= u_cam'
 
+
+    let proj =          
+          fmap realToFrac . concat $ fmap DF.toList . DF.toList -- convert to GLfloat
+          --               FOV    Aspect    Near   Far
+          $ LP.perspective (pi/2.0) (resX/resY) (0.01) 1.5 :: [GLfloat]
+
+    persp             <- GL.newMatrix RowMajor proj :: IO (GLmatrix GLfloat)
+    location3         <- get (uniformLocation program "persp")
+    uniform location3 $= persp
+
+    let cam =
+          fmap realToFrac . concat $ fmap DF.toList . DF.toList $ u_cam'
+    camera            <- GL.newMatrix RowMajor cam :: IO (GLmatrix GLfloat)
+    location4         <- get (uniformLocation program "camera")
+    uniform location4 $= camera
+
+    let mtx =
+          fmap realToFrac . concat $ fmap DF.toList . DF.toList $ --u_trans'
+          (identity::M44 Double) :: [GLfloat]
+    transform         <- GL.newMatrix RowMajor mtx :: IO (GLmatrix GLfloat)
     location5         <- get (uniformLocation program "transform")
-    uniform location5 $= u_trans'
+    uniform location5 $= transform --u_trans'
     
     -- | Unload buffers
     bindVertexArrayObject         $= Nothing
     bindBuffer ElementArrayBuffer $= Nothing
 
-    return ()
-
-
--- initUniforms :: Game -> IO ()
--- initUniforms game =  
---   do
---     -- | Shaders
---     -- _ <- DT.trace ("vertShader: " ++ show (_vertShader $ (_materials $ (_objects $ game)!!0)!!0)) $ return ()
---     -- _ <- DT.trace ("vertShader: " ++ show (_fragShader $ (_materials $ (_objects $ game)!!0)!!0)) $ return ()
-    
---     program <- loadShaders [
---       ShaderInfo VertexShader
---         (FileSource (_vertShader $ (_materials $ (_objects $ game)!!0)!!0)), -- inito for first _objects: TODO: replace with fmap or whatever.
---       ShaderInfo FragmentShader
---         (FileSource (_fragShader $ (_materials $ (_objects $ game)!!0)!!0))
---       ]
---     currentProgram $= Just program
-
---     -- | Set Uniforms
---     location0         <- get (uniformLocation program "u_mouse")
---     let u_mouse       = Vector2 (realToFrac $ fst mpos) (realToFrac $ snd mpos) :: Vector2 GLfloat
---            where mpos = 
---                    (pos . mouse . devices . C.controller . _camera $ game)
---     uniform location0 $= u_mouse
-    
---     location1         <- get (uniformLocation program "u_resolution")
---     let u_res         = Vector2 (toEnum resX) (toEnum resY) :: Vector2 GLfloat
---            where resX = fromEnum $ (_resx . _options $ game)
---                  resY = fromEnum $ (_resy . _options $ game)
---     uniform location1 $= u_res
-
---     ticks             <- SDL.ticks
---     let currentTime = fromInteger (unsafeCoerce ticks :: Integer) :: Float
---     location2         <- get (uniformLocation program "u_time")
---     uniform location2 $= (currentTime :: GLfloat)
-    
---     let proj =          
---           fmap realToFrac . concat $ fmap DF.toList . DF.toList -- convert to GLfloat
---           --               FOV    Aspect    Near   Far
---           $ LP.perspective (pi/2) (resX/resY) (0.01) 1.5 :: [GLfloat]
---                      where resX = toEnum $ fromEnum $ (_resx . _options $ game)
---                            resY = toEnum $ fromEnum $ (_resy . _options $ game)
-
---     persp             <- GL.newMatrix RowMajor proj :: IO (GLmatrix GLfloat)
---     location3         <- get (uniformLocation program "persp")
---     uniform location3 $= persp
-    
---     let cam =
---           fmap realToFrac . concat $ fmap DF.toList . DF.toList $
---           transform . C.controller . _camera $ game --(identity::M44 Double) :: [GLfloat]
---     _camera            <- GL.newMatrix RowMajor cam :: IO (GLmatrix GLfloat)
---     location4         <- get (uniformLocation program "_camera")
---     uniform location4 $= _camera
-
---     let mtx =
---           fmap realToFrac . concat $ fmap DF.toList . DF.toList $
---           (identity::M44 Double) :: [GLfloat]
---     transform         <- GL.newMatrix RowMajor mtx :: IO (GLmatrix GLfloat)
---     location5         <- get (uniformLocation program "transform")
---     uniform location5 $= transform
-    
---     -- | Unload buffers
---     bindVertexArrayObject         $= Nothing
---     bindBuffer ElementArrayBuffer $= Nothing
-
---     return () -- $ Descriptor vao (fromIntegral numIndices)    
+    return ()      
 
        -- | Indices -> Stride -> ListOfFloats -> Material -> Descriptor
 initVAO :: ([Int], Int, [Float], Material) -> IO Descriptor
