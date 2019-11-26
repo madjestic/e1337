@@ -20,7 +20,7 @@ import Foreign.Marshal.Array                  (withArray)
 import Foreign.Ptr                            (plusPtr, nullPtr)
 import Foreign.Storable                       (sizeOf)
 import Graphics.Rendering.OpenGL as GL hiding (color, normal, Size)
-import SDL                             hiding (Point, Event, Timer, (^+^), (*^), (^-^), dot)
+import SDL                             hiding (Point, Event, Timer, (^+^), (*^), (^-^), dot, project)
 import Graphics.GLUtil                        (readTexture, texture2DWrap)
 
 import LoadShaders
@@ -31,6 +31,10 @@ import Controllable
 import Descriptor
 import Material
 import Mouse
+--- debug stuff
+import Project (Project, path, models)
+import Geometry hiding (materials)
+---
 
 import Data.Foldable     as DF (toList)
 import Linear.Projection as LP (perspective)
@@ -88,8 +92,8 @@ data Uniforms
      , u_time  :: Float
      , u_res   :: (CInt, CInt)
      --, u_proj  :: M44 Double --GLmatrix GLfloat
-     , u_cam   :: M44 Double --GLmatrix GLfloat
-     , u_trans :: M44 Double --GLmatrix GLfloat
+     , u_cam   :: M44 Double 
+     , u_trans :: M44 Double 
      } deriving Show
 
 data Drawable
@@ -104,18 +108,6 @@ data Drawable
 (<*.>) :: [a -> b] -> [a] -> [b]
 (<*.>) = zipWith ($)
 
-
--- TODO: fill in the gaps
--- toDrawables :: Game -> Float -> [Drawable]
--- toDrawables game time = (DT.trace ("ds: "      ++ show (length ds)      ++ "\n" ++ 
---                                    "n: "       ++ show n                ++ "\n" ++ 
---                                    "u_mats: "  ++ show (length u_mats)  ++ "\n" ++ 
---                                    "u_mouse: " ++ show (length u_mouse) ++ "\n" ++ 
---                                    "u_time: "  ++ show (length u_time)  ++ "\n" ++ 
---                                    "u_res: "   ++ show (length u_res)   ++ "\n" ++ 
---                                    "u_cam: "   ++ show (length u_cam)   ++ "\n" ++ 
---                                    "u_trans: " ++ show (length u_trans) ++ "\n"
---                                   ) $ drs)
 toDrawables :: Game -> Float -> [Drawable]
 toDrawables game time = drs --(DT.trace ("drs: " ++ show (length drs)) $ drs)
   where
@@ -133,41 +125,39 @@ toDrawables game time = drs --(DT.trace ("drs: " ++ show (length drs)) $ drs)
     drs      =
       (\  u_mats' u_mouse' u_time' u_res' u_cam' u_trans' ds'
         -> (Drawable (Uniforms u_mats' u_mouse' u_time' u_res' u_cam' u_trans') ds')) 
-      <$.> u_mats <*.> u_mouse <*.> u_time <*.> u_res <*.> u_cam <*.> u_trans <*.> ds --(DT.trace ("ds :" ++ show ds) $ ds)
+      <$.> u_mats <*.> u_mouse <*.> u_time <*.> u_res <*.> u_cam <*.> u_trans <*.> ds
 
-
--- TODO : move initObjects under render and see if 2 tris are drawn
--- basically make ds <- mapM initVAO args work somewhere here
-render :: Backend -> SDL.Window -> Game -> IO ()
-render Rendering.OpenGL window game =
+render :: Backend -> SDL.Window -> Game -> Project -> IO ()
+render Rendering.OpenGL window game proj =
   do
     GL.clearColor $= Color4 0.5 0.5 1.0 1.0
     GL.clear [ColorBuffer, DepthBuffer]
 
+    (VGeo idxs st vaos matPaths) <- readVGeo $ path ((models proj)!!0)
+    mats                         <- mapM readMaterial matPaths
+    let args = (\idx' st' vao' mat' ->  (idx', st', vao', mat')) <$.> idxs <*.> st <*.> vaos <*.> mats
+    
     ticks             <- SDL.ticks
     let currentTime = fromInteger (unsafeCoerce ticks :: Integer) :: Float
-
-    -- _ <- DT.trace ("toDrawables game currentTime: " ++ show (toDrawables game currentTime)) $ return ()
-    -- _ <- DT.trace ("game: " ++ show (game)) $ return ()
         drs = toDrawables game currentTime
-    --_ <- DT.trace ("drs: " ++ show (length drs)) $ return ()
-    --draw window (drs!!0)
+
     mapM_ (draw window) drs
 
     SDL.glSwapWindow window
-render Vulkan _ _ = undefined
+    
+render Vulkan _ _ _ = undefined
 
 draw :: SDL.Window -> Drawable -> IO ()
 draw window (Drawable
-              unis --(Uniforms u_mats' u_mouse' u_time' u_res' u_proj' u_cam' u_trans')
-              ds@(Descriptor vao' numIndices')) =
+              unis
+              (Descriptor vao' numIndices')) =
   do
     --_ <- DT.trace ("ds: " ++ show (ds)) $ return ()
     
-    initUniforms unis -- u_mats' u_mouse' u_time' u_res' u_proj' u_cam' u_trans'
+    initUniforms unis
     
     bindVertexArrayObject $= Just vao'
-    drawElements Points numIndices' GL.UnsignedInt nullPtr
+    drawElements Triangles numIndices' GL.UnsignedInt nullPtr
     
     GL.pointSize $= 10
 
@@ -226,8 +216,8 @@ initUniforms (Uniforms u_mats' u_mouse' u_time' u_res' u_cam' u_trans') =
     uniform location5 $= transform --u_trans'
     
     -- | Unload buffers
-    bindVertexArrayObject         $= Nothing
-    bindBuffer ElementArrayBuffer $= Nothing
+    --bindVertexArrayObject         $= Nothing
+    --bindBuffer ElementArrayBuffer $= Nothing
 
     return ()      
 

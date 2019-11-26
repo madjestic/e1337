@@ -52,9 +52,10 @@ type WinOutput = (Game, Bool)
 
 animate :: SDL.Window
         -> Game
+        -> Project
         -> SF WinInput WinOutput  -- ^ signal function to animate
         -> IO ()
-animate window game' sf =
+animate window game' proj sf =
   do
     reactimate (return NoEvent)
                senseInput
@@ -73,7 +74,7 @@ animate window game' sf =
 
         renderOutput _ (game, shouldExit) =
           do
-            R.render R.OpenGL window game
+            R.render R.OpenGL window game' proj
             return shouldExit
 
 
@@ -97,28 +98,24 @@ animate window game' sf =
 initObjects :: Project -> IO [Object]
 initObjects project = 
   do
-    -- (PGeo _ _ _ _ _ _ matPaths) <- readPGeo $ path ((models $ project)!!0)
     (VGeo idxs st vaos matPaths) <- readVGeo $ path ((models project)!!0)
     mats                         <- mapM readMaterial matPaths
-    --_ <- DT.trace ("mats: " ++ show mats) $ return ()
     
     let args = (\idx' st' vao' mat' ->  (idx', st', vao', mat')) <$.> idxs <*.> st <*.> vaos <*.> mats
-    _ <- DT.trace ("args: " ++ show args) $ return ()
+    --_ <- DT.trace ("args: " ++ show args) $ return ()
     ds <- mapM initVAO args
-    _ <- DT.trace ("ds: " ++ show ds) $ return ()
+    --_ <- DT.trace ("ds: " ++ show ds) $ return ()
     
     let objects =
           fmap
-          ((\ _ -> defaultObj{_descriptors = ds, _materials = mats})
-           . path)
+          ((\ _ -> defaultObj{_descriptors = ds, _materials = mats}) . path)
           (models project) :: [Object]
-          
+
     return objects
 
 initGame :: Project -> IO Game
 initGame project =
   do
-    -- print d
     objs <- (initObjects project)
     let initGame =
           Game
@@ -128,7 +125,7 @@ initGame project =
             resY'
           )
           GamePlaying
-          objs --(DT.trace ("objs :" ++ show objs) $ objs)
+          objs
           initCam
     return initGame
       where
@@ -346,4 +343,5 @@ main = do
   animate
     window
     game
+    proj
     (parseWinInput >>> (mainGame game &&& handleExit))
