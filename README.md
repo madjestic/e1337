@@ -4,12 +4,15 @@ At the moment it's a Shader-Toy-like application with blackjack and exotic dance
 
 It supports loading and rendering simple projects files, describing a model, a material, it has a camera and supports user-input.
 
-* Loads a model.
-* Applies a material.
+* Loads a model, only one model is supported at the moment.
+* Supports multiple materials per object.
 * Renders a scene.
 * Has a camera that supports user-input.
 
 [a youtube demo](https://youtu.be/KVFu1DjKTCE)
+
+![](https://github.com/madjestic/e1337/blob/master/multimaterial.png)
+[added multimaterial support](https://youtu.be/EYwBZOm5GNE)
 
 # What it wants to be: A relativistic space-time-sim pilot game.
 * inspired by Strugatsky "Noon: XXII century" series.

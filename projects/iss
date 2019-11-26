@@ -1,6 +1,0 @@
-[ "ISS"
-, "800"
-, "600"
-, "models/iss.vgeo"
-, "shaders/ISS/shader.vert"
-, "shaders/ISS/shader.frag" ]

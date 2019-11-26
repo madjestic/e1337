@@ -1,0 +1,10 @@
+{
+  "Material": {
+    "name":"constant_A",
+    "Shaders": {
+      "vertex":   "mat/square/Constant_A/shader.vert",
+      "fragment": "mat/square/Constant_A/shader.frag"
+    },
+    "textures": [""]
+  }
+}

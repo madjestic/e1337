@@ -51,11 +51,9 @@ type WinInput = Event SDL.EventPayload
 type WinOutput = (Game, Bool)
 
 animate :: SDL.Window
-        -> Game
-        -> Project
         -> SF WinInput WinOutput  -- ^ signal function to animate
         -> IO ()
-animate window game' proj sf =
+animate window sf =
   do
     reactimate (return NoEvent)
                senseInput
@@ -74,7 +72,7 @@ animate window game' proj sf =
 
         renderOutput _ (game, shouldExit) =
           do
-            R.render R.OpenGL window game' proj
+            R.render R.OpenGL window game
             return shouldExit
 
 
@@ -171,7 +169,6 @@ updateGame game =
   proc input -> do
     let objs = _objects game
     cam      <- updateCamera $ _camera game -< input
-    --returnA  -< Game (_options game) GamePlaying objs cam
     returnA  -< Game (view options game) GamePlaying (view objects game) cam
 
 updateCamera :: Camera -> SF AppInput Camera
@@ -342,6 +339,4 @@ main = do
   
   animate
     window
-    game
-    proj
     (parseWinInput >>> (mainGame game &&& handleExit))

@@ -109,7 +109,7 @@ data Drawable
 (<*.>) = zipWith ($)
 
 toDrawables :: Game -> Float -> [Drawable]
-toDrawables game time = drs --(DT.trace ("drs: " ++ show (length drs)) $ drs)
+toDrawables game time = drs
   where
     ds       = concat $ toListOf (objects . traverse . descriptors) game :: [Descriptor]
     n        = length ds :: Int
@@ -127,16 +127,12 @@ toDrawables game time = drs --(DT.trace ("drs: " ++ show (length drs)) $ drs)
         -> (Drawable (Uniforms u_mats' u_mouse' u_time' u_res' u_cam' u_trans') ds')) 
       <$.> u_mats <*.> u_mouse <*.> u_time <*.> u_res <*.> u_cam <*.> u_trans <*.> ds
 
-render :: Backend -> SDL.Window -> Game -> Project -> IO ()
-render Rendering.OpenGL window game proj =
+render :: Backend -> SDL.Window -> Game -> IO ()
+render Rendering.OpenGL window game =
   do
     GL.clearColor $= Color4 0.5 0.5 1.0 1.0
     GL.clear [ColorBuffer, DepthBuffer]
 
-    (VGeo idxs st vaos matPaths) <- readVGeo $ path ((models proj)!!0)
-    mats                         <- mapM readMaterial matPaths
-    let args = (\idx' st' vao' mat' ->  (idx', st', vao', mat')) <$.> idxs <*.> st <*.> vaos <*.> mats
-    
     ticks             <- SDL.ticks
     let currentTime = fromInteger (unsafeCoerce ticks :: Integer) :: Float
         drs = toDrawables game currentTime
@@ -145,15 +141,13 @@ render Rendering.OpenGL window game proj =
 
     SDL.glSwapWindow window
     
-render Vulkan _ _ _ = undefined
+render Vulkan _ _ = undefined
 
 draw :: SDL.Window -> Drawable -> IO ()
 draw window (Drawable
               unis
               (Descriptor vao' numIndices')) =
   do
-    --_ <- DT.trace ("ds: " ++ show (ds)) $ return ()
-    
     initUniforms unis
     
     bindVertexArrayObject $= Just vao'
