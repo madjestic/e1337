@@ -96,9 +96,18 @@ animate window sf =
 initObjects :: Project -> IO [Object]
 initObjects project = 
   do
-    (VGeo idxs st vaos matPaths) <- readVGeo $ path ((models project)!!0)
-    mats                         <- mapM readMaterial matPaths
-    
+    --(VGeo idxs st vaos matPaths) <- readVGeo $ _path ((_models project)!!0)
+    --let foo = toListOf (models . traverse . path) project
+    vgeos <- mapM loadModels $ toListOf (models . traverse . path) project
+    let vgeo =
+          foldr1 (\(VGeo idxs st vaos matPaths)(VGeo idxs' st' vaos' matPaths')
+                  -> (VGeo
+                      (concat [idxs,idxs'])
+                      (concat [st, st'])
+                      (concat [vaos, vaos'])
+                      (concat [matPaths, matPaths']))) vgeos
+    mats  <- mapM readMaterial (ms vgeo)--matPaths
+    let (VGeo idxs st vaos matPaths) = vgeo
     let args = (\idx' st' vao' mat' ->  (idx', st', vao', mat')) <$.> idxs <*.> st <*.> vaos <*.> mats
     --_ <- DT.trace ("args: " ++ show args) $ return ()
     ds <- mapM initVAO args
@@ -106,10 +115,16 @@ initObjects project =
     
     let objects =
           fmap
-          ((\ _ -> defaultObj{_descriptors = ds, _materials = mats}) . path)
-          (models project) :: [Object]
+          ((\ _ -> defaultObj{_descriptors = ds, _materials = mats}) . _path)
+          (_models project) :: [Object]
 
     return objects
+
+loadModels :: String -> IO Geo
+loadModels path =
+  do
+    (VGeo idxs st vaos matPaths) <- readVGeo path
+    return (VGeo idxs st vaos matPaths)
 
 initGame :: Project -> IO Game
 initGame project =

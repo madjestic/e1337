@@ -1,0 +1,10 @@
+{
+  "Material": {
+    "name":"constant_C",
+    "Shaders": {
+      "vertex":   "mat/tri/Constant_C/shader.vert",
+      "fragment": "mat/tri/Constant_C/shader.frag"
+    },
+    "textures": [""]
+  }
+}

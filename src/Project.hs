@@ -6,6 +6,7 @@ module Project
   , resx
   , resy
   , models
+  , path
   ) where
 
 --import Material
@@ -14,17 +15,16 @@ import Control.Lens
 data Project
   =  Project
      {
-       name   :: String
-     , resx   :: Int
-     , resy   :: Int
-     , models :: [Model]
+       name    :: String
+     , resx    :: Int
+     , resy    :: Int
+     , _models :: [Model]
      } deriving Show
 
 data Model
   =  Model
      {
-       path      :: String
-     -- , materials :: [Material]
+       _path      :: String
      } deriving Show
 
 -- name :: Lens' Project String
@@ -36,6 +36,8 @@ data Model
 -- resy :: Lens' Project Int
 -- resy = lens _resy (\project newY -> Project { _resy = newY })
 
--- models :: Lens' Project [Model]
--- models = lens _models (\project newModels -> Project { _models = newModels })
-
+models :: Lens' Project [Model]
+models = lens _models (\project newModels -> Project { _models = newModels })
+-- TOODO : finish lensing:..
+path :: Lens' Model String
+path = lens _path (\model newPath -> Model { _path = newPath })
