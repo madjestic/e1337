@@ -79,10 +79,7 @@ $ gpu ./run.sh
 ## Rebuilding assets:
 ```bash
 $ cd ./resources
-$ make
-$ cd ./resources/geoIndexer
-$ ./Main
-$ cp ./resources/geoIndexer/model.i.json ./src/models/iss.vgeo
+$ ./convertGeo.sh model_file_name
 ```
 
 ## Working with REPL:
@@ -93,7 +90,7 @@ $ cabal new-repl exe:e1337
 
 - running:
 ```bash
-$ cabal new-run exe:e1337
+$ gpu ./run.sh
 ```
 - with ghcid:
 ```bash
