@@ -4,6 +4,7 @@ module Controllable
   , Keyboard (..)
   , Mouse (..)
   , transform
+  , transform'
   , ypr      
   , device
   , mouse
@@ -18,19 +19,31 @@ import Keyboard
 import Mouse
 
 data Controllable
-  =  Controllable
-     { _debug      :: (Double, Double)
+  =  Controller
+     {
+       _debug      :: (Double, Double)
      , _transform  :: M44 Double
      , _ypr        :: V3 Double  -- yaw/pitch/roll
      , _device     :: Device
-     } deriving Show
+     }
+  |  Solver
+     {
+       _transform  :: M44 Double
+     , _ypr        :: V3 Double  -- yaw/pitch/roll
+     }
+  deriving Show
 
 transform :: Lens' Controllable (M44 Double)
+transform = lens _transform (\controllable newTransform -> Controller { _transform = newTransform })
+
+transform' :: Lens' Controllable (M44 Double)
+transform' = lens _transform (\controllable newTransform -> Solver { _transform = newTransform })
+
 ypr       :: Lens' Controllable (V3 Double)
+ypr       = lens _ypr       (\controllable newYpr       -> Controller { _ypr       = newYpr })
+
 device    :: Lens' Controllable Device
-transform = lens _transform (\controllable newTransform -> Controllable { _transform = newTransform })
-ypr       = lens _ypr       (\controllable newYpr       -> Controllable { _ypr       = newYpr })
-device    = lens _device    (\controllable newDevice    -> Controllable { _device    = newDevice })
+device    = lens _device    (\controllable newDevice    -> Controller { _device    = newDevice })
 
 data Device
   =  Device

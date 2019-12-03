@@ -182,32 +182,105 @@ gamePlay game =
 updateGame :: Game -> SF AppInput Game
 updateGame game = 
   proc input -> do
-    let objs = _objects game
-    cam      <- updateCamera $ _camera game -< input
-    returnA  -< Game (view options game) GamePlaying (view objects game) cam
+    --let objs = _objects game
+    objs'    <- updateObjects $ _objects game -< ()
+    cam      <- updateCamera  $ _camera game -< input
+    --returnA  -< Game (view options game) GamePlaying (view objects game) cam
+    returnA  -< Game (view options game) GamePlaying objs' cam
+
+-- solve :: Solver -> Solver
+-- [Object] -> [Solver]
+-- fmap (solve :: Solver -> Solver) ([Object] -> [Solver]) :: [Solver]
+-- fmap (\slv -> Object { _solver = slv} ) [Solver] :: [Object]
+
+
+updateObjects :: [Object] -> SF () [Object]
+updateObjects objs =
+  proc () -> do
+    let 
+        slvs   = fmap (view solver) objs
+        slvs'  = fmap solve' slvs
+        --objs'  = fmap (\(obj, slv') -> (obj { _solver = slv' }) ) $ zip objs $ fmap (\slv' -> slv' { _ypr = V3 11.1 33.3 77.7 }) slvs'
+        objs'  = fmap
+                 (\(obj, slv') -> (obj { Object._transform = (view transform' slv')
+                                       , _solver = slv' }) )
+                 $ zip objs $ fmap (\slv' -> slv' { _ypr = V3 11.1 33.3 77.7 }) slvs'
+    returnA -< objs'
+
+solve' :: Controllable -> Controllable
+solve' (Solver mtx0 ypr0) = (Solver mtx ypr0)
+  where
+    mtx = 
+      mkTransformationMat
+      rot
+      tr
+      where
+        rot =
+          (view _m33 mtx0)
+          !*! fromQuaternion (axisAngle (view _x (view _m33 mtx0)) (view _x ypr0)) -- yaw
+          !*! fromQuaternion (axisAngle (view _y (view _m33 mtx0)) (view _y ypr0)) -- pitch
+          !*! fromQuaternion (axisAngle (view _z (view _m33 mtx0)) (view _z ypr0)) -- roll
+        tr  = view translation mtx0 --undefined
+
+solve :: Controllable -> SF () Controllable
+solve (Solver mtx0 ypr0) =
+  proc () -> do
+    let mtx = 
+          mkTransformationMat
+          rot
+          tr
+          where
+            rot =
+              (view _m33 mtx0)
+              !*! fromQuaternion (axisAngle (view _x (view _m33 mtx0)) (view _x ypr0)) -- yaw
+              !*! fromQuaternion (axisAngle (view _y (view _m33 mtx0)) (view _y ypr0)) -- pitch
+              !*! fromQuaternion (axisAngle (view _z (view _m33 mtx0)) (view _z ypr0)) -- roll
+            tr  = view translation mtx0 --undefined
+              -- foldr (+) (view translation mtx0) $
+              -- fmap (0.1 *) $ transpose rot
+              --fmap (transpose (rot) !*) $
+
+    let result = Solver mtx ypr0 --undefined
+    returnA -< result
+    
+
+-- updateObjects :: [Object] -> SF () [Object]
+-- updateObjects objs =
+--   proc input -> do
+--     slv <- solverLoop (fmap _solver objs) -< ()
+--     let objs' = fmap (\s -> Object { _solver = s})
+--     --let result = undefined
+--     returnA -< objs' -- undefined--Object { _solver = slv }
+
+--or
+-- Objects -> list of solvers -> 
+
+-- Solver (transform, ypr) -> update (transform, ypr) -> Solver
+-- solverLoop :: [Controllable] -> SF () [Controllable]
+-- solverLoop ctl0 = undefined
 
 updateCamera :: Camera -> SF AppInput Camera
 updateCamera cam = 
   proc input -> do
-    ctl <- loopControlable (Cam._controller $ cam) -< input
+    ctl <- controlLoop (Cam._controller $ cam) -< input
     returnA -< Camera { Cam._controller = ctl }
 
-loopControlable :: Controllable -> SF AppInput Controllable
-loopControlable ctl0 =
+controlLoop :: Controllable -> SF AppInput Controllable
+controlLoop ctl0 =
   -- | foldrWith mtx0 keys - for every keyInput apply a folding transform to mtx0
-  -- | in case of keypress event - updateControllable the set of keys and call new fold ^
+  -- | in case of keypress event - updateLoop the set of keys and call new fold ^
   switch sf cont
     where
       sf = proc input -> do
-        ctl           <- updateControllable ctl0       -< ctl0
+        ctl           <- updateLoop ctl0  -< ctl0
         mtx           <- returnA          -< Controllable._transform ctl
-        ypr           <- returnA          -< _ypr       ctl
+        ypr           <- returnA          -< _ypr ctl
         (kkeys, kevs) <- updateKeys  ctl0 -< input
         (pos0, mev)   <- (mouseEventPos &&& mouseEvent) -< input
 
         result <-
           returnA -<
-          ( Controllable (0,0) mtx ypr
+          ( Controller (0,0) mtx ypr
             ( Device
               ( Keyboard kkeys (keyVecs (_keyboard (_device ctl))) )
               ( Mouse Nothing Nothing pos0 [] ) ) )
@@ -215,35 +288,10 @@ loopControlable ctl0 =
           ( result
           , catEvents (mev:kevs)
             $> result) -- :: (Controllable, Event Controllable)
-      cont result = loopControlable result
+      cont result = controlLoop result
 
-updateKeys :: Controllable -> SF AppInput (Keys, [Event ()])
-updateKeys ctl0 = 
-  proc input -> do
-    let keys0 = keys._keyboard._device $ ctl0
-    
-    (keyW_, keyWe) <- keyEvents SDL.ScancodeW keyW ctl0 -< input
-    (keyS_, keySe) <- keyEvents SDL.ScancodeS keyS ctl0 -< input
-    (keyA_, keyAe) <- keyEvents SDL.ScancodeA keyA ctl0 -< input
-    (keyD_, keyDe) <- keyEvents SDL.ScancodeD keyD ctl0 -< input
-
-    (keyQ_, keyQe) <- keyEvents SDL.ScancodeQ keyQ ctl0 -< input
-    (keyE_, keyEe) <- keyEvents SDL.ScancodeE keyE ctl0 -< input
-    (keyZ_, keyZe) <- keyEvents SDL.ScancodeZ keyZ ctl0 -< input
-    (keyX_, keyXe) <- keyEvents SDL.ScancodeX keyX ctl0 -< input
-  
-    (keyUp_,    keyUpE)    <- keyEvents SDL.ScancodeUp    keyUp    ctl0 -< input
-    (keyDown_,  keyDownE)  <- keyEvents SDL.ScancodeDown  keyDown  ctl0 -< input
-    (keyLeft_,  keyLeftE)  <- keyEvents SDL.ScancodeLeft  keyLeft  ctl0 -< input
-    (keyRight_, keyRightE) <- keyEvents SDL.ScancodeRight keyRight ctl0 -< input
-
-    let events = [      keyWe, keySe, keyAe, keyDe, keyQe, keyEe, keyZe, keyXe, keyUpE, keyDownE, keyLeftE, keyRightE  ]
-        keys   = ( Keys keyW_  keyS_  keyA_  keyD_  keyQ_  keyE_  keyZ_  keyX_  keyUp_  keyDown_  keyLeft_  keyRight_ )
-
-    returnA -< (keys, events)
-
-updateControllable :: Controllable -> SF Controllable Controllable
-updateControllable ctl0 =
+updateLoop :: Controllable -> SF Controllable Controllable
+updateLoop ctl0 =
   iterFrom update1 ctl0
   where
     update1 :: Controllable -> Controllable -> DTime -> Controllable -> Controllable
@@ -254,7 +302,7 @@ updateControllable ctl0 =
                 (V3 )]
         pos0 = _pos._mouse._device $ ctl2
 
-        ctl = (Controllable
+        ctl = (Controller
                (0,0)
                mtx
                ypr'
@@ -306,6 +354,31 @@ updateControllable ctl0 =
                         rVel   = (keyVecs._keyboard._device $ ctl0)!!3  -- right     velocity
                         uVel   = (keyVecs._keyboard._device $ ctl0)!!4  -- right     velocity
                         dVel   = (keyVecs._keyboard._device $ ctl0)!!5  -- right     velocity
+
+updateKeys :: Controllable -> SF AppInput (Keys, [Event ()])
+updateKeys ctl0 = 
+  proc input -> do
+    let keys0 = keys._keyboard._device $ ctl0
+    
+    (keyW_, keyWe) <- keyEvents SDL.ScancodeW keyW ctl0 -< input
+    (keyS_, keySe) <- keyEvents SDL.ScancodeS keyS ctl0 -< input
+    (keyA_, keyAe) <- keyEvents SDL.ScancodeA keyA ctl0 -< input
+    (keyD_, keyDe) <- keyEvents SDL.ScancodeD keyD ctl0 -< input
+
+    (keyQ_, keyQe) <- keyEvents SDL.ScancodeQ keyQ ctl0 -< input
+    (keyE_, keyEe) <- keyEvents SDL.ScancodeE keyE ctl0 -< input
+    (keyZ_, keyZe) <- keyEvents SDL.ScancodeZ keyZ ctl0 -< input
+    (keyX_, keyXe) <- keyEvents SDL.ScancodeX keyX ctl0 -< input
+  
+    (keyUp_,    keyUpE)    <- keyEvents SDL.ScancodeUp    keyUp    ctl0 -< input
+    (keyDown_,  keyDownE)  <- keyEvents SDL.ScancodeDown  keyDown  ctl0 -< input
+    (keyLeft_,  keyLeftE)  <- keyEvents SDL.ScancodeLeft  keyLeft  ctl0 -< input
+    (keyRight_, keyRightE) <- keyEvents SDL.ScancodeRight keyRight ctl0 -< input
+
+    let events = [      keyWe, keySe, keyAe, keyDe, keyQe, keyEe, keyZe, keyXe, keyUpE, keyDownE, keyLeftE, keyRightE  ]
+        keys   = ( Keys keyW_  keyS_  keyA_  keyD_  keyQ_  keyE_  keyZ_  keyX_  keyUp_  keyDown_  keyLeft_  keyRight_ )
+
+    returnA -< (keys, events)
 
 keyEvents :: SDL.Scancode -> (Keys -> Bool) -> Controllable -> SF AppInput (Bool, Event ())
 keyEvents code keyFunc ctl = 

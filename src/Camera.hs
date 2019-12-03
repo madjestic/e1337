@@ -14,7 +14,7 @@ import Keyboard
 
 initCam
   = Camera
-  ( Controllable
+  ( Controller
     (0,0)
     (identity :: M44 Double)
     (V3 0 0 0)

@@ -7,6 +7,7 @@ module Object
   , materials
   , descriptors
   , transform
+  , solver
   ) where
 
 -- import Control.Monad             (mzero)
@@ -33,9 +34,9 @@ data Object
      { --_scalar      :: Double
        _descriptors :: [Descriptor]
      , _materials   :: [Material]
-     , _transform   :: M44 Double
+     , _transform   :: M44 Double -- this is the problem, TODO: possibly remove the _solver
      , _velocity    :: V4 Double
-     , _driver      :: Controllable
+     , _solver      :: Controllable
      } deriving Show
 
 -- scalar :: Lens' Object Double
@@ -50,30 +51,15 @@ materials = lens _materials (\object newMaterial -> Object { _materials = newMat
 transform :: Lens' Object (M44 Double)
 transform = lens _transform (\object newTransform -> Object { _transform = newTransform })
 
+solver :: Lens' Object (Controllable)
+solver = lens _solver (\object newSolver -> Object { _solver = newSolver })
+
 defaultObj 
   = Object.Object
-    -- 0.0
-    []                        --"models/square.pgeo" --(Geo [[]] [] [] [] [] [])
+    []
     [defaultMat]
     (identity::M44 Double)
     (V4 0 0 0 0)
-    ( Controllable
-      (0,0)
+    ( Solver
       (identity :: M44 Double)
-      (V3 0 0 0)
-      (Device (Keyboard keys0 kvs0) (Mouse Nothing Nothing (0,0) [])) )
-          where
-            keys0  = ( Keys False False False False False False False False False False False False )
-            kvs0   = [ fVel, bVel, lVel, rVel, uVel, dVel, pPitch, nPitch, pYaw, nYaw, pRoll, nRoll ]
-            fVel   = V3 ( 0  )( 0  )( 999)   -- forwards  velocity
-            bVel   = V3 ( 0  )( 0  )(-999)   -- backwards velocity
-            lVel   = V3 ( 999)( 0  )( 0  )   -- left      velocity
-            rVel   = V3 (-999)( 0  )( 0  )   -- right     velocity
-            uVel   = V3 ( 0  )(-999)( 0  )   -- right     velocity
-            dVel   = V3 ( 0  )( 999)( 0  )   -- right     velocity
-            pPitch = V3 ( 999)( 0  )( 0  )   -- positive  pitch
-            nPitch = V3 (-999)( 0  )( 0  )   -- negative  pitch
-            pYaw   = V3 ( 0  )( 999)( 0  )   -- positive  yaw
-            nYaw   = V3 ( 0  )(-999)( 0  )   -- negative  yaw
-            pRoll  = V3 ( 0  )(  0 )( 999)   -- positive  roll
-            nRoll  = V3 ( 0  )(  0 )(-999)   -- negative  roll
+      (V3 10.1 10.1 10.1))

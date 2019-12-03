@@ -122,10 +122,11 @@ toDrawables game time = drs
 --    u_proj   = undefined -- :: [GLmatrix GLfloat]
     u_cam    = replicate n $ view (camera . controller . Controllable.transform) game :: [M44 Double]
     u_trans  = concat $ replicate n $ toListOf (objects . traverse . Object.transform) game :: [M44 Double]  -- :: [GLmatrix GLfloat]
+    
     drs      =
       (\  u_mats' u_mouse' u_time' u_res' u_cam' u_trans' ds'
         -> (Drawable (Uniforms u_mats' u_mouse' u_time' u_res' u_cam' u_trans') ds')) 
-      <$.> u_mats <*.> u_mouse <*.> u_time <*.> u_res <*.> u_cam <*.> u_trans <*.> ds
+      <$.> u_mats <*.> u_mouse <*.> u_time <*.> u_res <*.> u_cam <*.> (DT.trace ("u_trans :" ++ show u_trans) $ u_trans) <*.> ds
 
 render :: Backend -> SDL.Window -> Game -> IO ()
 render Rendering.OpenGL window game =
@@ -203,8 +204,8 @@ initUniforms (Uniforms u_mats' u_mouse' u_time' u_res' u_cam' u_trans') =
     uniform location4 $= camera
 
     let mtx =
-          fmap realToFrac . concat $ fmap DF.toList . DF.toList $ --u_trans'
-          (identity::M44 Double) :: [GLfloat]
+          fmap realToFrac . concat $ fmap DF.toList . DF.toList $ u_trans'
+          --(identity::M44 Double) :: [GLfloat]
     transform         <- GL.newMatrix RowMajor mtx :: IO (GLmatrix GLfloat)
     location5         <- get (uniformLocation program "transform")
     uniform location5 $= transform --u_trans'
