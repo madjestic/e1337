@@ -62,4 +62,4 @@ defaultObj
     (V4 0 0 0 0)
     ( Solver
       (identity :: M44 Double)
-      (V3 10.1 10.1 10.1))
+      (V3 (10.1) (-10.1) (-10.1)))

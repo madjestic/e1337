@@ -37,6 +37,6 @@ void main()
 	uv = uvCoords;
 	vec4 offset = vec4(0,0,-0.9,0);
 	//gl_Position = persp * viewM44 * ((vec4(vPosition,0) + offset) + camera[3]);
-	gl_Position = testM44 * persp * viewM44 * ((vec4(vPosition,0) + offset) + camera[3]);
+	gl_Position = transform * testM44 * persp * viewM44 * ((vec4(vPosition,0) + offset) + camera[3]);
 	//gl_Position = vec4(vPosition,1.0);
 }

@@ -5,10 +5,12 @@
 module Main where 
 
 import Control.Concurrent
+import Control.Arrow.List.Class  --(arrL)
 import Control.Lens       hiding (transform, indexed)
 import Data.Text                 (pack)
 import Foreign.C
 import FRP.Yampa          hiding (identity)
+import FRP.Yampa.Switches
 import Data.Functor              (($>))
 
 import SDL                hiding ( Point
@@ -175,89 +177,38 @@ gamePlay game =
     switch sf (const (mainGame game))        
      where sf =
              proc input -> do
-               game      <- updateGame game -< input
-               reset     <- keyInput SDL.ScancodeSpace "Pressed" -< input
-               returnA   -< (game, reset)
+               game'   <- updateGame game -< input
+               reset   <- keyInput SDL.ScancodeSpace "Pressed" -< input
+               --returnA -< (game' { _objects = objs }, reset)
+               returnA -< (game', reset)
 
 updateGame :: Game -> SF AppInput Game
 updateGame game = 
   proc input -> do
-    --let objs = _objects game
-    objs'    <- updateObjects $ _objects game -< ()
-    cam      <- updateCamera  $ _camera game -< input
+    objs' <- updateObjects () $ _objects game -< [()]
+    cam   <- updateCamera  $ _camera game -< input
     --returnA  -< Game (view options game) GamePlaying (view objects game) cam
     returnA  -< Game (view options game) GamePlaying objs' cam
 
--- solve :: Solver -> Solver
--- [Object] -> [Solver]
--- fmap (solve :: Solver -> Solver) ([Object] -> [Solver]) :: [Solver]
--- fmap (\slv -> Object { _solver = slv} ) [Solver] :: [Object]
-
-
-updateObjects :: [Object] -> SF () [Object]
-updateObjects objs =
+spinControllable :: Controllable -> V3 Double -> SF () (Controllable)
+spinControllable ctl0 ypr0 =
   proc () -> do
-    let 
-        slvs   = fmap (view solver) objs
-        slvs'  = fmap solve' slvs
-        --objs'  = fmap (\(obj, slv') -> (obj { _solver = slv' }) ) $ zip objs $ fmap (\slv' -> slv' { _ypr = V3 11.1 33.3 77.7 }) slvs'
-        objs'  = fmap
-                 (\(obj, slv') -> (obj { Object._transform = (view transform' slv')
-                                       , _solver = slv' }) )
-                 $ zip objs $ fmap (\slv' -> slv' { _ypr = V3 11.1 33.3 77.7 }) slvs'
-    returnA -< objs'
+    ypr' <- (ypr0 ^+^) ^<< integral -< (_ypr ctl0) -- add angular velocity, ypr <- M44 / Quaternion
+    returnA -< ctl0 { _ypr = ypr' }
+    --returnA -< ctl0 { _ypr = (V3 10 10 10) }
 
-solve' :: Controllable -> Controllable
-solve' (Solver mtx0 ypr0) = (Solver mtx ypr0)
-  where
-    mtx = 
-      mkTransformationMat
-      rot
-      tr
-      where
-        rot =
-          (view _m33 mtx0)
-          !*! fromQuaternion (axisAngle (view _x (view _m33 mtx0)) (view _x ypr0)) -- yaw
-          !*! fromQuaternion (axisAngle (view _y (view _m33 mtx0)) (view _y ypr0)) -- pitch
-          !*! fromQuaternion (axisAngle (view _z (view _m33 mtx0)) (view _z ypr0)) -- roll
-        tr  = view translation mtx0 --undefined
-
-solve :: Controllable -> SF () Controllable
-solve (Solver mtx0 ypr0) =
+solve :: Object -> SF () Object
+solve obj =
   proc () -> do
-    let mtx = 
-          mkTransformationMat
-          rot
-          tr
-          where
-            rot =
-              (view _m33 mtx0)
-              !*! fromQuaternion (axisAngle (view _x (view _m33 mtx0)) (view _x ypr0)) -- yaw
-              !*! fromQuaternion (axisAngle (view _y (view _m33 mtx0)) (view _y ypr0)) -- pitch
-              !*! fromQuaternion (axisAngle (view _z (view _m33 mtx0)) (view _z ypr0)) -- roll
-            tr  = view translation mtx0 --undefined
-              -- foldr (+) (view translation mtx0) $
-              -- fmap (0.1 *) $ transpose rot
-              --fmap (transpose (rot) !*) $
+    ctl <- spinControllable (_solver obj) (view (solver . ypr) obj) -<  ()
+    returnA -< obj { _solver = ctl }
 
-    let result = Solver mtx ypr0 --undefined
-    returnA -< result
-    
-
--- updateObjects :: [Object] -> SF () [Object]
--- updateObjects objs =
---   proc input -> do
---     slv <- solverLoop (fmap _solver objs) -< ()
---     let objs' = fmap (\s -> Object { _solver = s})
---     --let result = undefined
---     returnA -< objs' -- undefined--Object { _solver = slv }
-
---or
--- Objects -> list of solvers -> 
-
--- Solver (transform, ypr) -> update (transform, ypr) -> Solver
--- solverLoop :: [Controllable] -> SF () [Controllable]
--- solverLoop ctl0 = undefined
+updateObjects :: a -> [Object] -> SF [()] [Object] --[Object] --SF [()] [Object]
+updateObjects objs = 
+  proc objs -> do
+    ars <- fmap solve -< objs
+    ar  <- returnA -< (parZ ars)
+    returnA -< ar
 
 updateCamera :: Camera -> SF AppInput Camera
 updateCamera cam = 
