@@ -10,11 +10,6 @@ module Object
   , solver
   ) where
 
--- import Control.Monad             (mzero)
--- import Data.Aeson           as A
--- import Data.ByteString.Lazy as B
--- import Data.Maybe                (fromMaybe)
-
 import Linear.V4
 import Linear.Matrix (M44, M33, identity)
 import Linear (V3(..))
@@ -62,4 +57,4 @@ defaultObj
     (V4 0 0 0 0)
     ( Solver
       (identity :: M44 Double)
-      (V3 (10.1) (-10.1) (-10.1)))
+      (V3 (0) (0) (-10.1)))

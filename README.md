@@ -6,9 +6,9 @@ It supports loading and rendering simple projects files, describing a model, a m
 
 * Loads one or more models.
 * Supports multiple materials per model.
-* TODO : Applies a solver-controller per object.
-* Renders a scene.
+* Applies a solver-controller per object.
 * Has a camera that supports user-input.
+* Renders a scene of objects.
 
 [a youtube demo](https://youtu.be/KVFu1DjKTCE)
 
@@ -19,6 +19,8 @@ Recent Changes:
 [added multimaterial support](https://youtu.be/EYwBZOm5GNE)
 
 [added multiobject support](https://youtu.be/CSedgiMpKzg)
+
+[added multiobject update loop](https://youtu.be/S2WPuo63r5g)
 
 # What it wants to be: A relativistic space-time-sim pilot game.
 * inspired by Strugatsky "Noon: XXII century" series.

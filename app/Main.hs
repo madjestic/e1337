@@ -179,15 +179,13 @@ gamePlay game =
              proc input -> do
                game'   <- updateGame game -< input
                reset   <- keyInput SDL.ScancodeSpace "Pressed" -< input
-               --returnA -< (game' { _objects = objs }, reset)
                returnA -< (game', reset)
 
 updateGame :: Game -> SF AppInput Game
 updateGame game = 
   proc input -> do
     cam  <- updateCamera     $ _camera  game -< input
-    objs <- updateObjects () $ _objects game -< [()]
-    --returnA  -< Game (view options game) GamePlaying (view objects game) cam
+    objs <- updateObjects () $ _objects game -< (fmap (\x -> ()) (_objects game))
     returnA  -< Game (view options game) GamePlaying objs cam
 
 spinControllable :: Controllable -> V3 Double -> SF () (Controllable)
@@ -207,7 +205,6 @@ spinControllable ctl0@(Solver mtx0 ypr0) ypr1 =
             tr  = view translation mtx0 --undefined
     returnA -< ctl0 { Controllable._transform = mtx
                     , _ypr = ypr' }
-    --returnA -< ctl0 { _ypr = (V3 10 10 10) } -- TODO: Debug, that should have an affect
 
 solve :: Object -> SF () Object
 solve obj =
@@ -219,10 +216,9 @@ solve obj =
 updateObjects :: a -> [Object] -> SF [()] [Object] --[Object] --SF [()] [Object]
 updateObjects objs = 
   proc objs -> do
-    ars <- fmap solve -< [(objs!!0)]
+    ars <- fmap solve -< objs 
     ar  <- returnA -< (parZ ars)
     returnA -< ar
-    --returnA -< [()] objs
 
 updateCamera :: Camera -> SF AppInput Camera
 updateCamera cam = 
