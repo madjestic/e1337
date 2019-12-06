@@ -185,9 +185,9 @@ updateGame :: Game -> SF AppInput Game
 updateGame game = 
   proc input -> do
     cam  <- updateCamera  $ _camera  game -< input
-    --objs <- updateObjects () $ _objects game -< (fmap (\x -> ()) (_objects game))
     objs <- updateObjects $ _objects game -< ()
-    returnA  -< Game (view options game) GamePlaying objs cam
+    returnA  -< game { _objects = objs
+                     , _camera  = cam }
 
 spinControllable :: Controllable -> V3 Double -> SF () (Controllable)
 spinControllable ctl0@(Solver mtx0 ypr0) ypr1 =
