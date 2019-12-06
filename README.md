@@ -10,7 +10,7 @@ It supports loading and rendering simple projects files, describing a model, a m
 * Has a camera that supports user-input.
 * Renders a scene of objects.
 
-[a youtube demo](https://youtu.be/KVFu1DjKTCE)
+[a youtube demo](https://www.youtube.com/watch?v=S2WPuo63r5g)
 
 ![](https://github.com/madjestic/e1337/blob/master/output.png)
 

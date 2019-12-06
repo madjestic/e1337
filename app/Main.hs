@@ -184,8 +184,9 @@ gamePlay game =
 updateGame :: Game -> SF AppInput Game
 updateGame game = 
   proc input -> do
-    cam  <- updateCamera     $ _camera  game -< input
-    objs <- updateObjects () $ _objects game -< (fmap (\x -> ()) (_objects game))
+    cam  <- updateCamera  $ _camera  game -< input
+    --objs <- updateObjects () $ _objects game -< (fmap (\x -> ()) (_objects game))
+    objs <- updateObjects $ _objects game -< ()
     returnA  -< Game (view options game) GamePlaying objs cam
 
 spinControllable :: Controllable -> V3 Double -> SF () (Controllable)
@@ -213,12 +214,8 @@ solve obj =
     returnA -< obj { Object._transform = view transform' ctl
                    , _solver = ctl }
 
-updateObjects :: a -> [Object] -> SF [()] [Object] --[Object] --SF [()] [Object]
-updateObjects objs = 
-  proc objs -> do
-    ars <- fmap solve -< objs 
-    ar  <- returnA -< (parZ ars)
-    returnA -< ar
+updateObjects :: [Object] -> SF () [Object] --[Object] --SF [()] [Object]
+updateObjects = parB . fmap solve
 
 updateCamera :: Camera -> SF AppInput Camera
 updateCamera cam = 
