@@ -132,7 +132,7 @@ initGame :: Project -> IO Game
 initGame project =
   do
     objs <- (initObjects project)
-    let initGame =
+    let game =
           Game
           ( Options
             name'
@@ -142,7 +142,7 @@ initGame project =
           GamePlaying
           objs
           initCam
-    return initGame
+    return game
       where
         name'           = Project.name  $ project
         resX'           = (unsafeCoerce $ Project.resx $ project) :: CInt
@@ -151,12 +151,12 @@ initGame project =
 -- < Game Logic > ---------------------------------------------------------
 
 mainGame :: Game -> SF AppInput Game
-mainGame initGame =
-  loopPre initGame $ 
+mainGame game0 =
+  loopPre game0 $ 
   proc (input, game) -> do
     gs <- case _gStg game of
             GameIntro   -> gameIntro   -< (input, game)
-            GamePlaying -> gamePlay initGame -< input
+            GamePlaying -> gamePlay game0 -< input
     returnA -< (gs, gs)
 
 gameIntro :: SF (AppInput, Game) Game
@@ -185,30 +185,44 @@ gamePlay game =
 updateGame :: Game -> SF AppInput Game
 updateGame game = 
   proc input -> do
-    objs' <- updateObjects () $ _objects game -< [()]
-    cam   <- updateCamera  $ _camera game -< input
+    cam  <- updateCamera     $ _camera  game -< input
+    objs <- updateObjects () $ _objects game -< [()]
     --returnA  -< Game (view options game) GamePlaying (view objects game) cam
-    returnA  -< Game (view options game) GamePlaying objs' cam
+    returnA  -< Game (view options game) GamePlaying objs cam
 
 spinControllable :: Controllable -> V3 Double -> SF () (Controllable)
-spinControllable ctl0 ypr0 =
+spinControllable ctl0@(Solver mtx0 ypr0) ypr1 =
   proc () -> do
-    ypr' <- (ypr0 ^+^) ^<< integral -< (_ypr ctl0) -- add angular velocity, ypr <- M44 / Quaternion
-    returnA -< ctl0 { _ypr = ypr' }
-    --returnA -< ctl0 { _ypr = (V3 10 10 10) }
+    ypr' <- (ypr0 ^+^) ^<< integral -< ypr1*100 -- add angular velocity, ypr <- M44 / Quaternion
+    let mtx = 
+          mkTransformationMat
+          rot
+          tr
+          where
+            rot =
+              (view _m33 mtx0)
+              !*! fromQuaternion (axisAngle (view _x (view _m33 mtx0)) (view _x ypr')) -- yaw
+              !*! fromQuaternion (axisAngle (view _y (view _m33 mtx0)) (view _y ypr')) -- pitch
+              !*! fromQuaternion (axisAngle (view _z (view _m33 mtx0)) (view _z ypr')) -- roll
+            tr  = view translation mtx0 --undefined
+    returnA -< ctl0 { Controllable._transform = mtx
+                    , _ypr = ypr' }
+    --returnA -< ctl0 { _ypr = (V3 10 10 10) } -- TODO: Debug, that should have an affect
 
 solve :: Object -> SF () Object
 solve obj =
   proc () -> do
     ctl <- spinControllable (_solver obj) (view (solver . ypr) obj) -<  ()
-    returnA -< obj { _solver = ctl }
+    returnA -< obj { Object._transform = view transform' ctl
+                   , _solver = ctl }
 
 updateObjects :: a -> [Object] -> SF [()] [Object] --[Object] --SF [()] [Object]
 updateObjects objs = 
   proc objs -> do
-    ars <- fmap solve -< objs
+    ars <- fmap solve -< [(objs!!0)]
     ar  <- returnA -< (parZ ars)
     returnA -< ar
+    --returnA -< [()] objs
 
 updateCamera :: Camera -> SF AppInput Camera
 updateCamera cam = 

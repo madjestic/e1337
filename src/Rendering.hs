@@ -204,8 +204,9 @@ initUniforms (Uniforms u_mats' u_mouse' u_time' u_res' u_cam' u_trans') =
     location4         <- get (uniformLocation program "camera")
     uniform location4 $= camera
 
+    let testM44 = (V4 (V4 1 0 0 0) (V4 0 2 0 0) (V4 0 0 1 0) (V4 0 0 0 1)) :: M44 Double
     let mtx =
-          -- fmap realToFrac . concat $ fmap DF.toList . DF.toList $ (DT.trace ("u_trans' :" ++ show u_trans' ) $ u_trans')
+          --fmap realToFrac . concat $ fmap DF.toList . DF.toList $ (DT.trace ("u_trans' :" ++ show u_trans' ) $ u_trans')
           fmap realToFrac . concat $ fmap DF.toList . DF.toList $ u_trans'
           --(identity::M44 Double) :: [GLfloat]
     transform         <- GL.newMatrix RowMajor mtx :: IO (GLmatrix GLfloat)
