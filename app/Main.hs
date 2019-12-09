@@ -35,6 +35,7 @@ import Geometry
 import Input 
 import Rendering      as R
 import Material
+import Solver
 
 
 import Debug.Trace    as DT
@@ -189,10 +190,10 @@ updateGame game =
     returnA  -< game { _objects = objs
                      , _camera  = cam }
 
-spinControllable :: Controllable -> V3 Double -> SF () (Controllable)
-spinControllable ctl0@(Solver mtx0 ypr0) ypr1 =
+spinSolver :: Controllable -> V3 Double -> SF () (Controllable)
+spinSolver ctl0@(Solver mtx0 ypr0) ypr1 =
   proc () -> do
-    ypr' <- (ypr0 ^+^) ^<< integral -< ypr1*100 -- add angular velocity, ypr <- M44 / Quaternion
+    ypr' <- (ypr0 ^+^) ^<< integral -< (V3 0 0 1000) --ypr1*100 -- add angular velocity, ypr <- M44 / Quaternion
     let mtx = 
           mkTransformationMat
           rot
@@ -205,17 +206,35 @@ spinControllable ctl0@(Solver mtx0 ypr0) ypr1 =
               !*! fromQuaternion (axisAngle (view _z (view _m33 mtx0)) (view _z ypr')) -- roll
             tr  = view translation mtx0 --undefined
     returnA -< ctl0 { Controllable._transform = mtx
-                    , _ypr = ypr' }
+                    , Controllable._ypr = ypr' }
 
 solve :: Object -> SF () Object
 solve obj =
   proc () -> do
-    ctl <- spinControllable (_solver obj) (view (solver . ypr) obj) -<  ()
+    ctl <- spinSolver' (_solver obj) (view (solver . ypr) obj) -<  ()
     returnA -< obj { Object._transform = view transform' ctl
                    , _solver = ctl }
 
+solve' :: Object -> SF () Object
+solve' obj =
+  proc () -> do
+    obj' <- spinSolver'' (Spin (V3 0 0 0) (V3 0 0 1000)) obj -<  ()
+    returnA -< obj'
+      
+-- solve :: Object -> SF () Object
+-- solve obj =
+--   proc () -> do
+--     --ctl <- spinSolver (_solver obj) (view (solver . ypr) obj) -<  ()
+--     --ctl <- solve'' (_solver obj) (view (solver . ypr) obj) -<  ()
+--     obj' <- solve'' (Spin (V3 0 0 0) (V3 0 0 1000)) obj -<  ()
+--     --obj' <- arr $ solve' (Spin (V3 0 0 0) (V3 0 0 0)) -< obj --TODO: fill in the placeholder and check if it works
+--     returnA -< obj'-- { _solver = ctl }
+    
+--     -- returnA -< obj { Object._transform = view transform' ctl
+--     --                , _solver = ctl }
+
 updateObjects :: [Object] -> SF () [Object] --[Object] --SF [()] [Object]
-updateObjects = parB . fmap solve
+updateObjects = parB . fmap solve'
 
 updateCamera :: Camera -> SF AppInput Camera
 updateCamera cam = 
@@ -232,7 +251,7 @@ controlLoop ctl0 =
       sf = proc input -> do
         ctl           <- updateLoop ctl0  -< ctl0
         mtx           <- returnA          -< Controllable._transform ctl
-        ypr           <- returnA          -< _ypr ctl
+        ypr           <- returnA          -< Controllable._ypr ctl
         (kkeys, kevs) <- updateKeys  ctl0 -< input
         (pos0, mev)   <- (mouseEventPos &&& mouseEvent) -< input
 
@@ -354,11 +373,11 @@ keyEvent state pressed released
   | isEvent released = False
   | otherwise = state
 
-instance VectorSpace (V3 Double) Double where
-  zeroVector                   = (V3 0 0 0)
-  (*^) s (V3 x y z)            = (V3 (s*x) (s*y) (s*z))
-  (^+^)  (V3 x y z) (V3 k l m) = (V3 (x+k) (y+l) (z+m))
-  dot    (V3 x y z) (V3 k l m) = (x*k) + (y*l) + (z*m)
+-- instance VectorSpace (V3 Double) Double where
+--   zeroVector                   = (V3 0 0 0)
+--   (*^) s (V3 x y z)            = (V3 (s*x) (s*y) (s*z))
+--   (^+^)  (V3 x y z) (V3 k l m) = (V3 (x+k) (y+l) (z+m))
+--   dot    (V3 x y z) (V3 k l m) = (x*k) + (y*l) + (z*m)
 
 handleExit :: SF AppInput Bool
 handleExit = quitEvent >>^ isEvent

@@ -28,8 +28,11 @@ data Controllable
      }
   |  Solver
      {
+--       _pivot      :: V3 Double
        _transform  :: M44 Double
      , _ypr        :: V3 Double  -- yaw/pitch/roll
+--     , _velocity   :: V3 Double
+--     , _physC      :: Physics -- TODO : add phys.parms
      }
   deriving Show
 
