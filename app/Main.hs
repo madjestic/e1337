@@ -190,66 +190,29 @@ updateGame game =
     returnA  -< game { _objects = objs
                      , _camera  = cam }
 
-spinSolver :: Controllable -> V3 Double -> SF () (Controllable)
-spinSolver ctl0@(Solver mtx0 ypr0) ypr1 =
-  proc () -> do
-    ypr' <- (ypr0 ^+^) ^<< integral -< (V3 0 0 1000) --ypr1*100 -- add angular velocity, ypr <- M44 / Quaternion
-    let mtx = 
-          mkTransformationMat
-          rot
-          tr
-          where
-            rot =
-              (view _m33 mtx0)
-              !*! fromQuaternion (axisAngle (view _x (view _m33 mtx0)) (view _x ypr')) -- yaw
-              !*! fromQuaternion (axisAngle (view _y (view _m33 mtx0)) (view _y ypr')) -- pitch
-              !*! fromQuaternion (axisAngle (view _z (view _m33 mtx0)) (view _z ypr')) -- roll
-            tr  = view translation mtx0 --undefined
-    returnA -< ctl0 { Controllable._transform = mtx
-                    , Controllable._ypr = ypr' }
-
 solve :: Object -> SF () Object
 solve obj =
   proc () -> do
-    ctl <- spinSolver' (_solver obj) (view (solver . ypr) obj) -<  ()
-    returnA -< obj { Object._transform = view transform' ctl
-                   , _solver = ctl }
-
-solve' :: Object -> SF () Object
-solve' obj =
-  proc () -> do
-    obj' <- spinSolver'' (Spin (V3 0 0 0) (V3 0 0 1000)) obj -<  ()
+    obj' <- solver (Spin (V3 0 0 0) (V3 0 0 1000)) obj -<  ()
     returnA -< obj'
       
--- solve :: Object -> SF () Object
--- solve obj =
---   proc () -> do
---     --ctl <- spinSolver (_solver obj) (view (solver . ypr) obj) -<  ()
---     --ctl <- solve'' (_solver obj) (view (solver . ypr) obj) -<  ()
---     obj' <- solve'' (Spin (V3 0 0 0) (V3 0 0 1000)) obj -<  ()
---     --obj' <- arr $ solve' (Spin (V3 0 0 0) (V3 0 0 0)) -< obj --TODO: fill in the placeholder and check if it works
---     returnA -< obj'-- { _solver = ctl }
-    
---     -- returnA -< obj { Object._transform = view transform' ctl
---     --                , _solver = ctl }
-
 updateObjects :: [Object] -> SF () [Object] --[Object] --SF [()] [Object]
-updateObjects = parB . fmap solve'
+updateObjects = parB . fmap solve
 
 updateCamera :: Camera -> SF AppInput Camera
 updateCamera cam = 
   proc input -> do
-    ctl <- controlLoop (Cam._controller $ cam) -< input
+    ctl <- updateController (Cam._controller $ cam) -< input
     returnA -< Camera { Cam._controller = ctl }
 
-controlLoop :: Controllable -> SF AppInput Controllable
-controlLoop ctl0 =
+updateController :: Controllable -> SF AppInput Controllable
+updateController ctl0 =
   -- | foldrWith mtx0 keys - for every keyInput apply a folding transform to mtx0
-  -- | in case of keypress event - updateLoop the set of keys and call new fold ^
+  -- | in case of keypress event - updateController' the set of keys and call new fold ^
   switch sf cont
     where
       sf = proc input -> do
-        ctl           <- updateLoop ctl0  -< ctl0
+        ctl           <- updateController' ctl0  -< ctl0
         mtx           <- returnA          -< Controllable._transform ctl
         ypr           <- returnA          -< Controllable._ypr ctl
         (kkeys, kevs) <- updateKeys  ctl0 -< input
@@ -265,10 +228,10 @@ controlLoop ctl0 =
           ( result
           , catEvents (mev:kevs)
             $> result) -- :: (Controllable, Event Controllable)
-      cont result = controlLoop result
+      cont result = updateController result
 
-updateLoop :: Controllable -> SF Controllable Controllable
-updateLoop ctl0 =
+updateController' :: Controllable -> SF Controllable Controllable
+updateController' ctl0 =
   iterFrom update1 ctl0
   where
     update1 :: Controllable -> Controllable -> DTime -> Controllable -> Controllable
