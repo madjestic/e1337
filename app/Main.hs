@@ -35,7 +35,7 @@ import Geometry
 import Input 
 import Rendering      as R
 import Material
-import Solver
+import Solvable -- hiding (solver)
 
 
 import Debug.Trace    as DT
