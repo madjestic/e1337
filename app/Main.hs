@@ -193,7 +193,7 @@ updateGame game =
 solve :: Object -> SF () Object
 solve obj =
   proc () -> do
-    obj' <- solver (Spin (V3 0 0 0) (V3 0 0 1000)) obj -<  ()
+    obj' <- solver (Spin (V3 0 0 0) (V3 0 0 1000)) obj -< ()
     returnA -< obj'
       
 updateObjects :: [Object] -> SF () [Object] --[Object] --SF [()] [Object]

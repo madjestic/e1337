@@ -13,6 +13,7 @@ module Object
   , descriptors
   , transform
   , solver
+  , solvers
   ) where
 
 import Linear.V4
@@ -38,8 +39,11 @@ data Object
        _descriptors :: [Descriptor]
      , _materials   :: [Material]
      , _transform   :: M44 Double -- this is the problem, TODO: possibly remove the _solver
-     , _velocity    :: V4 Double
---     , _solver      :: [Solver] -- TODO:introduce Solver stack
+     , _pivot       :: V3 Double
+     , _velocity    :: V3 Double
+     , _mass        :: Double
+     , _density     :: Double
+     , _solvers     :: [Solver] -- TODO:introduce Solver stack
      } deriving Show
 
 descriptors :: Lens' Object [Descriptor]
@@ -50,6 +54,9 @@ materials = lens _materials (\object newMaterial -> Object { _materials = newMat
 
 transform :: Lens' Object (M44 Double)
 transform = lens _transform (\object newTransform -> Object { _transform = newTransform })
+
+solvers :: Lens' Object [Solver]
+solvers = lens _solvers (\object newSolvers -> Object { _solvers = newSolvers })
 
 -- solver :: Lens' Object (Controllable)
 -- solver = lens _solver (\object newSolver -> Object { _solver = newSolver })
@@ -79,7 +86,8 @@ defaultObj =
     []
     [defaultMat]
     (identity::M44 Double)
-    (V4 0 0 0 0)
-    -- ( Solver
-    --   (identity :: M44 Double)
-    --   (V3 (0) (0) (-10.1)))
+    (V3 0 0 0)
+    (V3 0 0 0)
+    (1.0)
+    (1.0)
+    [(Spin (V3 0 0 0) (V3 0 0 1000))]

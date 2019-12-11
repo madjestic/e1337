@@ -156,20 +156,27 @@ def parseJSON(jsonFile):
 
     # indices.reverse()
     jsonEntry = {'indices' : indices}
-    # print("jsonEntry: ", jsonEntry["indices"])
+    #print("jsonEntry: ", jsonEntry["indices"])
     idx = jsonEntry["indices"]
 
     jsonEntry = {'material' : vtxAttrMatIndices}
     value = jsonEntry["material"]
-    print("initial value  :", value)
+    #print("initial value  :", value)
     value = concat(value)
     value = eval(rpcShuffler(value))
-    print("material indices:", vtxAttrMatIndices)
-    print("shuffled value :", type(value))
-    print("idx :", type(idx))
-    value = array(idx)[(array(value))]
-    value = value.tolist()
-    print("shuffled result :", value)
+    # print("material indices:", vtxAttrMatIndices)
+    # print("shuffled value type :", type(value))
+    # print("shuffled value :", value)
+    # print("shuffled value element type :", type((array(value)[0][0])))
+    # print("value element :", ((array(value)[0][0])))
+    # print("idx :", type(array(idx)))
+    # print("idx :", idx)
+    list_ = []
+    for elem in (array(value)):
+        list_.append((array(idx)[elem]).tolist())
+        #print("list_ :", list_)
+    value = list_  #value.tolist()
+    #print("shuffled result :", value)
     jsonEntry = {'indices' : value}
     data.get('PGeo').update(jsonEntry)
 

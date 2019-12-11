@@ -1,11 +1,9 @@
 {-# LANGUAGE FlexibleInstances #-}
--- {-# LANGUAGE OverloadedStrings, Arrows #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 module Solvable
   ( Solver (..)
   , Solvable (..)
---  , solver
   ) where
 
 import Linear.Matrix
@@ -16,7 +14,6 @@ import Control.Lens hiding (transform)
 import FRP.Yampa
 import FRP.Yampa.Switches
 
---import Object hiding (solve')
 import Controllable (Controllable (Solver),  _transform, _ypr)
 
 data Solver
