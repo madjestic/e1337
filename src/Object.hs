@@ -43,6 +43,7 @@ data Object
      , _velocity    :: V3 Double
      , _mass        :: Double
      , _density     :: Double
+     , _time        :: Double
      , _solvers     :: [Solver] -- TODO:introduce Solver stack
      } deriving Show
 
@@ -63,7 +64,7 @@ solvers = lens _solvers (\object newSolvers -> Object { _solvers = newSolvers })
 
 instance Solvable Object where
   solver :: Solver -> Object -> SF () (Object)
-  solver (Spin pv0 ypr0) obj0 =
+  solver (Rotate pv0 ypr0) obj0 =
     proc () -> do
       ypr' <- ((V3 0 0 0) ^+^) ^<< integral -< ypr0
       let mtx0 = Object._transform obj0
@@ -90,4 +91,5 @@ defaultObj =
     (V3 0 0 0)
     (1.0)
     (1.0)
-    [(Spin (V3 0 0 0) (V3 0 0 1000))]
+    (0.0)
+    []

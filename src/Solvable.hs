@@ -16,13 +16,20 @@ import FRP.Yampa.Switches
 
 import Controllable (Controllable (Solver),  _transform, _ypr)
 
-data Solver
-  =  Spin
+data Solver =
+     Translate
+     {
+       _txyz   :: V3 Double
+     }
+  |  Rotate
      {
        _pivot :: V3 Double
      , _ypr   :: V3 Double
---     , _formula :: (V3 Double) -> Solver
      }
+  |  Scale
+    {
+      _sxyz   :: V3 Double
+    }
   -- |  Gravity
   --   {
   --     _G :: Double

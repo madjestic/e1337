@@ -100,6 +100,7 @@ def parseJSON(jsonFile):
     vtxAttrAlpha         = vtxAttrs [0]
     vtxAttrAlphaDict     = toDict (vtxAttrAlpha [1])
     vtxAttrAlphaDictVals = vtxAttrAlphaDict ["values"]
+    #print("vtxAttrAlphaDictVals :",vtxAttrAlphaDictVals) 
     vtxAttrAlphaArrays   = toDict (vtxAttrAlphaDictVals) ["arrays"]
 
     ### Color

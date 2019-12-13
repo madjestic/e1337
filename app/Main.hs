@@ -20,8 +20,11 @@ import SDL                hiding ( Point
                                  , Mouse
                                  , RenderDrivers
                                  , (^+^)
-                                 , (*^))
+                                 , (*^)
+                                 , _xyz)
 import System.Environment       (getArgs)
+import Linear.Matrix
+import Linear.V4
 import Unsafe.Coerce
        
 import Camera         as Cam
@@ -111,14 +114,32 @@ initObjects project =
                       (concat [matPaths, matPaths']))) vgeos
     mats  <- mapM readMaterial (ms vgeo)--matPaths
     let (VGeo idxs st vaos matPaths) = vgeo
-    let args = (\idx' st' vao' mat' ->  (idx', st', vao', mat')) <$.> idxs <*.> st <*.> vaos <*.> mats
+        args         = (\idx' st' vao' mat' ->  (idx', st', vao', mat')) <$.> idxs <*.> st <*.> vaos <*.> mats
+        -- offset       = (V4 0.5 0 0 1) :: V4 Double
+        offset       = (V3 0.5 0 0) :: V3 Double
+        preTransform = --(identity::M44 Double) !!* 0.5
+          V4
+          (V4 0.5 0 0 0)
+          (V4 0 0.5 0 0)
+          (V4 0 0 0.5 0)
+          ((\(V3 x y z) -> V4 x y z 1) offset)
+          --(V4 1 0 0 0)
     --_ <- DT.trace ("args: " ++ show args) $ return ()
     ds <- mapM initVAO args
     --_ <- DT.trace ("ds: " ++ show ds) $ return ()
     
     let objects =
           fmap
-          ((\ _ -> defaultObj{_descriptors = ds, _materials = mats}) . _path)
+          ((\ _ ->
+              defaultObj
+              { Object._descriptors = ds
+              , Object._materials   = mats
+              , Object._transform   = preTransform
+              , Object._pivot       = offset
+              , Object._solvers     =
+                [(Rotate offset (V3 0 0 1000))]
+              }
+           ) . _path)
           (_models project) :: [Object]
 
     return objects
@@ -193,7 +214,7 @@ updateGame game =
 solve :: Object -> SF () Object
 solve obj =
   proc () -> do
-    obj' <- solver (Spin (V3 0 0 0) (V3 0 0 1000)) obj -< ()
+    obj' <- solver (Rotate (V3 0 0 0) (V3 0 0 1000)) obj -< ()
     returnA -< obj'
       
 updateObjects :: [Object] -> SF () [Object] --[Object] --SF [()] [Object]
