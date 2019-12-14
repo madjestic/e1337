@@ -113,14 +113,16 @@ initObjects project =
                       (concat [vaos, vaos'])
                       (concat [matPaths, matPaths']))) vgeos
     mats  <- mapM readMaterial (ms vgeo)--matPaths
+    _ <- DT.trace ("ms :" ++ show (ms vgeo)) $ return ()
+    _ <- DT.trace ("mats :" ++ show mats) $ return ()
     let (VGeo idxs st vaos matPaths) = vgeo
         args         = (\idx' st' vao' mat' ->  (idx', st', vao', mat')) <$.> idxs <*.> st <*.> vaos <*.> mats
         -- offset       = (V4 0.5 0 0 1) :: V4 Double
-        offset       = (V3 0.5 0 0) :: V3 Double
+        offset       = (V3 1.5 0 0) :: V3 Double
         preTransform = --(identity::M44 Double) !!* 0.5
           V4
           (V4 0.5 0 0 0)
-          (V4 0 0.5 0 0)
+          (V4 0 1.5 0 0)
           (V4 0 0 0.5 0)
           ((\(V3 x y z) -> V4 x y z 1) offset)
           --(V4 1 0 0 0)

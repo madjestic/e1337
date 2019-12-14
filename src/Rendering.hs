@@ -165,8 +165,8 @@ initUniforms :: Uniforms -> IO ()
 initUniforms (Uniforms u_mats' u_mouse' u_time' u_res' u_cam' u_trans') = 
   do
     -- | Shaders
-    -- _ <- DT.trace ("vertShader: " ++ show (_vertShader $ (_materials $ (_objects $ game)!!0)!!0)) $ return ()
-    -- _ <- DT.trace ("vertShader: " ++ show (_fragShader $ (_materials $ (_objects $ game)!!0)!!0)) $ return ()
+    -- _ <- DT.trace ("vertShader: " ++ show (_vertShader u_mats')) $ return ()
+    -- _ <- DT.trace ("vertShader: " ++ show (_fragShader u_mats')) $ return ()
     
     program <- loadShaders
       [ ShaderInfo VertexShader   (FileSource (_vertShader u_mats' ))
