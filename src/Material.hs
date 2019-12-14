@@ -40,15 +40,10 @@ textures = lens _textures (\material newTextures -> Material { _textures = newTe
 
 defaultMat
   = Material
-    "foobar"
-    -- "mat/mandelbrot/shader.vert"
-    -- "mat/mandelbrot/shader.frag"
-    "mat/const/const.vert"
-    "mat/const/const.frag"
-    -- "shaders/shader.vert"
-    -- "shaders/shader.frag"
+    "default"
+    "shader.vert"
+    "shader.frag"
     []
-
 
 instance FromJSON Material where
   parseJSON (Object o) =
@@ -59,8 +54,6 @@ instance FromJSON Material where
        <*> ((o .: "Material") >>= (.: "textures"))
   parseJSON _ = mzero
 
--- readMaterial "mat/square/constant_A"
--- Material {name = "constant_A", vertShader = "/mat/square/Constant_A/shader.vert", fragShader = "/mat/square/Constant_A/shader.frag", textures = [""]}
 readMaterial :: FilePath -> IO Material
 readMaterial jsonFile =
   do
@@ -75,5 +68,4 @@ readMaterial jsonFile =
         fromEither d =
           case d of
             Left err -> Nothing
-            Right pt -> Just pt
-            
+            Right pt -> Just pt            

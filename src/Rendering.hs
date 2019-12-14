@@ -121,13 +121,11 @@ toDrawables game time = drs
     u_res    = replicate n $ ((toEnum resX), (toEnum resY)) :: [(CInt, CInt)]
 --    u_proj   = undefined -- :: [GLmatrix GLfloat]
     u_cam    = replicate n $ view (camera . controller . Controllable.transform) game :: [M44 Double]
-    --u_trans  = concat $ replicate n $ toListOf (objects . traverse . Object.transform) game :: [M44 Double]  -- :: [GLmatrix GLfloat]
     u_trans  = concat $ replicate n $ toListOf (objects . traverse . Object.transform) game :: [M44 Double]  -- :: [GLmatrix GLfloat]
     
     drs      =
       (\  u_mats' u_mouse' u_time' u_res' u_cam' u_trans' ds'
         -> (Drawable (Uniforms u_mats' u_mouse' u_time' u_res' u_cam' u_trans') ds')) 
-      -- <$.> u_mats <*.> u_mouse <*.> u_time <*.> u_res <*.> u_cam <*.> (DT.trace ("u_trans :" ++ show u_trans) $ u_trans) <*.> ds
       <$.> u_mats <*.> u_mouse <*.> u_time <*.> u_res <*.> u_cam <*.> u_trans <*.> ds
 
 render :: Backend -> SDL.Window -> Game -> IO ()

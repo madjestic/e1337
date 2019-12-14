@@ -102,8 +102,6 @@ animate window sf =
 initObjects :: Project -> IO [Object]
 initObjects project = 
   do
-    --(VGeo idxs st vaos matPaths) <- readVGeo $ _path ((_models project)!!0)
-    --let foo = toListOf (models . traverse . path) project
     vgeos <- mapM loadModels $ toListOf (models . traverse . path) project
     let vgeo =
           foldr1 (\(VGeo idxs st vaos matPaths)(VGeo idxs' st' vaos' matPaths')
@@ -112,12 +110,9 @@ initObjects project =
                       (concat [st, st'])
                       (concat [vaos, vaos'])
                       (concat [matPaths, matPaths']))) vgeos
-    mats  <- mapM readMaterial (ms vgeo)--matPaths
-    _ <- DT.trace ("ms :" ++ show (ms vgeo)) $ return ()
-    _ <- DT.trace ("mats :" ++ show mats) $ return ()
+    mats  <- mapM readMaterial (ms vgeo)
     let (VGeo idxs st vaos matPaths) = vgeo
         args         = (\idx' st' vao' mat' ->  (idx', st', vao', mat')) <$.> idxs <*.> st <*.> vaos <*.> mats
-        -- offset       = (V4 0.5 0 0 1) :: V4 Double
         offset       = (V3 1.5 0 0) :: V3 Double
         preTransform = --(identity::M44 Double) !!* 0.5
           V4
@@ -126,9 +121,7 @@ initObjects project =
           (V4 0 0 0.5 0)
           ((\(V3 x y z) -> V4 x y z 1) offset)
           --(V4 1 0 0 0)
-    --_ <- DT.trace ("args: " ++ show args) $ return ()
     ds <- mapM initVAO args
-    --_ <- DT.trace ("ds: " ++ show ds) $ return ()
     
     let objects =
           fmap
@@ -358,12 +351,6 @@ keyEvent state pressed released
   | isEvent pressed  = True
   | isEvent released = False
   | otherwise = state
-
--- instance VectorSpace (V3 Double) Double where
---   zeroVector                   = (V3 0 0 0)
---   (*^) s (V3 x y z)            = (V3 (s*x) (s*y) (s*z))
---   (^+^)  (V3 x y z) (V3 k l m) = (V3 (x+k) (y+l) (z+m))
---   dot    (V3 x y z) (V3 k l m) = (x*k) + (y*l) + (z*m)
 
 handleExit :: SF AppInput Bool
 handleExit = quitEvent >>^ isEvent
