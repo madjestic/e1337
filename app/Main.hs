@@ -113,7 +113,7 @@ initObjects project =
     mats  <- mapM readMaterial (ms vgeo)
     let (VGeo idxs st vaos matPaths) = vgeo
         args         = (\idx' st' vao' mat' ->  (idx', st', vao', mat')) <$.> idxs <*.> st <*.> vaos <*.> mats
-        offset       = (V3 1.5 0 0) :: V3 Double
+        offset       = (V3 0 0 0.5) :: V3 Double
         preTransform = --(identity::M44 Double) !!* 0.5
           V4
           (V4 0.5 0 0 0)
