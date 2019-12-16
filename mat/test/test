@@ -1,0 +1,10 @@
+{
+  "Material": {
+    "name":"test",
+    "Shaders": {
+      "vertex":   "mat/test/Test/shader.vert",
+      "fragment": "mat/test/Test/shader.frag"
+    },
+    "textures": [""]
+  }
+}
