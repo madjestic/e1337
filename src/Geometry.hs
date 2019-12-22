@@ -14,11 +14,12 @@
 {-# LANGUAGE NamedFieldPuns #-}
 module Geometry
   ( Geo(..)
-  , FromGeo(..)
+--  , FromGeo(..)
   , Vec3(..)
   , getJSON
   , readPGeo
   , readVGeo
+  , fromPGeo
   ) where
 
 import Control.Monad (mzero)
@@ -28,6 +29,7 @@ import qualified Data.ByteString.Lazy as B
 import Graphics.Rendering.OpenGL as GL        (Vertex4(..))
 
 import FromVector
+import Utils
 
 import Debug.Trace   as DT
 
@@ -55,9 +57,9 @@ data Geo
      } 
   deriving Show
 
-class FromGeo a where
-  fromPGeo :: Geo -> a
-  fromPGeo' :: Geo -> [a]
+-- class FromGeo a where
+--   fromPGeo :: Geo -> a
+--   fromPGeo' :: Geo -> [a]
 
 -- | TODO : replace Vec3 -> Vec4
 type Vec3     = (Double, Double, Double)
@@ -110,3 +112,12 @@ readPGeo jsonFile =
           case d of
             Left err -> Nothing
             Right pt -> Just pt
+
+fromPGeo :: Geo -> Geo
+fromPGeo (PGeo idx as cs ns uv ps ms) = (VGeo idxs st vaos ms)
+  where
+    stride = 13
+    --_ = (DT.trace ("idx :" ++ show $ fromList idx) ())
+    --vao = DT.trace ("toVAO :" ++ show (toVAO idx as cs ns uv ps)) $ (toVAO idx as cs ns uv ps)
+    (idxs, vaos) = unzip $ fmap (toIdxVAO stride) (toVAO idx as cs ns uv ps)
+    st           = take (length vaos) $ repeat stride

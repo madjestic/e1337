@@ -99,8 +99,8 @@ animate window sf =
 (<*.>) :: [a -> b] -> [a] -> [b]
 (<*.>) = zipWith ($)
 
-initObjects :: Project -> IO [Object]
-initObjects project = 
+fromProject :: Project -> IO [Object]
+fromProject project = 
   do
     vgeos <- mapM loadModels $ toListOf (models . traverse . path) project
     let vgeo =
@@ -148,7 +148,7 @@ loadModels path =
 initGame :: Project -> IO Game
 initGame project =
   do
-    objs <- (initObjects project)
+    objs <- (fromProject project)
     let game =
           Game
           ( Options

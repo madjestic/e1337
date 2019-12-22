@@ -18,7 +18,7 @@ import Data.List.Split                 (chunksOf)
 import Data.List.Index                 (indexed)
 import Data.List                       (elemIndex, sortBy, sort)
 
-import Geometry
+--import Geometry
        
 import Debug.Trace as DT
 

@@ -24,7 +24,6 @@ import Control.Lens hiding (transform)
 import FRP.Yampa    hiding (identity)
 import FRP.Yampa.Switches
 
---import Controllable hiding (_transform, transform)
 import Keyboard
 import Material
 import Descriptor
@@ -38,13 +37,13 @@ data Object
      { 
        _descriptors :: [Descriptor]
      , _materials   :: [Material]
-     , _transform   :: M44 Double -- this is the problem, TODO: possibly remove the _solver
+     , _transform   :: M44 Double
      , _pivot       :: V3 Double
      , _velocity    :: V3 Double
      , _mass        :: Double
      , _density     :: Double
      , _time        :: Double
-     , _solvers     :: [Solver] -- TODO:introduce Solver stack
+     , _solvers     :: [Solver]
      } deriving Show
 
 descriptors :: Lens' Object [Descriptor]
