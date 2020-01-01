@@ -6,7 +6,7 @@ module Main where
 
 import Control.Concurrent
 import Control.Arrow.List.Class  --(arrL)
-import Control.Lens       hiding (transform, indexed)
+import Control.Lens       hiding (transform, indexed, indices)
 import Data.Text                 (pack)
 import Foreign.C
 import FRP.Yampa          hiding (identity)
@@ -22,6 +22,9 @@ import SDL                hiding ( Point
                                  , (^+^)
                                  , (*^)
                                  , _xyz)
+
+import Graphics.Rendering.OpenGL (PrimitiveMode(..))
+
 import System.Environment       (getArgs)
 import Linear.Matrix
 import Linear.V4
@@ -34,11 +37,13 @@ import Project.Parser
 import Keyboard
 import Object
 import Controllable  
-import Geometry
+import PGeo
+import VGeo
+--import VGeo
 import Input 
 import Rendering      as R
 import Material
-import Solvable -- hiding (solver)
+import Solvable
 
 
 import Debug.Trace    as DT
@@ -78,7 +83,12 @@ animate window sf =
 
         renderOutput _ (game, shouldExit) =
           do
-            R.render R.OpenGL window game
+            R.render
+              R.OpenGL
+              (BackendOptions { primitiveMode = Triangles})
+              window
+              game
+            --R.render R.OpenGL window game
             return shouldExit
 
 
@@ -99,8 +109,60 @@ animate window sf =
 (<*.>) :: [a -> b] -> [a] -> [b]
 (<*.>) = zipWith ($)
 
-fromProject :: Project -> IO [Object]
-fromProject project = 
+-- generateObject TODO : write an object generator (pointcloud).
+-- VGeo -> Object
+
+genObject :: VGeo -> IO Object
+genObject (VGeo idxs st vaos matPaths) = 
+  do
+    mats <- mapM readMaterial matPaths -- (ms vgeo)
+    let
+      args         = (\idx' st' vao' mat' ->  (idx', st', vao', mat')) <$.> idxs <*.> st <*.> vaos <*.> mats
+      offset       = (V3 0 0 0.5) :: V3 Double
+      preTransform = --(identity::M44 Double) !!* 0.5
+        V4
+        (V4 0.5 0 0 0)
+        (V4 0 1.5 0 0)
+        (V4 0 0 0.5 0)
+        ((\(V3 x y z) -> V4 x y z 1) offset)
+        --(V4 1 0 0 0)
+    ds   <- mapM initVAO args
+    
+    let object =
+          defaultObj
+          { Object._descriptors = ds
+          , Object._materials   = mats
+          , Object._transform   = preTransform
+          , Object._pivot       = offset
+          , Object._solvers     =
+            [(Rotate offset (V3 0 0 1000))]
+          }
+
+    return object
+
+generatePC :: [(Double, Double)] -> PGeo
+generatePC ps0 =
+  PGeo
+  {
+    indices   = [ids]
+  , alpha     = as
+  , color     = cs
+  , normal    = ns
+  , uv        = uvs
+  , position  = ps
+  , PGeo.materials = ms
+  }
+  where
+    ids = undefined
+    as  = undefined
+    cs  = undefined
+    ns  = undefined
+    uvs = undefined
+    ps  = undefined
+    ms  = undefined
+
+loadObjects :: Project -> IO [Object]
+loadObjects project = 
   do
     vgeos <- mapM loadModels $ toListOf (models . traverse . path) project
     let vgeo =
@@ -139,7 +201,7 @@ fromProject project =
 
     return objects
 
-loadModels :: String -> IO Geo
+loadModels :: String -> IO VGeo
 loadModels path =
   do
     (VGeo idxs st vaos matPaths) <- readVGeo path
@@ -148,7 +210,7 @@ loadModels path =
 initGame :: Project -> IO Game
 initGame project =
   do
-    objs <- (fromProject project)
+    objs <- (loadObjects project)
     let game =
           Game
           ( Options
@@ -356,7 +418,7 @@ handleExit :: SF AppInput Bool
 handleExit = quitEvent >>^ isEvent
         
 -- -- < Global Constants > --------------------------------------------------------
-mBlur     = 0.25 :: Float
+mBlur     = 0.025 :: Float
 loadDelay = 2.0  :: Double
 
 -- < Main Function > -----------------------------------------------------------

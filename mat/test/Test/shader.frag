@@ -1,7 +1,7 @@
 #version 430
 
-uniform float u_time;
-uniform vec2 u_resolution;
+uniform float     u_time;
+uniform vec2      u_resolution;
 uniform sampler2D tex_00;
 
 in vec4 gl_FragCoord;

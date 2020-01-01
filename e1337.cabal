@@ -42,7 +42,8 @@ library
               , extra      >=1.6.15
   exposed-modules:
                 Input
-              , Geometry
+              , PGeo
+              , VGeo
               , Game
               , Rendering
               , Descriptor
@@ -105,7 +106,8 @@ executable e1337
               , Descriptor
               , FromVector
               , Game
-              , Geometry
+              , PGeo
+              , VGeo
               , Input
               , Keyboard
               , Mouse

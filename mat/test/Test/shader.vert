@@ -24,22 +24,17 @@ void main()
 			, camera[2]
 			, vec4(0,0,0,1));
 
-	mat4 testM44 =
-		mat4( vec4(1,0,0,0)
-			, vec4(0,1,0,0)
-			, vec4(0,0,1,0)
-			, vec4(0,0,0,1));
-
-	mat4 testM44_ =
-		mat4( vec4(1,0,0,0)
-			, vec4(0,1,0,0)
-			, vec4(0,0,1,0)
-			, vec4(0,0,0,1));
+	// mat4 testM44 =
+	// 	mat4( vec4(1,0,0,0)
+	// 		, vec4(0,1,0,0)
+	// 		, vec4(0,0,1,0)
+	// 		, vec4(0,0,0,1));
 
 	A  = alpha;
 	N  = normal;
 	Cd = color;
 	uv = uvCoords;
 	vec4 offset = transform[3];
-	gl_Position = testM44 * persp * viewM44 * ((vec4(vPosition,0)*transform + offset) + camera[3]);
+	// gl_Position = testM44 * persp * viewM44 * ((vec4(vPosition,0)*transform + offset) + camera[3]);
+	gl_Position = persp * viewM44 * ((vec4(vPosition,0)*transform + offset) + camera[3]);
 }

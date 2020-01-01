@@ -35,8 +35,8 @@ import Solvable
 data Object
   =  Object
      { 
-       _descriptors :: [Descriptor]
-     , _materials   :: [Material]
+       _descriptors :: [Descriptor] -- | Material is present in Descriptor, technically, but we use it also for draw-call separation per material
+     , _materials   :: [Material]   -- | hence [Material] is present on the Object level too.
      , _transform   :: M44 Double
      , _pivot       :: V3 Double
      , _velocity    :: V3 Double

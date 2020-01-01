@@ -11,6 +11,7 @@ module Rendering
   , initUniforms
   , render
   , Backend (..)
+  , BackendOptions (..)
   ) where
 
 import Control.Monad
@@ -33,7 +34,8 @@ import Material
 import Mouse
 --- debug stuff
 import Project (Project, path, models)
-import Geometry hiding (materials)
+import PGeo hiding (materials)
+import VGeo
 ---
 
 import Data.Foldable     as DF (toList)
@@ -45,7 +47,14 @@ import Control.Lens       hiding (transform, indexed)
 import Debug.Trace as DT
 
 data Backend
-  = OpenGL | Vulkan
+  = OpenGL
+  | Vulkan
+
+data BackendOptions
+  =  BackendOptions
+     {
+       primitiveMode :: PrimitiveMode
+     } deriving Show
 
 openWindow :: Text -> (CInt, CInt) -> IO SDL.Window
 openWindow title (sizex,sizey) =
@@ -128,8 +137,8 @@ toDrawables game time = drs
         -> (Drawable (Uniforms u_mats' u_mouse' u_time' u_res' u_cam' u_trans') ds')) 
       <$.> u_mats <*.> u_mouse <*.> u_time <*.> u_res <*.> u_cam <*.> u_trans <*.> ds
 
-render :: Backend -> SDL.Window -> Game -> IO ()
-render Rendering.OpenGL window game =
+render :: Backend -> BackendOptions -> SDL.Window -> Game -> IO ()
+render Rendering.OpenGL opts window game =
   do
     GL.clearColor $= Color4 0.5 0.5 1.0 1.0
     GL.clear [ColorBuffer, DepthBuffer]
@@ -138,21 +147,22 @@ render Rendering.OpenGL window game =
     let currentTime = fromInteger (unsafeCoerce ticks :: Integer) :: Float
         drs = toDrawables game currentTime
 
-    mapM_ (draw window) drs
+    mapM_ (draw opts window) drs
 
     SDL.glSwapWindow window
     
-render Vulkan _ _ = undefined
+render Vulkan _ _ _ = undefined
 
-draw :: SDL.Window -> Drawable -> IO ()
-draw window (Drawable
+draw :: BackendOptions -> SDL.Window -> Drawable -> IO ()
+draw opts window (Drawable
               unis
               (Descriptor vao' numIndices')) =
   do
     initUniforms unis
     
     bindVertexArrayObject $= Just vao'
-    drawElements Triangles numIndices' GL.UnsignedInt nullPtr
+    --drawElements Triangles numIndices' GL.UnsignedInt nullPtr
+    drawElements (primitiveMode opts) numIndices' GL.UnsignedInt nullPtr
     
     GL.pointSize $= 10
 
