@@ -230,7 +230,7 @@ initUniforms (Uniforms u_mats' u_mouse' u_time' u_res' u_cam' u_trans') =
 
        -- | Indices -> Stride -> ListOfFloats -> Material -> Descriptor
 initVAO :: ([Int], Int, [Float], Material) -> IO Descriptor
-initVAO (idx', st, vs', matPath) =  
+initVAO (idx', st', vs', matPath) =
   do
     let
       idx = (fmap unsafeCoerce idx') :: [GLuint]
@@ -256,7 +256,7 @@ initVAO (idx', st, vs', matPath) =
         
         -- | Bind the pointer to the vertex attribute data
         let floatSize  = (fromIntegral $ sizeOf (0.0::GLfloat)) :: GLsizei
-            stride     = (fromIntegral st) * floatSize -- TODO : stride value should come from a single location
+            stride     = (fromIntegral st') * floatSize -- TODO : stride value should come from a single location
         
         -- | Alpha
         vertexAttribPointer (AttribLocation 0) $= (ToFloat, VertexArrayDescriptor 1 Float stride ((plusPtr nullPtr . fromIntegral) (0 * floatSize)))

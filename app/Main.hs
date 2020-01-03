@@ -6,7 +6,7 @@ module Main where
 
 import Control.Concurrent
 import Control.Arrow.List.Class  --(arrL)
-import Control.Lens       hiding (transform, indexed, indices)
+import Control.Lens       hiding (transform, indexed, ids)
 import Data.Text                 (pack)
 import Foreign.C
 import FRP.Yampa          hiding (identity)
@@ -85,7 +85,8 @@ animate window sf =
           do
             R.render
               R.OpenGL
-              (BackendOptions { primitiveMode = Triangles})
+              --(BackendOptions { primitiveMode = Triangles})
+              (BackendOptions { primitiveMode = Points})
               window
               game
             --R.render R.OpenGL window game
@@ -109,11 +110,8 @@ animate window sf =
 (<*.>) :: [a -> b] -> [a] -> [b]
 (<*.>) = zipWith ($)
 
--- generateObject TODO : write an object generator (pointcloud).
--- VGeo -> Object
-
-genObject :: VGeo -> IO Object
-genObject (VGeo idxs st vaos matPaths) = 
+fromVGeo :: VGeo -> IO Object
+fromVGeo (VGeo idxs st vaos matPaths) = 
   do
     mats <- mapM readMaterial matPaths -- (ms vgeo)
     let
@@ -140,26 +138,32 @@ genObject (VGeo idxs st vaos matPaths) =
 
     return object
 
-generatePC :: [(Double, Double)] -> PGeo
-generatePC ps0 =
+-- TODO : pCloud -> PGeo -> (fromPGeo -> VGeo) -> (fromVGeo -> Object)
+-- generate :: Form -> [(Double, Double)] -> PGeo
+-- data Form
+--  =   PCloud | ...
+-- ...
+-- generate PCloud ps = ... where ps = positions :: [(Double, Double)]
+
+
+-- pCloud :: [(Double, Double)] -> Vec3
+--           [Pos3]             -> Color -> PGeo
+-- pCloud :: [(Double, Double)] -> PGeo
+-- pCloud ps0 =
+pCloud :: PGeo
+pCloud =
   PGeo
   {
-    indices   = [ids]
-  , alpha     = as
-  , color     = cs
-  , normal    = ns
-  , uv        = uvs
-  , position  = ps
-  , PGeo.materials = ms
+    ids  = [take (length ps') [0..]]
+  , as   = take (length ps') $ repeat (1.0)
+  , cs   = take (length ps') $ repeat (1.0, 0.0, 0.0) :: [Vec3]
+  , ns   = take (length ps') $ repeat (0.0, 0.0, 1.0) :: [Vec3]
+  , uvws = ps'
+  , ps   = ps'
+  , mats = ["mat/test/test"]
   }
   where
-    ids = undefined
-    as  = undefined
-    cs  = undefined
-    ns  = undefined
-    uvs = undefined
-    ps  = undefined
-    ms  = undefined
+    ps' = [(x,y,0.0) | x <- [0.0, 0.1 .. 1.0], y <- [0.0, 0.1 .. 1.0]] :: [Vec3]
 
 loadObjects :: Project -> IO [Object]
 loadObjects project = 
@@ -210,7 +214,9 @@ loadModels path =
 initGame :: Project -> IO Game
 initGame project =
   do
-    objs <- (loadObjects project)
+    --objs  <- (loadObjects project)
+    pc <- fromVGeo $ fromPGeo pCloud
+    let objs = [pc]
     let game =
           Game
           ( Options
@@ -222,10 +228,10 @@ initGame project =
           objs
           initCam
     return game
-      where
-        name'           = Project.name  $ project
-        resX'           = (unsafeCoerce $ Project.resx $ project) :: CInt
-        resY'           = (unsafeCoerce $ Project.resy $ project) :: CInt
+      where        
+        name' = Project.name  $ project
+        resX' = (unsafeCoerce $ Project.resx $ project) :: CInt
+        resY' = (unsafeCoerce $ Project.resy $ project) :: CInt
 
 -- < Game Logic > ---------------------------------------------------------
 
