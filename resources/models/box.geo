@@ -1,19 +1,19 @@
 [
-	"fileversion","17.5.333",
+	"fileversion","18.0.327",
 	"hasindex",false,
 	"pointcount",24,
 	"vertexcount",36,
 	"primitivecount",12,
 	"info",{
-		"date":"2019-12-14 04:30:17",
-		"timetocook":0.0013159999999999999,
-		"software":"Houdini 17.5.333",
+		"date":"2020-01-05 02:47:22",
+		"timetocook":8.20000000000000009e-05,
+		"software":"Houdini 18.0.327",
 		"artist":"madjestic",
 		"hostname":"nu",
 		"time":0,
 		"bounds":[-0.5,0.5,-0.5,0.5,-0.5,0.5],
 		"primcount_summary":"         12 Polygons\n",
-		"attribute_summary":"     5 vertex attributes:\tuv, N, Alpha, shop_materialpath, Cd\n     1 point attributes:\tP\n"
+		"attribute_summary":"     5 vertex attributes:\tN, uv, shop_materialpath, Cd, Alpha\n     1 point attributes:\tP\n"
 	},
 	"topology",[
 		"pointref",[
@@ -105,8 +105,8 @@
 					"values",[
 						"size",3,
 						"storage","fpreal32",
-						"tuples",[[0,0,1],[0,0,1],[0,0,1],[-1,0,0],[-1,0,0],[-1,0,0],[0,0,-1],[0,0,-1],[0,0,-1],[1,0,0],[1,0,0],[1,0,0],[0,1,0],[0,1,0],[0,1,0],[0,-1,0],[0,-1,0],[0,-1,0],[0,-1,0],[0,-1,0],[0,-1,0],[0,1,0],[0,1,0],[0,
-								1,0],[1,0,0],[1,0,0],[1,0,0],[0,0,-1],[0,0,-1],[0,0,-1],[-1,0,0],[-1,0,0],[-1,0,0],[0,0,1],[0,0,1],[0,0,1]
+						"tuples",[[0,0,-1],[0,0,-1],[0,0,-1],[1,0,0],[1,0,0],[1,0,0],[0,0,1],[0,0,1],[0,0,1],[-1,0,0],[-1,0,0],[-1,0,0],[0,-1,0],[0,-1,0],[0,-1,0],[0,1,0],[0,1,0],[0,1,0],[0,1,0],[0,1,0],[0,1,0],[0,-1,0],[0,-1,0],[0,
+								-1,0],[-1,0,0],[-1,0,0],[-1,0,0],[0,0,1],[0,0,1],[0,0,1],[1,0,0],[1,0,0],[1,0,0],[0,0,-1],[0,0,-1],[0,0,-1]
 						]
 					]
 				]
@@ -122,7 +122,7 @@
 				[
 					"size",1,
 					"storage","int32",
-					"strings",["/mat/test/test"
+					"strings",["/mat/normal/normal"
 					],
 					"indices",[
 						"size",1,

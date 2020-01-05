@@ -39,7 +39,6 @@ import Object
 import Controllable  
 import PGeo
 import VGeo
---import VGeo
 import Input 
 import Rendering      as R
 import Material
@@ -116,40 +115,28 @@ fromVGeo (VGeo idxs st vaos matPaths) =
     mats <- mapM readMaterial matPaths -- (ms vgeo)
     let
       args         = (\idx' st' vao' mat' ->  (idx', st', vao', mat')) <$.> idxs <*.> st <*.> vaos <*.> mats
-      offset       = (V3 0 0 0.5) :: V3 Double
-      preTransform = --(identity::M44 Double) !!* 0.5
-        V4
-        (V4 0.5 0 0 0)
-        (V4 0 1.5 0 0)
-        (V4 0 0 0.5 0)
-        ((\(V3 x y z) -> V4 x y z 1) offset)
-        --(V4 1 0 0 0)
+      offset       = (V3 0 0 0) :: V3 Double
+      -- preTransform = --(identity::M44 Double) !!* 0.5
+      --   V4
+      --   (V4 0.5 0 0 0)
+      --   (V4 0 1.5 0 0)
+      --   (V4 0 0 0.5 0)
+      --   ((\(V3 x y z) -> V4 x y z 1) offset)
+
     ds   <- mapM initVAO args
     
     let object =
           defaultObj
           { Object._descriptors = ds
           , Object._materials   = mats
-          , Object._transform   = preTransform
-          , Object._pivot       = offset
+          --, Object._transform   = preTransform
+          --, Object._pivot       = offset
           , Object._solvers     =
             [(Rotate offset (V3 0 0 1000))]
           }
 
     return object
 
--- TODO : pCloud -> PGeo -> (fromPGeo -> VGeo) -> (fromVGeo -> Object)
--- generate :: Form -> [(Double, Double)] -> PGeo
--- data Form
---  =   PCloud | ...
--- ...
--- generate PCloud ps = ... where ps = positions :: [(Double, Double)]
-
-
--- pCloud :: [(Double, Double)] -> Vec3
---           [Pos3]             -> Color -> PGeo
--- pCloud :: [(Double, Double)] -> PGeo
--- pCloud ps0 =
 pCloud :: PGeo
 pCloud =
   PGeo
@@ -176,7 +163,7 @@ loadObjects project =
                       (concat [st, st'])
                       (concat [vaos, vaos'])
                       (concat [matPaths, matPaths']))) vgeos
-    mats  <- mapM readMaterial (ms vgeo)
+    mats  <- mapM readMaterial ( DT.trace ("ms vgeo" ++ show (ms vgeo)) $ ms vgeo)
     let (VGeo idxs st vaos matPaths) = vgeo
         args         = (\idx' st' vao' mat' ->  (idx', st', vao', mat')) <$.> idxs <*.> st <*.> vaos <*.> mats
         offset       = (V3 0 0 0.5) :: V3 Double
@@ -214,6 +201,7 @@ loadModels path =
 initGame :: Project -> IO Game
 initGame project =
   do
+    _ <- DT.trace ("initializing game resources...") $ return ()
     objs  <- (loadObjects project)
     --pc <- fromVGeo $ fromPGeo pCloud
     --let objs = [pc]

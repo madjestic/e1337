@@ -24,7 +24,7 @@ import PGeo
 import VGeo
 import Utils
 
-import Debug.Trace as DT
+-- import Debug.Trace as DT
 
 main :: IO ()
 main = do
@@ -34,17 +34,18 @@ main = do
 
   
   pgeo <- readPGeo fileIn
+  -- let vgeo = fromPGeo (DT.trace ("pgeo :" ++ show pgeo) $ pgeo)
   let vgeo = fromPGeo pgeo
-  print $ "is :" ++ (show $ is vgeo)
+  -- print $ "is :" ++ (show $ is vgeo)
 
-  I.writeFile fileOut (encodeToLazyText
-                       ( VGeo
-                         (is vgeo)
-                         (st vgeo)
-                         (vs vgeo)
-                         (ms vgeo) ))
+  -- I.writeFile fileOut (encodeToLazyText
+  --                      ( VGeo
+  --                        (is vgeo)
+  --                        (st vgeo)
+  --                        (vs vgeo)
+  --                        (ms vgeo) ))
   
-  -- I.writeFile fileOut (encodeToLazyText ( is vgeo
-  --                                       , st vgeo
-  --                                       , vs vgeo
-  --                                       , ms vgeo))
+  I.writeFile fileOut (encodeToLazyText ( is vgeo
+                                        , st vgeo
+                                        , vs vgeo
+                                        , ms vgeo ))

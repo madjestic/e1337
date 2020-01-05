@@ -26,12 +26,24 @@
 
 # Box
 # a spinning box.
-mvlink ./app/Main.hs /home/madjestic/Projects/Haskell/e1337/app/Main.hs.box
-cabal new-build
-cabal new-run e1337 ./projects/box
+# mvlink ./app/Main.hs /home/madjestic/Projects/Haskell/e1337/app/Main.hs.box
+# cabal new-build
+# cabal new-run e1337 ./projects/box
+
+# Box with Normal Shader
+# a spinning box with a normal shader.
+# mvlink ./app/Main.hs /home/madjestic/Projects/Haskell/e1337/app/Main.hs.box
+# cabal new-build
+# cabal new-run e1337 ./projects/box_normal
 
 # PCloud
 # a point cloud.
 # mvlink ./app/Main.hs /home/madjestic/Projects/Haskell/e1337/app/Main.hs.pcloud 
 # cabal new-build
 # cabal new-run e1337 ./projects/box
+
+# Sphere with Normal Shader
+# a sphere with a normal shader.
+mvlink ./app/Main.hs /home/madjestic/Projects/Haskell/e1337/app/Main.hs.box
+cabal new-build
+cabal new-run e1337 ./projects/sphere

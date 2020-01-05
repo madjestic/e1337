@@ -23,6 +23,8 @@ def rpcShuffler(arg=[]):
     with open('./rpcShuffler/.h2p', 'r') as f:
         result = f.read()
 
+    print("OK")
+    
     return(result)
 
 

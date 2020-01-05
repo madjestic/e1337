@@ -31,7 +31,14 @@ toVAO
   -> [(Double, Double, Double)]
   -> [[[Float]]]
 
-toVAO idxs as cds ns ts ps = (DT.trace ("vaos :" ++ show vaos) $ vaos)
+-- toVAO idxs as cds ns ts ps = (
+--   DT.trace ("as :" ++ show as) $
+--   DT.trace ("cds :" ++ show cds) $
+--   DT.trace ("ns :" ++ show ns) $
+--   DT.trace ("ts :" ++ show ts) $
+--   DT.trace ("ps :" ++ show ps) $
+--   DT.trace ("vaos :" ++ show vaos) $ vaos)
+toVAO idxs as cds ns ts ps = vaos
   where vaos =
           fmap
           (\idx ->
