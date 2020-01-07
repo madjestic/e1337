@@ -45,7 +45,6 @@ import Rendering      as R
 import Material
 import Solvable
 
-
 import Debug.Trace    as DT
 
 -- --        d8888888b    8888888888888b     d888       d8888888888888888888888888 
@@ -116,7 +115,8 @@ fromVGeo (VGeo idxs st vaos matPaths xform) =
     mats <- mapM readMaterial matPaths -- (ms vgeo)
     let
       args         = (\idx' st' vao' mat' ->  (idx', st', vao', mat')) <$.> idxs <*.> st <*.> vaos <*.> mats
-      offset       = (V3 0 0 0) :: V3 Double
+      -- offset       = (V3 0 0 0) :: V3 Double
+      offset = view _w (fromList xform :: M44 Double)
       -- preTransform = --(identity::M44 Double) !!* 0.5
       --   V4
       --   (V4 0.5 0 0 0)
@@ -133,7 +133,7 @@ fromVGeo (VGeo idxs st vaos matPaths xform) =
           --, Object._transform   = preTransform
           --, Object._pivot       = offset
           , Object._solvers     =
-            [(Rotate offset (V3 0 0 1000))]
+            [(Rotate (view _xyz offset) (V3 0 0 1000))]
           }
 
     return object
@@ -157,9 +157,9 @@ pCloud =
 loadObjects :: Project -> IO [Object]
 loadObjects project = 
   do
-    _ <- DT.trace ("project :" ++ show project) $ return ()
+    -- _ <- DT.trace ("project :" ++ show project) $ return ()
     vgeos <- mapM loadModels $ toListOf (models . traverse . path) project
-    _ <- DT.trace ("vgeos :" ++ show vgeos) $ return ()
+    -- _ <- DT.trace ("vgeos :" ++ show vgeos) $ return ()
     let vgeo =
           foldr1 (\(VGeo idxs st vaos matPaths xform)(VGeo idxs' st' vaos' matPaths' xform')
                   -> (VGeo
@@ -169,19 +169,21 @@ loadObjects project =
                       (concat [matPaths, matPaths'])
                       (concat [xform, xform'])
                      )) vgeos
-    mats  <- mapM readMaterial ( DT.trace ("ms vgeo" ++ show (ms vgeo)) $ ms vgeo)
+    -- mats  <- mapM readMaterial ( DT.trace ("ms vgeo" ++ show (ms vgeo)) $ ms vgeo)
+    mats  <- mapM readMaterial $ ms vgeo
     let (VGeo idxs st vaos matPaths xform) = vgeo
         args         = (\idx' st' vao' mat' ->  (idx', st', vao', mat')) <$.> idxs <*.> st <*.> vaos <*.> mats
-        offset       = (V3 0 0 0.5) :: V3 Double -- TODO: replace with reading xform transform component
-        offset' = fromList xform :: M44 Double
+        -- offset       = (V3 0 0 0.5) :: V3 Double -- TODO: replace with reading xform transform component
+        offset = view _w (fromList xform :: M44 Double)
         preTransform = --(identity::M44 Double) !!* 0.5
           V4
           (V4 0.5 0 0 0)
           (V4 0 1.5 0 0)
           (V4 0 0 0.5 0)
-          ((\(V3 x y z) -> V4 x y z 1) offset)
+          offset
+          --((\(V3 x y z) -> V4 x y z 1) offset)
           --(V4 1 0 0 0)
-    _ <- DT.trace ("offset' :" ++ show offset') $ return ()
+    _ <- DT.trace ("offset' :" ++ show offset) $ return ()
     ds <- mapM initVAO args
     
     let objects =
@@ -191,9 +193,9 @@ loadObjects project =
               { Object._descriptors = ds
               , Object._materials   = mats
               , Object._transform   = preTransform
-              , Object._pivot       = offset
+              , Object._pivot       = view _xyz offset
               , Object._solvers     =
-                [(Rotate offset (V3 0 0 1000))]
+                [(Rotate (view _xyz offset) (V3 0 0 1000))]
               }
            ) . _path)
           (_models project) :: [Object]
@@ -207,7 +209,7 @@ fromList xs' = V4 x y z w
     y  = V4 (xs!!4 ) (xs!!5 ) (xs!!6 ) (xs!!7 ) 
     z  = V4 (xs!!8 ) (xs!!9 ) (xs!!10) (xs!!11) 
     w  = V4 (xs!!12) (xs!!13) (xs!!14) (xs!!15)
-    xs = unsafeCoerce xs' :: [Double]
+    xs = fmap realToFrac xs' :: [Double]
 
 toList :: M44 Double -> [Float]
 toList (V4 (V4 x y z w) (V4 x1 y1 z1 w1) (V4 x2 y2 z2 w2) (V4 x3 y3 z3 w3))
