@@ -29,6 +29,7 @@ import System.Environment       (getArgs)
 import Linear.Matrix
 import Linear.V4
 import Unsafe.Coerce
+import Data.Vector              (slice)
        
 import Camera         as Cam
 import Game
@@ -110,7 +111,7 @@ animate window sf =
 (<*.>) = zipWith ($)
 
 fromVGeo :: VGeo -> IO Object
-fromVGeo (VGeo idxs st vaos matPaths) = 
+fromVGeo (VGeo idxs st vaos matPaths xform) = 
   do
     mats <- mapM readMaterial matPaths -- (ms vgeo)
     let
@@ -141,13 +142,14 @@ pCloud :: PGeo
 pCloud =
   PGeo
   {
-    ids  = [take (length ps') [0..]]
-  , as   = take (length ps') $ repeat (1.0)
-  , cs   = take (length ps') $ repeat (1.0, 0.0, 0.0) :: [Vec3]
-  , ns   = take (length ps') $ repeat (0.0, 0.0, 1.0) :: [Vec3]
-  , uvws = ps'
-  , ps   = ps'
-  , mats = ["mat/test/test"]
+    ids   = [take (length ps') [0..]]
+  , as    = take (length ps') $ repeat (1.0)
+  , cs    = take (length ps') $ repeat (1.0, 0.0, 0.0) :: [Vec3]
+  , ns    = take (length ps') $ repeat (0.0, 0.0, 1.0) :: [Vec3]
+  , uvws  = ps'
+  , ps    = ps'
+  , mats  = ["mat/test/test"]
+  , xform = toList (identity :: M44 Double)
   }
   where
     ps' = [(x,y,0.0) | x <- [0.0, 0.1 .. 1.0], y <- [0.0, 0.1 .. 1.0]] :: [Vec3]
@@ -155,18 +157,23 @@ pCloud =
 loadObjects :: Project -> IO [Object]
 loadObjects project = 
   do
+    _ <- DT.trace ("project :" ++ show project) $ return ()
     vgeos <- mapM loadModels $ toListOf (models . traverse . path) project
+    _ <- DT.trace ("vgeos :" ++ show vgeos) $ return ()
     let vgeo =
-          foldr1 (\(VGeo idxs st vaos matPaths)(VGeo idxs' st' vaos' matPaths')
+          foldr1 (\(VGeo idxs st vaos matPaths xform)(VGeo idxs' st' vaos' matPaths' xform')
                   -> (VGeo
                       (concat [idxs,idxs'])
                       (concat [st, st'])
                       (concat [vaos, vaos'])
-                      (concat [matPaths, matPaths']))) vgeos
+                      (concat [matPaths, matPaths'])
+                      (concat [xform, xform'])
+                     )) vgeos
     mats  <- mapM readMaterial ( DT.trace ("ms vgeo" ++ show (ms vgeo)) $ ms vgeo)
-    let (VGeo idxs st vaos matPaths) = vgeo
+    let (VGeo idxs st vaos matPaths xform) = vgeo
         args         = (\idx' st' vao' mat' ->  (idx', st', vao', mat')) <$.> idxs <*.> st <*.> vaos <*.> mats
-        offset       = (V3 0 0 0.5) :: V3 Double
+        offset       = (V3 0 0 0.5) :: V3 Double -- TODO: replace with reading xform transform component
+        offset' = fromList xform :: M44 Double
         preTransform = --(identity::M44 Double) !!* 0.5
           V4
           (V4 0.5 0 0 0)
@@ -174,6 +181,7 @@ loadObjects project =
           (V4 0 0 0.5 0)
           ((\(V3 x y z) -> V4 x y z 1) offset)
           --(V4 1 0 0 0)
+    _ <- DT.trace ("offset' :" ++ show offset') $ return ()
     ds <- mapM initVAO args
     
     let objects =
@@ -192,11 +200,28 @@ loadObjects project =
 
     return objects
 
+fromList :: [Float] -> M44 Double
+fromList xs' = V4 x y z w
+  where
+    x  = V4 (xs!!0 ) (xs!!1 ) (xs!!2 ) (xs!!3 ) 
+    y  = V4 (xs!!4 ) (xs!!5 ) (xs!!6 ) (xs!!7 ) 
+    z  = V4 (xs!!8 ) (xs!!9 ) (xs!!10) (xs!!11) 
+    w  = V4 (xs!!12) (xs!!13) (xs!!14) (xs!!15)
+    xs = unsafeCoerce xs' :: [Double]
+
+toList :: M44 Double -> [Float]
+toList (V4 (V4 x y z w) (V4 x1 y1 z1 w1) (V4 x2 y2 z2 w2) (V4 x3 y3 z3 w3))
+  = fmap unsafeCoerce
+    [ x ,y ,z ,w
+    , x1,y1,z1,w1
+    , x2,y2,z2,w2
+    , x3,y3,z3,w3 ] :: [Float]
+                                                                            
 loadModels :: String -> IO VGeo
 loadModels path =
   do
-    (VGeo idxs st vaos matPaths) <- readVGeo path
-    return (VGeo idxs st vaos matPaths)
+    (VGeo idxs st vaos matPaths xf) <- readVGeo path
+    return (VGeo idxs st vaos matPaths xf)
 
 initGame :: Project -> IO Game
 initGame project =

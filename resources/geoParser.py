@@ -11,7 +11,6 @@ from numpy import argsort,array
 
 # from itertools import izip
 
-
 def rpcShuffler(arg=[]):
     print("initializing RPC process...")
     with open('./rpcShuffler/.p2h', 'w') as f:
@@ -117,8 +116,8 @@ def parseJSON(jsonFile):
     vtxAttrNDictVals  = vtxAttrNDict ["values"]
     vtxAttrNTuples    = toDict (vtxAttrNDictVals) ["tuples"]
 
-    # TODO : matIndices, shop_materialpath -> dir where materials live,
-    # basic material = vertex shader, fragment shader, a list of textures
+    # TODO : matIndices, shop_materialpath -> create a target dir, where materials should live,
+    # TODO : create material placeholder, if does not exist - vertex shader, fragment shader, a list of textures
     ### Material
     vtxAttrMat         = vtxAttrs [3]
     vtxAttrMatDict     = toDict (vtxAttrMat [1])
@@ -141,6 +140,11 @@ def parseJSON(jsonFile):
     ptAttrPDictVals   = ptAttrPDict ["values"] # Point Attr Dictionary Values
     ptAttrPTuples     = toDict (ptAttrPDictVals) ["tuples"]
 
+    ### Global Attributes
+    globAttrs         = attrs ["globalattributes"]
+    # print("globAttrs :", globAttrs)
+    glAttrXform       = (toDict(toDict((globAttrs[0])[1])["values"])["tuples"])[0]
+    # print("debug :", glAttrXform)      
 
     # DEBUG:
     # print("Alpha: ", vtxAttrs [0])
@@ -149,7 +153,7 @@ def parseJSON(jsonFile):
     # print("mat: "  , vtxAttrs [3])
     # print("uv: "   , vtxAttrs [4])
     # print("P: "    , ptAttrs  [0])
-    # print("Prim: "   , ptAttrs  [0])
+    # print("globAttrs :", globAttrs)
 
     ### FORMAT JSON ###
     data    = {}
@@ -202,6 +206,9 @@ def parseJSON(jsonFile):
     data.get('PGeo').update(jsonEntry)
 
     jsonEntry = {'position' : ptAttrPTuples}
+    data.get('PGeo').update(jsonEntry)
+
+    jsonEntry = {'xform' : glAttrXform}
     data.get('PGeo').update(jsonEntry)
 
     return data

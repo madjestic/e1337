@@ -48,4 +48,5 @@ main = do
   I.writeFile fileOut (encodeToLazyText ( is vgeo
                                         , st vgeo
                                         , vs vgeo
-                                        , ms vgeo ))
+                                        , ms vgeo
+                                        , xf vgeo ))

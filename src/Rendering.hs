@@ -44,7 +44,7 @@ import Linear.Projection as LP (perspective)
 import Unsafe.Coerce
 
 import Control.Lens       hiding (transform, indexed)
-import Debug.Trace as DT
+-- import Debug.Trace as DT
 
 data Backend
   = OpenGL
