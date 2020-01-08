@@ -102,7 +102,7 @@ data Uniforms
      , u_res   :: (CInt, CInt)
      --, u_proj  :: M44 Double --GLmatrix GLfloat
      , u_cam   :: M44 Double 
-     , u_trans :: M44 Double 
+     , u_xform :: M44 Double 
      } deriving Show
 
 data Drawable
@@ -130,12 +130,12 @@ toDrawables game time = drs
     u_res    = replicate n $ ((toEnum resX), (toEnum resY)) :: [(CInt, CInt)]
 --    u_proj   = undefined -- :: [GLmatrix GLfloat]
     u_cam    = replicate n $ view (camera . controller . Controllable.transform) game :: [M44 Double]
-    u_trans  = concat $ replicate n $ toListOf (objects . traverse . Object.transform) game :: [M44 Double]  -- :: [GLmatrix GLfloat]
+    u_xform  = concat $ replicate n $ toListOf (objects . traverse . Object.transform) game :: [M44 Double]  -- :: [GLmatrix GLfloat]
     
     drs      =
       (\  u_mats' u_mouse' u_time' u_res' u_cam' u_trans' ds'
         -> (Drawable (Uniforms u_mats' u_mouse' u_time' u_res' u_cam' u_trans') ds')) 
-      <$.> u_mats <*.> u_mouse <*.> u_time <*.> u_res <*.> u_cam <*.> u_trans <*.> ds
+      <$.> u_mats <*.> u_mouse <*.> u_time <*.> u_res <*.> u_cam <*.> u_xform <*.> ds
 
 render :: Backend -> BackendOptions -> SDL.Window -> Game -> IO ()
 render Rendering.OpenGL opts window game =

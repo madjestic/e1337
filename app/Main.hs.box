@@ -173,14 +173,15 @@ loadObjects project =
     mats  <- mapM readMaterial $ ms vgeo
     let (VGeo idxs st vaos matPaths xform) = vgeo
         args         = (\idx' st' vao' mat' ->  (idx', st', vao', mat')) <$.> idxs <*.> st <*.> vaos <*.> mats
-        -- offset       = (V3 0 0 0.5) :: V3 Double -- TODO: replace with reading xform transform component
+        -- offset       = (V3 0 0 0.5) :: V3 Double 
         offset = view _w (fromList xform :: M44 Double)
-        preTransform = --(identity::M44 Double) !!* 0.5
-          V4
-          (V4 0.5 0 0 0)
-          (V4 0 1.5 0 0)
-          (V4 0 0 0.5 0)
-          offset
+        preTransform = fromList xform
+        -- preTransform = --(identity::M44 Double) !!* 0.5 -- TODO: replace with reading xform transform component from offset above
+        --   V4
+        --   (V4 0.5 0 0 0)
+        --   (V4 0 1.5 0 0)
+        --   (V4 0 0 0.5 0)
+        --   offset
           --((\(V3 x y z) -> V4 x y z 1) offset)
           --(V4 1 0 0 0)
     _ <- DT.trace ("offset' :" ++ show offset) $ return ()
