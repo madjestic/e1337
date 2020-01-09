@@ -44,6 +44,12 @@
 
 # Sphere with Normal Shader
 # a sphere with a normal shader.
+# mvlink ./app/Main.hs /home/madjestic/Projects/Haskell/e1337/app/Main.hs.box
+# cabal new-build
+# cabal new-run e1337 ./projects/sphere
+
+# 2 Spheres with Normal Shader
+# 2 spheres with a normal shader.
 mvlink ./app/Main.hs /home/madjestic/Projects/Haskell/e1337/app/Main.hs.box
 cabal new-build
-cabal new-run e1337 ./projects/sphere
+cabal new-run e1337 ./projects/2spheres

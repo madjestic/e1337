@@ -36,7 +36,7 @@ import Game
 import Project 
 import Project.Parser
 import Keyboard
-import Object
+import Object         as Obj
 import Controllable  
 import PGeo
 import VGeo
@@ -128,11 +128,11 @@ fromVGeo (VGeo idxs st vaos matPaths xform) =
     
     let object =
           defaultObj
-          { Object._descriptors = ds
-          , Object._materials   = mats
-          --, Object._transform   = preTransform
-          --, Object._pivot       = offset
-          , Object._solvers     =
+          { Obj._descriptors = ds
+          , Obj._materials   = mats
+          --, Obj._transform   = preTransform
+          --, Obj._pivot       = offset
+          , Obj._solvers     =
             [(Rotate (view _xyz offset) (V3 0 0 1000))]
           }
 
@@ -157,9 +157,9 @@ pCloud =
 loadObjects :: Project -> IO [Object]
 loadObjects project = 
   do
-    -- _ <- DT.trace ("project :" ++ show project) $ return ()
+    _ <- DT.trace ("project :" ++ show project) $ return ()
     vgeos <- mapM loadModels $ toListOf (models . traverse . path) project
-    -- _ <- DT.trace ("vgeos :" ++ show vgeos) $ return ()
+    _ <- DT.trace ("vgeos :" ++ show vgeos) $ return ()
     let vgeo =
           foldr1 (\(VGeo idxs st vaos matPaths xform)(VGeo idxs' st' vaos' matPaths' xform')
                   -> (VGeo
@@ -167,16 +167,17 @@ loadObjects project =
                       (concat [st, st'])
                       (concat [vaos, vaos'])
                       (concat [matPaths, matPaths'])
-                      (concat [xform, xform'])
+                      ([xform, xform'])
                      )) vgeos
+    _ <- DT.trace ("vgeo :" ++ show vgeo) $ return ()
     -- mats  <- mapM readMaterial ( DT.trace ("ms vgeo" ++ show (ms vgeo)) $ ms vgeo)
     mats  <- mapM readMaterial $ ms vgeo
-    let (VGeo idxs st vaos matPaths xform) = vgeo
-        args         = (\idx' st' vao' mat' ->  (idx', st', vao', mat')) <$.> idxs <*.> st <*.> vaos <*.> mats
+    let (VGeo idxs_ st_ vaos_ matPaths_ xform_) = vgeo
+        args         = (\idx' st' vao' mat' ->  (idx', st', vao', mat')) <$.> idxs_ <*.> st_ <*.> vaos_ <*.> mats
         -- offset       = (V3 0 0 0.5) :: V3 Double 
-        offset = view _w (fromList xform :: M44 Double)
-        preTransform = fromList xform
-        -- preTransform = --(identity::M44 Double) !!* 0.5 -- TODO: replace with reading xform transform component from offset above
+        offset = view _w (fromList xform_ :: M44 Double)
+        preTransform = fromList xform_
+        -- preTransform = --(identity::M44 Double) !!* 0.5 -- TODO: replace with reading xform_ transform component from offset above
         --   V4
         --   (V4 0.5 0 0 0)
         --   (V4 0 1.5 0 0)
@@ -184,18 +185,18 @@ loadObjects project =
         --   offset
           --((\(V3 x y z) -> V4 x y z 1) offset)
           --(V4 1 0 0 0)
-    _ <- DT.trace ("offset' :" ++ show offset) $ return ()
+    _ <- DT.trace ("offset :" ++ show offset) $ return ()
     ds <- mapM initVAO args
     
     let objects =
           fmap
           ((\ _ ->
               defaultObj
-              { Object._descriptors = ds
-              , Object._materials   = mats
-              , Object._transform   = preTransform
-              , Object._pivot       = view _xyz offset
-              , Object._solvers     =
+              { Obj._descriptors = ds
+              , Obj._materials   = mats
+              , Obj._transform   = preTransform
+              -- , Obj._pivot       = view _xyz offset
+              , Obj._solvers     =
                 [(Rotate (view _xyz offset) (V3 0 0 1000))]
               }
            ) . _path)
@@ -293,8 +294,12 @@ updateGame game =
 solve :: Object -> SF () Object
 solve obj =
   proc () -> do
-    obj' <- solver (Rotate (V3 0 0 0) (V3 0 0 1000)) obj -< ()
-    returnA -< obj'
+    obj <- solver (Rotate (pv0) (V3 0 0 1000)) obj -< ()
+    returnA -< obj
+      where
+        --pv0 = V3 0.5 0 0--view (Obj.transform . _w . _xyz) obj
+        pv0 = view (Obj.transform . _w . _xyz) obj
+
       
 updateObjects :: [Object] -> SF () [Object] --[Object] --SF [()] [Object]
 updateObjects = parB . fmap solve
@@ -453,12 +458,13 @@ main = do
       resX  = (unsafeCoerce $ Project.resx $ proj) :: CInt
       resY  = (unsafeCoerce $ Project.resy $ proj) :: CInt
 
-  window    <- openWindow
-               title
-               (resX, resY)
+  -- window    <- openWindow
+  --              title
+  --              (resX, resY)
 
   game <- initGame proj
   
-  animate
-    window
-    (parseWinInput >>> (mainGame game &&& handleExit))
+  -- animate
+  --   window
+  --   (parseWinInput >>> (mainGame game &&& handleExit))
+  return ()
