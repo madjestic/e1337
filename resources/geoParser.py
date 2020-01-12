@@ -143,7 +143,7 @@ def parseJSON(jsonFile):
     ### Global Attributes
     globAttrs         = attrs ["globalattributes"]
     # print("globAttrs :", globAttrs)
-    glAttrXform       = (toDict(toDict((globAttrs[0])[1])["values"])["tuples"])[0]
+    glAttrXform       = (toDict(toDict((globAttrs[0])[1])["values"])["tuples"])
     # print("debug :", glAttrXform)      
 
     # DEBUG:

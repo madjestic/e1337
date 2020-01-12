@@ -130,7 +130,8 @@ toDrawables game time = drs
     u_res    = replicate n $ ((toEnum resX), (toEnum resY)) :: [(CInt, CInt)]
 --    u_proj   = undefined -- :: [GLmatrix GLfloat]
     u_cam    = replicate n $ view (camera . controller . Controllable.transform) game :: [M44 Double]
-    u_xform  = concat $ replicate n $ toListOf (objects . traverse . Object.transform) game :: [M44 Double]  -- :: [GLmatrix GLfloat]
+    --u_xform  = undefined :: [(M44 Double)] -- concat $ replicate n $ toListOf (objects . traverse . Object.transform) game :: [(M44 Double)]  -- :: [GLmatrix GLfloat]
+    u_xform  = concat $ toListOf (objects . traverse . Object.transform) game :: [(M44 Double)]  -- :: [GLmatrix GLfloat]
     
     drs      =
       (\  u_mats' u_mouse' u_time' u_res' u_cam' u_xform' ds'
