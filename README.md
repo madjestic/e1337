@@ -10,11 +10,13 @@ It supports loading and rendering simple projects files, describing a model, a m
 * Has a camera that supports user-input.
 * Renders a scene of objects.
 
-[a youtube demo](https://www.youtube.com/watch?v=S2WPuo63r5g)
+[a youtube demo](https://youtu.be/rnkZqXXqWYA)
 
 ![](https://github.com/madjestic/e1337/blob/master/output.png)
 
 Recent Changes:
+
+[2 objects with different materials and centers of rotation](https://youtu.be/rnkZqXXqWYA)
 
 [added multimaterial support](https://youtu.be/EYwBZOm5GNE)
 

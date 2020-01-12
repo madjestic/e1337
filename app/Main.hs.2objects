@@ -115,14 +115,7 @@ fromVGeo (VGeo idxs st vaos matPaths xform) =
     mats <- mapM readMaterial matPaths -- (ms vgeo)
     let
       args         = (\idx' st' vao' mat' ->  (idx', st', vao', mat')) <$.> idxs <*.> st <*.> vaos <*.> mats
-      -- offset       = (V3 0 0 0) :: V3 Double
       offset = view _w (fromList (xform!!0) :: M44 Double) -- xform!!0 - at conversion stage, there can be only a single element in a list of transforms, therefore I don't want to overcomplicate it at the moment and keep it adhoc.
-      -- preTransform = --(identity::M44 Double) !!* 0.5
-      --   V4
-      --   (V4 0.5 0 0 0)
-      --   (V4 0 1.5 0 0)
-      --   (V4 0 0 0.5 0)
-      --   ((\(V3 x y z) -> V4 x y z 1) offset)
 
     ds   <- mapM initVAO args
     
@@ -149,7 +142,7 @@ pCloud =
   , uvws  = ps'
   , ps    = ps'
   , mats  = ["mat/test/test"]
-  , xform = [toList (identity :: M44 Double)] -- same story, it's supposed to be a single transform per pcloud object
+  , xform = [toList (identity :: M44 Double)]
   }
   where
     ps' = [(x,y,0.0) | x <- [0.0, 0.1 .. 1.0], y <- [0.0, 0.1 .. 1.0]] :: [Vec3]
@@ -174,19 +167,8 @@ loadObjects project =
     mats  <- mapM readMaterial $ ms vgeo
     let (VGeo idxs_ st_ vaos_ matPaths_ xform_) = vgeo
         args         = (\idx' st' vao' mat' ->  (idx', st', vao', mat')) <$.> idxs_ <*.> st_ <*.> vaos_ <*.> mats
-        -- offset       = (V3 0 0 0.5) :: V3 Double 
-        --offset = fmap (view _w) (fmap fromList xform_ :: [M44 Double]) -- TODO: should be a list of offsets
         offset = fmap ((view _w).fromList) (xform_)
         preTransform = fmap fromList xform_
-        -- preTransform = --(identity::M44 Double) !!* 0.5 -- TODO: replace with reading xform_ transform component from offset above
-        --   V4
-        --   (V4 0.5 0 0 0)
-        --   (V4 0 1.5 0 0)
-        --   (V4 0 0 0.5 0)
-        --   offset
-          --((\(V3 x y z) -> V4 x y z 1) offset)
-          --(V4 1 0 0 0)
-    --_ <- DT.trace ("offset :" ++ show offset) $ return ()
     ds <- mapM initVAO args
     
     let objects =
@@ -296,23 +278,19 @@ updateGame game =
 solve :: Object -> SF () Object
 solve obj =
   proc () -> do
-    --obj <- solver (Rotate (pv0) (V3 0 0 1000)) obj -< ()
-    --let obj = undefined
-    --let mtxs0 = _transforms obj
-    mtxs <- (parB . fmap (\mtx -> spin (V3 0 0 0) (V3 0 0 0) mtx)) (_transforms obj) -< ()
+-- TODO: read pivot from the object preTransform
+    mtxs <- (parB . fmap (\mtx -> spin (V3 0 0 0) (V3 0 0 1000) mtx)) (_transforms obj) -< ()
     --obj' <- mapM (\pv0' -> solver (Rotate (pv0') (V3 0 0 1000)) obj) pv0 -< ()
     returnA -< obj { _transforms = mtxs }
       -- where
-      --   --pv0 = V3 0.5 0 0--view (Obj.transform . _w . _xyz) obj
-      --   --pv0 = view (Obj.transform . _w . _xyz) obj -- TODO: there multiple "pivots" due to multiple M44 (transforms)
       --   pv0 = toListOf (Obj.transform . traverse . _w . _xyz) obj
 
 spin :: V3 Double -> V3 Double -> M44 Double -> SF () (M44 Double)
 spin pv0 ypr0 mtx0 =
   proc () -> do
     ypr' <- ((V3 0 0 0) ^+^) ^<< integral -< ypr0
-    let mtx = -- undefined :: M44 Double
-          mkTransformationMat             -- mkTransformationMat
+    let mtx =
+          mkTransformationMat
             rot
             tr
             where
@@ -321,13 +299,11 @@ spin pv0 ypr0 mtx0 =
                 !*! fromQuaternion (axisAngle (view _x (view _m33 mtx0)) (view _x ypr')) -- yaw
                 !*! fromQuaternion (axisAngle (view _y (view _m33 mtx0)) (view _y ypr')) -- pitch
                 !*! fromQuaternion (axisAngle (view _z (view _m33 mtx0)) (view _z ypr')) -- roll
-              --tr  = DT.trace ("view translation mtx0: " ++ show (view (_w._xyz) mtx0)) $ view (_w._xyz) mtx0
-              --tr  = V3 0.777 0 0
               tr  = view (_w._xyz) mtx0
 
     returnA -< mtx
      
-updateObjects :: [Object] -> SF () [Object] --[Object] --SF [()] [Object]
+updateObjects :: [Object] -> SF () [Object]
 updateObjects = parB . fmap solve
 
 updateCamera :: Camera -> SF AppInput Camera
