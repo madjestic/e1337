@@ -1,0 +1,472 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE OverloadedStrings, Arrows #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+
+module Main where 
+
+import Control.Concurrent
+import Control.Arrow.List.Class  --(arrL)
+import Control.Lens       hiding (transform, indexed, ids)
+import Data.Text                 (pack)
+import Foreign.C
+import FRP.Yampa          hiding (identity)
+import FRP.Yampa.Switches
+import Data.Functor              (($>))
+
+import SDL                hiding ( Point
+                                 , M44
+                                 , M33
+                                 , Event
+                                 , Mouse
+                                 , RenderDrivers
+                                 , (^+^)
+                                 , (*^)
+                                 , _xyz)
+
+import Graphics.Rendering.OpenGL (PrimitiveMode(..))
+
+import System.Environment       (getArgs)
+import Linear.Matrix
+import Linear.V4
+import Unsafe.Coerce
+import Data.Vector              (slice)
+       
+import Camera         as Cam
+import Game
+import Project 
+import Project.Parser
+import Keyboard
+import Object         as Obj
+import Controllable  
+import PGeo
+import VGeo
+import Input 
+import Rendering      as R
+import Material
+import Solvable
+
+import Debug.Trace    as DT
+
+-- --        d8888888b    8888888888888b     d888       d8888888888888888888888888 
+-- --       d888888888b   888  888  8888b   d8888      d88888    888    888        
+-- --      d88P88888888b  888  888  88888b.d88888     d88P888    888    888        
+-- --     d88P 888888Y88b 888  888  888Y88888P888    d88P 888    888    8888888    
+-- --    d88P  888888 Y88b888  888  888 Y888P 888   d88P  888    888    888        
+-- --   d88P   888888  Y88888  888  888  Y8P  888  d88P   888    888    888        
+-- --  d8888888888888   Y8888  888  888   "   888 d8888888888    888    888        
+-- -- d88P     888888    Y8888888888888       888d88P     888    888    8888888888 
+
+-- -- < Animate > ------------------------------------------------------------
+type WinInput = Event SDL.EventPayload
+type WinOutput = (Game, Bool)
+
+animate :: SDL.Window
+        -> SF WinInput WinOutput  -- ^ signal function to animate
+        -> IO ()
+animate window sf =
+  do
+    reactimate (return NoEvent)
+               senseInput
+               renderOutput
+               sf
+    closeWindow window
+    
+      where
+        senseInput _ =
+          do
+            lastInteraction <- newMVar =<< SDL.time
+            currentTime <- SDL.time                          
+            dt <- (currentTime -) <$> swapMVar lastInteraction currentTime
+            mEvent <- SDL.pollEvent                          
+            return (dt, Event . SDL.eventPayload <$> mEvent) 
+
+        renderOutput _ (game, shouldExit) =
+          do
+            R.render
+              R.OpenGL
+              (BackendOptions { primitiveMode = Triangles})
+              --(BackendOptions { primitiveMode = Points})
+              window
+              game
+            --R.render R.OpenGL window game
+            return shouldExit
+
+
+-- --  .d8888b.88888888888    d8888888888888888888888888888b     d888       d8888 .d8888b. 888    8888888888888b    8888888888888 
+-- -- d88P  Y88b   888       d88888    888    888       8888b   d8888      d88888d88P  Y88b888    888  888  8888b   888888        
+-- -- Y88b.        888      d88P888    888    888       88888b.d88888     d88P888888    888888    888  888  88888b  888888        
+-- --  "Y888b.     888     d88P 888    888    8888888   888Y88888P888    d88P 888888       8888888888  888  888Y88b 8888888888    
+-- --     "Y88b.   888    d88P  888    888    888       888 Y888P 888   d88P  888888       888    888  888  888 Y88b888888        
+-- --       "888   888   d88P   888    888    888       888  Y8P  888  d88P   888888    888888    888  888  888  Y88888888        
+-- -- Y88b  d88P   888  d8888888888    888    888       888   "   888 d8888888888Y88b  d88P888    888  888  888   Y8888888        
+-- --  "Y8888P"    888 d88P     888    888    8888888888888       888d88P     888 "Y8888P" 888    8888888888888    Y8888888888888 
+
+-- -- < Init Game > ----------------------------------------------------------
+
+(<$.>) :: (a -> b) -> [a] -> [b]
+(<$.>) = map
+
+(<*.>) :: [a -> b] -> [a] -> [b]
+(<*.>) = zipWith ($)
+
+fromVGeo :: VGeo -> IO Object
+fromVGeo (VGeo idxs st vaos matPaths xform) = 
+  do
+    mats <- mapM readMaterial matPaths -- (ms vgeo)
+    let
+      args         = (\idx' st' vao' mat' ->  (idx', st', vao', mat')) <$.> idxs <*.> st <*.> vaos <*.> mats
+      offset = view _w (fromList (xform!!0) :: M44 Double) -- xform!!0 - at conversion stage, there can be only a single element in a list of transforms, therefore I don't want to overcomplicate it at the moment and keep it adhoc.
+
+    ds   <- mapM initVAO args
+    
+    let object =
+          defaultObj
+          { Obj._descriptors = ds
+          , Obj._materials   = mats
+          --, Obj._transforms   = preTransform
+          --, Obj._pivot       = offset
+          , Obj._solvers     =
+            [(Rotate (view _xyz offset) (V3 0 0 1000))]
+          }
+
+    return object
+
+pCloud :: PGeo
+pCloud =
+  PGeo
+  {
+    ids   = [take (length ps') [0..]]
+  , as    = take (length ps') $ repeat (1.0)
+  , cs    = take (length ps') $ repeat (1.0, 0.0, 0.0) :: [Vec3]
+  , ns    = take (length ps') $ repeat (0.0, 0.0, 1.0) :: [Vec3]
+  , uvws  = ps'
+  , ps    = ps'
+  , mats  = ["mat/test/test"]
+  , xform = [toList (identity :: M44 Double)]
+  }
+  where
+    ps' = [(x,y,0.0) | x <- [0.0, 0.1 .. 1.0], y <- [0.0, 0.1 .. 1.0]] :: [Vec3]
+
+loadObjects :: Project -> IO [Object]
+loadObjects project = 
+  do
+    -- _ <- DT.trace ("project :" ++ show project) $ return ()
+    vgeos <- mapM loadModels $ toListOf (models . traverse . path) project
+    -- _ <- DT.trace ("vgeos :" ++ show vgeos) $ return ()
+    let vgeo =
+          foldr1 (\(VGeo idxs st vaos matPaths xform)(VGeo idxs' st' vaos' matPaths' xform')
+                  -> (VGeo
+                      (concat [idxs,idxs'])
+                      (concat [st, st'])
+                      (concat [vaos, vaos'])
+                      (concat [matPaths, matPaths'])
+                      (xform ++ xform')
+                     )) vgeos
+    -- _ <- DT.trace ("vgeo :" ++ show vgeo) $ return ()
+    -- mats  <- mapM readMaterial ( DT.trace ("ms vgeo" ++ show (ms vgeo)) $ ms vgeo)
+    mats  <- mapM readMaterial $ ms vgeo
+    let (VGeo idxs_ st_ vaos_ matPaths_ xform_) = vgeo
+        args         = (\idx' st' vao' mat' ->  (idx', st', vao', mat')) <$.> idxs_ <*.> st_ <*.> vaos_ <*.> mats
+        offset = fmap ((view _w).fromList) (xform_)
+        preTransform = fmap fromList xform_
+    ds <- mapM initVAO args
+    
+    let objects =
+          fmap
+          ((\ _ ->
+              defaultObj
+              { Obj._descriptors = ds
+              , Obj._materials   = mats
+              , Obj._transforms  = preTransform
+              -- , Obj._pivot       = view _xyz offset
+              -- , Obj._solvers     =
+              --   [(Rotate (view _xyz offset) (V3 0 0 1000))] -- TODO: a solver per ()transform) object
+              , Obj._solvers = fmap (\offset' -> (Rotate (view _xyz offset') (V3 0 0 1000))) offset
+              }
+           ) . _path)
+          (_models project) :: [Object]
+
+    return objects
+
+fromList :: [Float] -> M44 Double
+fromList xs' = V4 x y z w
+  where
+    x  = V4 (xs!!0 ) (xs!!1 ) (xs!!2 ) (xs!!3 ) 
+    y  = V4 (xs!!4 ) (xs!!5 ) (xs!!6 ) (xs!!7 ) 
+    z  = V4 (xs!!8 ) (xs!!9 ) (xs!!10) (xs!!11) 
+    w  = V4 (xs!!12) (xs!!13) (xs!!14) (xs!!15)
+    xs = fmap realToFrac xs' :: [Double]
+
+toList :: M44 Double -> [Float]
+toList (V4 (V4 x y z w) (V4 x1 y1 z1 w1) (V4 x2 y2 z2 w2) (V4 x3 y3 z3 w3))
+  = fmap unsafeCoerce
+    [ x ,y ,z ,w
+    , x1,y1,z1,w1
+    , x2,y2,z2,w2
+    , x3,y3,z3,w3 ] :: [Float]
+                                                                            
+loadModels :: String -> IO VGeo
+loadModels path =
+  do
+    (VGeo idxs st vaos matPaths xf) <- readVGeo path
+    return (VGeo idxs st vaos matPaths xf)
+
+initGame :: Project -> IO Game
+initGame project =
+  do
+    _ <- DT.trace ("initializing game resources...") $ return ()
+    objs  <- (loadObjects project)
+    --pc <- fromVGeo $ fromPGeo pCloud
+    --let objs = [pc]
+    let game =
+          Game
+          ( Options
+            name'
+            resX'
+            resY'
+          )
+          GamePlaying
+          objs
+          initCam
+    return game
+      where        
+        name' = Project.name  $ project
+        resX' = (unsafeCoerce $ Project.resx $ project) :: CInt
+        resY' = (unsafeCoerce $ Project.resy $ project) :: CInt
+
+-- < Game Logic > ---------------------------------------------------------
+
+mainGame :: Game -> SF AppInput Game
+mainGame game0 =
+  loopPre game0 $ 
+  proc (input, game) -> do
+    gs <- case _gStg game of
+            GameIntro   -> gameIntro   -< (input, game)
+            GamePlaying -> gamePlay game0 -< input
+    returnA -< (gs, gs)
+
+gameIntro :: SF (AppInput, Game) Game
+gameIntro =
+  switch sf cont        
+     where sf =
+             proc (input, game) -> do
+               introState <- returnA -< game
+               playState  <- returnA -< game { _gStg =  GamePlaying }
+               skipE      <- keyInput SDL.ScancodeSpace "Pressed" -< input
+               waitE      <- after loadDelay () -< ()
+               returnA    -< (introState, (skipE `lMerge` waitE) $> playState)
+           cont game  = 
+             proc input -> returnA -< game
+
+gamePlay :: Game -> SF AppInput Game
+gamePlay game =
+    switch sf (const (mainGame game))        
+     where sf =
+             proc input -> do
+               game'   <- updateGame game -< input
+               reset   <- keyInput SDL.ScancodeSpace "Pressed" -< input
+               returnA -< (game', reset)
+
+updateGame :: Game -> SF AppInput Game
+updateGame game = 
+  proc input -> do
+    cam  <- updateCamera  $ _camera  game -< input
+    objs <- updateObjects $ _objects game -< ()
+    returnA  -< game { _objects = objs
+                     , _camera  = cam }
+
+solve :: Object -> SF () Object
+solve obj =
+  proc () -> do
+-- TODO: read pivot from the object preTransform
+    mtxs <- (parB . fmap (\mtx -> spin (V3 0 0 0) (V3 0 0 1000) mtx)) (_transforms obj) -< ()
+    --obj' <- mapM (\pv0' -> solver (Rotate (pv0') (V3 0 0 1000)) obj) pv0 -< ()
+    returnA -< obj { _transforms = mtxs }
+      -- where
+      --   pv0 = toListOf (Obj.transform . traverse . _w . _xyz) obj
+
+spin :: V3 Double -> V3 Double -> M44 Double -> SF () (M44 Double)
+spin pv0 ypr0 mtx0 =
+  proc () -> do
+    ypr' <- ((V3 0 0 0) ^+^) ^<< integral -< ypr0
+    let mtx =
+          mkTransformationMat
+            rot
+            tr
+            where
+              rot =
+                (view _m33 mtx0)
+                !*! fromQuaternion (axisAngle (view _x (view _m33 mtx0)) (view _x ypr')) -- yaw
+                !*! fromQuaternion (axisAngle (view _y (view _m33 mtx0)) (view _y ypr')) -- pitch
+                !*! fromQuaternion (axisAngle (view _z (view _m33 mtx0)) (view _z ypr')) -- roll
+              tr  = view (_w._xyz) mtx0
+
+    returnA -< mtx
+     
+updateObjects :: [Object] -> SF () [Object]
+updateObjects = parB . fmap solve
+
+updateCamera :: Camera -> SF AppInput Camera
+updateCamera cam = 
+  proc input -> do
+    ctl <- updateController (Cam._controller $ cam) -< input
+    returnA -< Camera { Cam._controller = ctl }
+
+updateController :: Controllable -> SF AppInput Controllable
+updateController ctl0 =
+  -- | foldrWith mtx0 keys - for every keyInput apply a folding transform to mtx0
+  -- | in case of keypress event - updateController' the set of keys and call new fold ^
+  switch sf cont
+    where
+      sf = proc input -> do
+        ctl           <- updateController' ctl0  -< ctl0
+        mtx           <- returnA          -< Controllable._transform ctl
+        ypr           <- returnA          -< Controllable._ypr ctl
+        (kkeys, kevs) <- updateKeys  ctl0 -< input
+        (pos0, mev)   <- (mouseEventPos &&& mouseEvent) -< input
+
+        result <-
+          returnA -<
+          ( Controller (0,0) mtx ypr
+            ( Device
+              ( Keyboard kkeys (keyVecs (_keyboard (_device ctl))) )
+              ( Mouse Nothing Nothing pos0 [] ) ) )
+        returnA -< 
+          ( result
+          , catEvents (mev:kevs)
+            $> result) -- :: (Controllable, Event Controllable)
+      cont result = updateController result
+
+updateController' :: Controllable -> SF Controllable Controllable
+updateController' ctl0 =
+  iterFrom update1 ctl0
+  where
+    update1 :: Controllable -> Controllable -> DTime -> Controllable -> Controllable
+    update1 ctl0 ctl1 dt ctl2 = ctl
+      where
+        kvs = (keyVecs._keyboard._device $ ctl0)
+        mvs = [ -- mouse vectors
+                (V3 )]
+        pos0 = _pos._mouse._device $ ctl2
+
+        ctl = (Controller
+               (0,0)
+               mtx
+               ypr'
+               (Device
+                (Keyboard keys0 kvs)
+                (Mouse Nothing Nothing pos0 [])))
+          where
+            mtx0  = (Controllable._transform ctl2)
+            keys0 = (keys._keyboard._device $ ctl0)
+
+            ypr' :: V3 Double
+            ypr'   =
+              (99999 * ) $
+              ((V3 dt dt dt) * ) $
+              foldr (+) (V3 0 0 0) $
+              zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys0) <$>
+                            [ keyUp,  keyDown, keyLeft, keyRight, keyQ,  keyE ])
+                            [ pPitch, nPitch,  pYaw,    nYaw,     pRoll, nRoll ]
+              where
+                pPitch = (keyVecs._keyboard._device $ ctl0)!!6  -- positive  pitch
+                nPitch = (keyVecs._keyboard._device $ ctl0)!!7  -- negative  pitch
+                pYaw   = (keyVecs._keyboard._device $ ctl0)!!8  -- positive  yaw
+                nYaw   = (keyVecs._keyboard._device $ ctl0)!!9  -- negative  yaw
+                pRoll  = (keyVecs._keyboard._device $ ctl0)!!10 -- positive  roll
+                nRoll  = (keyVecs._keyboard._device $ ctl0)!!11 -- negative  roll
+            
+            mtx = 
+              mkTransformationMat
+              rot
+              tr
+              where
+                rot =
+                  (view _m33 mtx0)
+                  !*! fromQuaternion (axisAngle (view _x (view _m33 mtx0)) (view _x ypr')) -- yaw
+                  !*! fromQuaternion (axisAngle (view _y (view _m33 mtx0)) (view _y ypr')) -- pitch
+                  !*! fromQuaternion (axisAngle (view _z (view _m33 mtx0)) (view _z ypr')) -- roll
+
+                tr  =
+                  foldr (+) (view translation mtx0) $
+                  fmap (0.1 *) $
+                  fmap (transpose (rot) !*) $
+                  zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys0) <$>
+                                [keyW, keyS, keyA, keyD, keyZ, keyX])
+                                [fVel, bVel, lVel, rVel, uVel, dVel]
+
+                  where fVel   = (keyVecs._keyboard._device $ ctl0)!!0  -- forwards  velocity
+                        bVel   = (keyVecs._keyboard._device $ ctl0)!!1  -- backwards velocity
+                        lVel   = (keyVecs._keyboard._device $ ctl0)!!2  -- left      velocity
+                        rVel   = (keyVecs._keyboard._device $ ctl0)!!3  -- right     velocity
+                        uVel   = (keyVecs._keyboard._device $ ctl0)!!4  -- right     velocity
+                        dVel   = (keyVecs._keyboard._device $ ctl0)!!5  -- right     velocity
+
+updateKeys :: Controllable -> SF AppInput (Keys, [Event ()])
+updateKeys ctl0 = 
+  proc input -> do
+    let keys0 = keys._keyboard._device $ ctl0
+    
+    (keyW_, keyWe) <- keyEvents SDL.ScancodeW keyW ctl0 -< input
+    (keyS_, keySe) <- keyEvents SDL.ScancodeS keyS ctl0 -< input
+    (keyA_, keyAe) <- keyEvents SDL.ScancodeA keyA ctl0 -< input
+    (keyD_, keyDe) <- keyEvents SDL.ScancodeD keyD ctl0 -< input
+
+    (keyQ_, keyQe) <- keyEvents SDL.ScancodeQ keyQ ctl0 -< input
+    (keyE_, keyEe) <- keyEvents SDL.ScancodeE keyE ctl0 -< input
+    (keyZ_, keyZe) <- keyEvents SDL.ScancodeZ keyZ ctl0 -< input
+    (keyX_, keyXe) <- keyEvents SDL.ScancodeX keyX ctl0 -< input
+  
+    (keyUp_,    keyUpE)    <- keyEvents SDL.ScancodeUp    keyUp    ctl0 -< input
+    (keyDown_,  keyDownE)  <- keyEvents SDL.ScancodeDown  keyDown  ctl0 -< input
+    (keyLeft_,  keyLeftE)  <- keyEvents SDL.ScancodeLeft  keyLeft  ctl0 -< input
+    (keyRight_, keyRightE) <- keyEvents SDL.ScancodeRight keyRight ctl0 -< input
+
+    let events = [      keyWe, keySe, keyAe, keyDe, keyQe, keyEe, keyZe, keyXe, keyUpE, keyDownE, keyLeftE, keyRightE  ]
+        keys   = ( Keys keyW_  keyS_  keyA_  keyD_  keyQ_  keyE_  keyZ_  keyX_  keyUp_  keyDown_  keyLeft_  keyRight_ )
+
+    returnA -< (keys, events)
+
+keyEvents :: SDL.Scancode -> (Keys -> Bool) -> Controllable -> SF AppInput (Bool, Event ())
+keyEvents code keyFunc ctl = 
+  proc input -> do
+    keyPressed     <- keyInput code  "Pressed"  -< input
+    keyReleased    <- keyInput code  "Released" -< input
+    let keys0  = keys._keyboard._device $ ctl
+        result = keyEvent (keyFunc keys0) keyPressed keyReleased
+        event  = lMerge keyPressed keyReleased
+    returnA -< (result, event)
+
+keyEvent :: Bool -> Event () -> Event () -> Bool
+keyEvent state pressed released
+  | isEvent pressed  = True
+  | isEvent released = False
+  | otherwise = state
+
+handleExit :: SF AppInput Bool
+handleExit = quitEvent >>^ isEvent
+        
+-- -- < Global Constants > --------------------------------------------------------
+mBlur     = 0.025 :: Float
+loadDelay = 2.0  :: Double
+
+-- < Main Function > -----------------------------------------------------------
+main :: IO ()
+main = do
+  args <- getArgs
+  proj <- Project.Parser.parse (unsafeCoerce (args!!0) :: FilePath)
+
+  let title = pack $ Project.name $ proj
+      resX  = (unsafeCoerce $ Project.resx $ proj) :: CInt
+      resY  = (unsafeCoerce $ Project.resy $ proj) :: CInt
+
+  window    <- openWindow
+               title
+               (resX, resY)
+
+  game <- initGame proj
+  
+  animate
+    window
+    (parseWinInput >>> (mainGame game &&& handleExit))
+  return ()

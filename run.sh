@@ -50,6 +50,12 @@
 
 # 2 Spheres with Normal Shader
 # 2 spheres with a normal shader.
-mvlink ./app/Main.hs /home/madjestic/Projects/Haskell/e1337/app/Main.hs.2objects
+# mvlink ./app/Main.hs /home/madjestic/Projects/Haskell/e1337/app/Main.hs.2objects
+# cabal new-build
+# cabal new-run e1337 ./projects/2objects
+
+# Spinning Objects
+# a spinning box.
+mvlink ./app/Main.hs /home/madjestic/Projects/Haskell/e1337/app/Main.hs.spinning_objects
 cabal new-build
-cabal new-run e1337 ./projects/2objects
+cabal new-run e1337 ./projects/spinning_objects
