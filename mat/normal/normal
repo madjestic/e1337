@@ -1,0 +1,10 @@
+{
+  "Material": {
+    "name":"normal",
+    "Shaders": {
+      "vertex":   "mat/normal/Normal/shader.vert",
+      "fragment": "mat/normal/Normal/shader.frag"
+    },
+    "textures": [""]
+  }
+}

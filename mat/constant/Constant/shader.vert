@@ -24,28 +24,19 @@ void main()
 			, camera[2]
 			, vec4(0,0,0,1));
 
-	mat3 viewM33 =
-		mat3( camera[0].xyz
-			, camera[1].xyz
-			, camera[2].xyz );
-
-	mat3 perspM33 =
-		mat3 ( persp[0].xyz
-			 , persp[1].xyz
-			 , persp[2].xyz );
-
-	mat3 xformM33 =
-		mat3 ( transform[0].xyz
-			 , transform[1].xyz
-			 , transform[2].xyz );	
-	
 	A  = alpha;
-	N  = perspM33 * viewM33 * (inverse(xformM33)*normal);
+	N  = normal;
 	Cd = color;
 	uv = uvCoords;
+
 	vec4 position = vec4(vPosition,1);
 	vec4 offset = transform[3];
-	position    = position - offset;
-	gl_Position = persp * viewM44 * (inverse(transform)*position + camera[3]);
-	gl_Position = gl_Position + offset;
+	//gl_Position = persp * viewM44 * ((vec4(vPosition,0)*transform + offset) + camera[3]);
+	gl_Position = persp * viewM44 * ((position*transform + offset) + camera[3]);
+	
+	// vec4 position = vec4(vPosition,1);
+	// vec4 offset = transform[3];
+	// position    = position - offset;
+	// gl_Position = persp * viewM44 * (inverse(transform)*position + camera[3]);
+	// gl_Position = gl_Position + offset;
 }

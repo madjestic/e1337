@@ -1,0 +1,10 @@
+{
+  "Material": {
+    "name":"mandelbrot",
+    "Shaders": {
+      "vertex":   "mat/mandelbrot/Mandelbrot/shader.vert",
+      "fragment": "mat/mandelbrot/Mandelbrot/shader.frag"
+    },
+    "textures": [""]
+  }
+}
