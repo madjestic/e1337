@@ -9,6 +9,8 @@ It supports loading and rendering simple projects files, describing a model, a m
 * Applies a solver-controller per object.
 * Has a camera that supports user-input.
 * Renders a scene of objects.
+* Supports transformation stack per object.
+* Uses Houdini as a game-editor.
 
 [a youtube demo](https://www.youtube.com/watch?v=Oqiyv4zhxWE)
 
