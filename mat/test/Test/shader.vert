@@ -44,8 +44,8 @@ void main()
 	Cd = color;
 	uv = uvCoords;
 	vec4 position = vec4(vPosition,1);
-	vec4 offset = transform[3];
-	position    = position - offset;
-	gl_Position = persp * viewM44 * (inverse(transform)*position + camera[3]);
-	gl_Position = gl_Position + offset;
+
+	position    = transform * position;
+	gl_Position = persp * viewM44 * (position + (camera)[3]);
+
 }

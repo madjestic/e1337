@@ -279,7 +279,7 @@ solve :: Object -> SF () Object
 solve obj =
   proc () -> do
 -- TODO: read pivot from the object preTransform
-    mtxs <- (parB . fmap (\mtx -> spin (V3 0 0 0) (V3 0 0 0*1000) mtx)) (_transforms obj) -< ()
+    mtxs <- (parB . fmap (\mtx -> spin (V3 0 0 0) (V3 0 0 5*1000) mtx)) (_transforms obj) -< ()
     --obj' <- mapM (\pv0' -> solver (Rotate (pv0') (V3 0 0 1000)) obj) pv0 -< ()
     returnA -< obj { _transforms = mtxs }
       -- where
