@@ -1,0 +1,10 @@
+#!/bin/sh
+
+
+# Spinning Objects
+# a spinning box.
+mvlink ./app/Main.hs /home/madjestic/Projects/Haskell/e1337/app/Main.hs.spinning_objects
+cabal new-build
+cabal new-run +RTS -sstderr -RTS e1337 ./projects/spinning_objects
+
+# cabal new-run +RTS -sstderr -RTS
