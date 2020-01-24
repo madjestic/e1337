@@ -13,16 +13,17 @@ build-type:    Simple
 cabal-version: >=1.10
 
 extra-source-files:
-                ChangeLog.md
-                README.md
+               ChangeLog.md
+               README.md
+
 
 source-repository head
-  type: git
-  location: https://github.com/madjestic/e1337
+  type:        git
+  location:    https://github.com/madjestic/e1337
 
 library
   hs-source-dirs:
-                 src
+                src
   build-depends:
                 base       >=4.7 && <5
               , aeson      >= 1.3.1.1
@@ -72,7 +73,9 @@ executable e1337
   hs-source-dirs:
                  app
                , src
-  ghc-options:  -threaded -rtsopts -with-rtsopts=-N -eventlog -O2 -prof -fprof-auto -fprof-cafs -fforce-recomp "-with-rtsopts=-N -p -s -h -i0.1"
+  ghc-options:  -O2 -threaded -fprof-auto -fprof-cafs "-with-rtsopts=-N -p -s -h -i0.1"
+  --ghc-options:  -threaded -prof
+  --ghc-options:  -prof
   build-depends:
                 e1337
               , base       >=4.7 && <5

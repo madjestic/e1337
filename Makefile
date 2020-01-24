@@ -11,9 +11,8 @@ run:
 build:
 	cabal new-build
 
-# prof:
-# 	make clean
-# 	#ghc ./Main.hs -threaded -prof -rtsopts -fprof-auto -fprof-cafs -fforce-recomp "-with-rtsopts=-N -p -s -h -i0.1"
-# 	cabalnew-build ./Main.hs -threaded -prof -rtsopts -fprof-auto -fprof-cafs -fforce-recomp "-with-rtsopts=-N -p -s -h -i0.1"
-# 	./Main +RTS -sstderr -RTS
+prof:
+	make clean
+	ghc ./app/Main.hs -threaded -prof -rtsopts -fprof-auto -fprof-cafs -fforce-recomp "-with-rtsopts=-N -p -s -h -i0.1"
+	#./Main +RTS -sstderr -RTS
 
