@@ -23,7 +23,9 @@ import SDL                hiding ( Point
                                  , (*^)
                                  , _xyz)
 
-import Graphics.Rendering.OpenGL (PrimitiveMode(..))
+import Graphics.Rendering.OpenGL ( PrimitiveMode(..)
+                                 , ShaderType(..) )
+
 
 import System.Environment       (getArgs)
 import Linear.Matrix
@@ -31,6 +33,7 @@ import Linear.V4
 import Unsafe.Coerce
 import Data.Vector              (slice)
        
+import LoadShaders
 import Camera         as Cam
 import Game
 import Project 
@@ -170,6 +173,14 @@ loadObjects project =
         offset = fmap ((view _w).fromList) (xform_)
         preTransform = fmap fromList xform_
     ds <- mapM initVAO args
+
+    program0 <- loadShaders
+      [ ShaderInfo VertexShader   (FileSource (_vertShader (mats!!0) ))
+      , ShaderInfo FragmentShader (FileSource (_fragShader (mats!!0) )) ]
+
+    program1 <- loadShaders
+      [ ShaderInfo VertexShader   (FileSource (_vertShader (mats!!1) ))
+      , ShaderInfo FragmentShader (FileSource (_fragShader (mats!!1) )) ]      
     
     let objects =
           fmap
@@ -177,6 +188,7 @@ loadObjects project =
               defaultObj
               { Obj._descriptors = ds
               , Obj._materials   = mats
+              , Obj._programs    = [program0, program1] --undefined
               , Obj._transforms  = preTransform
               -- , Obj._pivot       = view _xyz offset
               -- , Obj._solvers     =

@@ -96,7 +96,8 @@ closeWindow window =
 data Uniforms
   =  Uniforms
      {
-       u_mats  :: Material
+       u_mats  :: Material 
+     , u_prog  :: Program  -- TODO : finish (shader program) assignment at the load object stage, rather than re-initializing it every frame.
      , u_mouse :: (Double, Double)
      , u_time  :: Float
      , u_res   :: (CInt, CInt)
@@ -109,6 +110,7 @@ data Drawable
   =  Drawable
      { uniforms   :: Uniforms
      , descriptor :: Descriptor
+     , program    :: Program
      } deriving Show
 
 (<$.>) :: (a -> b) -> [a] -> [b]
@@ -122,7 +124,8 @@ toDrawables game time = drs
   where
     ds       = concat $ toListOf (objects . traverse . descriptors) game :: [Descriptor]
     n        = length ds :: Int
-    u_mats   = concat $ toListOf (objects . traverse . materials) game :: [Material]
+    u_mats   = concat $ toListOf (objects . traverse . materials) game   :: [Material]
+    u_prog   = concat $ toListOf (objects . traverse . programs) game    :: [Program]
     u_mouse  = replicate n $ unsafeCoerce $ view (camera . controller . device . mouse . pos) game :: [(Double, Double)]
     u_time   = replicate n $ time      :: [Float]
     resX     = fromEnum $ view (options . resx) game :: Int
@@ -133,10 +136,10 @@ toDrawables game time = drs
     --u_xform  = undefined :: [(M44 Double)] -- concat $ replicate n $ toListOf (objects . traverse . Object.transform) game :: [(M44 Double)]  -- :: [GLmatrix GLfloat]
     u_xform  = concat $ toListOf (objects . traverse . Object.transform) game :: [(M44 Double)]  -- :: [GLmatrix GLfloat]
     
-    drs      =
-      (\  u_mats' u_mouse' u_time' u_res' u_cam' u_xform' ds'
-        -> (Drawable (Uniforms u_mats' u_mouse' u_time' u_res' u_cam' u_xform') ds')) 
-      <$.> u_mats <*.> u_mouse <*.> u_time <*.> u_res <*.> u_cam <*.> u_xform <*.> ds
+    drs      = 
+      (\  u_mats' u_prog' u_mouse' u_time' u_res' u_cam' u_xform' ds' ps'
+        -> (Drawable (Uniforms u_mats' u_prog' u_mouse' u_time' u_res' u_cam' u_xform') ds' ps')) 
+      <$.> u_mats <*.> u_prog <*.> u_mouse <*.> u_time <*.> u_res <*.> u_cam <*.> u_xform <*.> ds <*.> u_prog
 
 render :: Backend -> BackendOptions -> SDL.Window -> Game -> IO ()
 render Rendering.OpenGL opts window game =
@@ -156,8 +159,9 @@ render Vulkan _ _ _ = undefined
 
 draw :: BackendOptions -> SDL.Window -> Drawable -> IO ()
 draw opts window (Drawable
-              unis
-              (Descriptor vao' numIndices')) =
+                   unis
+                   (Descriptor vao' numIndices')
+                   prog) =
   do
     initUniforms unis
     
@@ -171,15 +175,17 @@ draw opts window (Drawable
     depthFunc $= Just Less
 
 initUniforms :: Uniforms -> IO ()
-initUniforms (Uniforms u_mats' u_mouse' u_time' u_res' u_cam' u_xform') = 
+initUniforms (Uniforms u_mat' u_prog' u_mouse' u_time' u_res' u_cam' u_xform') = 
   do
     -- | Shaders
-    -- _ <- DT.trace ("vertShader: " ++ show (_vertShader u_mats')) $ return ()
-    -- _ <- DT.trace ("vertShader: " ++ show (_fragShader u_mats')) $ return ()
+    -- _ <- DT.trace ("vertShader: " ++ show (_vertShader u_mat')) $ return ()
+    -- _ <- DT.trace ("vertShader: " ++ show (_fragShader u_mat')) $ return ()
     
-    program <- loadShaders
-      [ ShaderInfo VertexShader   (FileSource (_vertShader u_mats' ))
-      , ShaderInfo FragmentShader (FileSource (_fragShader u_mats' )) ]
+    -- program <- loadShaders
+    --   [ ShaderInfo VertexShader   (FileSource (_vertShader u_mat' ))
+    --   , ShaderInfo FragmentShader (FileSource (_fragShader u_mat' )) ]
+    -- currentProgram $= Just program
+    let program = u_prog'
     currentProgram $= Just program
 
     -- | Set Uniforms
@@ -187,11 +193,9 @@ initUniforms (Uniforms u_mats' u_mouse' u_time' u_res' u_cam' u_xform') =
     location0         <- get (uniformLocation program "u_mouse'")
     uniform location0 $= u_mouse
 
-    let resX = fromIntegral $ fromEnum $ fst u_res' :: Float
-        resY = fromIntegral $ fromEnum $ snd u_res' :: Float
-        
-    let u_res         = Vector2 resX resY :: Vector2 GLfloat
-           
+    let resX          = fromIntegral $ fromEnum $ fst u_res' :: Float
+        resY          = fromIntegral $ fromEnum $ snd u_res' :: Float
+        u_res         = Vector2 resX resY :: Vector2 GLfloat
     location1         <- get (uniformLocation program "u_resolution")
     uniform location1 $= u_res
 

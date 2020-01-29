@@ -10,6 +10,7 @@ module Object
   , defaultObj
 --  , scalar
   , materials
+  , programs
   , descriptors
   , transform
   , solver
@@ -23,7 +24,9 @@ import Linear.Quaternion
 import Control.Lens hiding (transform)
 import FRP.Yampa    hiding (identity)
 import FRP.Yampa.Switches
+import Graphics.Rendering.OpenGL (Program (..))
 
+import LoadShaders
 import Keyboard
 import Material
 import Descriptor
@@ -39,8 +42,8 @@ data Object
      { 
        _descriptors :: [Descriptor] -- | Material is present in Descriptor, technically, but we use it also for draw-call separation per material
      , _materials   :: [Material]   -- | hence [Material] is present on the Object level too.
-     , _transforms   :: [M44 Double]
-     --, _pivot       :: V3 Double -- TODO: pivot is redundant, read it from : view translation _transforms
+     , _programs    :: [Program]    -- 
+     , _transforms  :: [M44 Double]
      , _velocity    :: V3 Double
      , _avelocity   :: V3 Double    -- | Angular velocity
      , _mass        :: Double
@@ -54,6 +57,9 @@ descriptors = lens _descriptors (\object newDescriptors -> Object { _descriptors
 
 materials :: Lens' Object [Material]
 materials = lens _materials (\object newMaterial -> Object { _materials = newMaterial })
+
+programs :: Lens' Object [Program]
+programs = lens _programs (\object newProgram -> Object { _programs = newProgram })
 
 transform :: Lens' Object [M44 Double]
 transform = lens _transforms (\object newTransforms -> Object { _transforms = newTransforms })
@@ -97,6 +103,7 @@ defaultObj =
   Object.Object
     []
     [defaultMat]
+    []
     [(identity::M44 Double)]
     (V3 0 0 0)
     (V3 0 0 0)
