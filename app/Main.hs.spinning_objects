@@ -24,7 +24,8 @@ import SDL                hiding ( Point
                                  , _xyz)
 
 import Graphics.Rendering.OpenGL ( PrimitiveMode(..)
-                                 , ShaderType(..) )
+                                 , ShaderType(..)
+                                 , Program(..))
 
 
 import System.Environment       (getArgs)
@@ -174,13 +175,17 @@ loadObjects project =
         preTransform = fmap fromList xform_
     ds <- mapM initVAO args
 
-    program0 <- loadShaders
-      [ ShaderInfo VertexShader   (FileSource (_vertShader (mats!!0) ))
-      , ShaderInfo FragmentShader (FileSource (_fragShader (mats!!0) )) ]
+    -- program0 <- loadShaders
+    --   [ ShaderInfo VertexShader   (FileSource (_vertShader (mats!!0) ))
+    --   , ShaderInfo FragmentShader (FileSource (_fragShader (mats!!0) )) ]
 
-    program1 <- loadShaders
-      [ ShaderInfo VertexShader   (FileSource (_vertShader (mats!!1) ))
-      , ShaderInfo FragmentShader (FileSource (_fragShader (mats!!1) )) ]      
+    -- program1 <- loadShaders
+    --   [ ShaderInfo VertexShader   (FileSource (_vertShader (mats!!1) ))
+    --   , ShaderInfo FragmentShader (FileSource (_fragShader (mats!!1) )) ]
+
+    progs <- mapM (\mat -> loadShaders
+                           [ ShaderInfo VertexShader   (FileSource (_vertShader (mat) ))
+                           , ShaderInfo FragmentShader (FileSource (_fragShader (mat) )) ]) mats
     
     let objects =
           fmap
@@ -188,7 +193,7 @@ loadObjects project =
               defaultObj
               { Obj._descriptors = ds
               , Obj._materials   = mats
-              , Obj._programs    = [program0, program1] --undefined
+              , Obj._programs    = progs --[program0, program1] --undefined
               , Obj._transforms  = preTransform
               -- , Obj._pivot       = view _xyz offset
               -- , Obj._solvers     =
@@ -199,6 +204,16 @@ loadObjects project =
           (_models project) :: [Object]
 
     return objects
+
+-- shaderProgram :: Material -> IO Program
+-- shaderProgram mat0 =
+--   do
+--     program <- loadShaders
+--       [ ShaderInfo VertexShader   (FileSource (_vertShader (mat0) ))
+--       , ShaderInfo FragmentShader (FileSource (_fragShader (mat0) )) ]
+               
+--     return program
+    
 
 fromList :: [Float] -> M44 Double
 fromList xs' = V4 x y z w
