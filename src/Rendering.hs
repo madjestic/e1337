@@ -279,11 +279,11 @@ initVAO (idx', st', vs', matPath) =
         vertexAttribPointer (AttribLocation 4) $= (ToFloat, VertexArrayDescriptor 3 Float stride ((plusPtr nullPtr . fromIntegral) (10 * floatSize)))
         vertexAttribArray   (AttribLocation 4) $= Enabled
         
-        -- | Assign Textures
-        activeTexture            $= TextureUnit 0
-        texture Texture2D        $= Enabled
-        tx0 <- loadTex "textures/4096_earth_clouds.jpg"
-        textureBinding Texture2D $= Just tx0
+        -- -- | Assign Textures
+        -- activeTexture            $= TextureUnit 0
+        -- texture Texture2D        $= Enabled
+        -- tx0 <- loadTex "textures/4096_earth_clouds.jpg"
+        -- textureBinding Texture2D $= Just tx0
 
     return $ Descriptor vao (fromIntegral numIndices)
 
