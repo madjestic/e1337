@@ -100,6 +100,11 @@ $ ./convertGeo.sh model_file_name
 $ cabal new-repl exe:e1337
 ```
 
+## Profiling
+```bash
+$ hp2ps -e8in -c ./e1337.hp && gv ./e1337.ps
+```
+
 - running:
 ```bash
 $ gpu ./run.sh

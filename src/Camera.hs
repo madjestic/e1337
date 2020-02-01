@@ -5,19 +5,31 @@ module Camera
   ) where
 
 import Control.Lens
-import Linear.Matrix             (M44, M33, identity)
-import Linear                    (V3(..))
+import Linear.Matrix             (M44, M33, identity, transpose)
+import Linear                    (V3(..), V4 (..))
 import Graphics.Rendering.OpenGL (GLmatrix, GLfloat)
 
 import Controllable
 import Keyboard
 
+data Camera =
+     Camera
+     {
+       _controller :: Controllable
+     } deriving Show
+
 initCam
   = Camera
   ( Controller
     (0,0)
-    (identity :: M44 Double)
-    (V3 0 0 0)
+    -- (transpose (identity :: M44 Double))
+    (
+      (V4
+        (V4 1 0 0 0)
+        (V4 0 1 0 0)
+        (V4 0 0 1 (-1.5))
+        (V4 0 0 0 1)))
+    (V3 0 0 0) -- rotation
     (Device (Keyboard keys0 kvs0) (Mouse Nothing Nothing (0,0) mvs0 )))
   where
     mvs0   = [] --undefined
@@ -37,13 +49,6 @@ initCam
     nYaw   = V3 ( 0  )( 0.1)( 0  )   -- negative  yaw
     pRoll  = V3 ( 0  )(  0 )(-0.1)   -- positive  roll
     nRoll  = V3 ( 0  )(  0 )( 0.1)   -- negative  roll
-
-
-data Camera =
-     Camera
-     {
-       _controller :: Controllable
-     } deriving Show
 
 controller :: Lens' Camera Controllable
 controller = lens _controller (\camera newController -> Camera { _controller = newController })

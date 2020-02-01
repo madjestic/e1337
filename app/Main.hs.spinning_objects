@@ -236,7 +236,7 @@ initGame project =
           )
           GamePlaying
           objs
-          initCam
+         initCam
     return game
       where        
         name' = Project.name  $ project
@@ -269,18 +269,21 @@ gameIntro =
 
 gamePlay :: Game -> SF AppInput Game
 gamePlay game =
-    switch sf (const (mainGame game))        
+  switch sf cont --(const (mainGame game))        
      where sf =
              proc input -> do
                game'   <- updateGame game -< input
                reset   <- keyInput SDL.ScancodeSpace "Pressed" -< input
-               returnA -< (game', reset)
+               returnA -< (game', reset $> game')
+           cont game' = mainGame game
 
 updateGame :: Game -> SF AppInput Game
 updateGame game = 
   proc input -> do
     cam  <- updateCamera  $ _camera  game -< input
+    -- let cam = _camera  game
     objs <- updateObjects $ _objects game -< ()
+    --let objs = _objects game
     returnA  -< game { _objects = objs
                      , _camera  = cam }
 
@@ -298,6 +301,7 @@ spin :: V3 Double -> V3 Double -> M44 Double -> SF () (M44 Double)
 spin pv0 ypr0 mtx0 =
   proc () -> do
     ypr' <- ((V3 0 0 0) ^+^) ^<< integral -< ypr0
+    --let ypr' = ypr0
     let mtx =
           mkTransformationMat
             rot
@@ -325,25 +329,26 @@ updateController :: Controllable -> SF AppInput Controllable
 updateController ctl0 =
   -- | foldrWith mtx0 keys - for every keyInput apply a folding transform to mtx0
   -- | in case of keypress event - updateController' the set of keys and call new fold ^
-  switch sf cont
+  dSwitch sf cont
     where
-      sf = proc input -> do
-        ctl           <- updateController' ctl0  -< ctl0
-        mtx           <- returnA          -< Controllable._transform ctl
-        ypr           <- returnA          -< Controllable._ypr ctl
-        (kkeys, kevs) <- updateKeys  ctl0 -< input
-        (pos0, mev)   <- (mouseEventPos &&& mouseEvent) -< input
-
-        result <-
-          returnA -<
-          ( Controller (0,0) mtx ypr
-            ( Device
-              ( Keyboard kkeys (keyVecs (_keyboard (_device ctl))) )
-              ( Mouse Nothing Nothing pos0 [] ) ) )
-        returnA -< 
-          ( result
-          , catEvents (mev:kevs)
-            $> result) -- :: (Controllable, Event Controllable)
+      sf =
+        proc input -> do
+          ctl           <- updateController' ctl0  -< ctl0
+          mtx           <- returnA          -< Controllable._transform ctl
+          ypr           <- returnA          -< Controllable._ypr ctl
+          (kkeys, kevs) <- updateKeys  ctl0 -< input
+          (pos0, mev)   <- (mouseEventPos &&& mouseEvent) -< input
+           
+          result <-
+            returnA -<
+            ( Controller (0,0) mtx ypr
+              ( Device
+                ( Keyboard kkeys (keyVecs (_keyboard (_device ctl))) )
+                ( Mouse Nothing Nothing pos0 [] ) ) )
+          returnA -< 
+            ( result
+            , catEvents (mev:kevs)
+              $> result) -- :: (Controllable, Event Controllable)
       cont result = updateController result
 
 updateController' :: Controllable -> SF Controllable Controllable

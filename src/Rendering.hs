@@ -132,6 +132,7 @@ toDrawables game time = drs
     resY     = fromEnum $ view (options . resy) game :: Int
     u_res    = replicate n $ ((toEnum resX), (toEnum resY)) :: [(CInt, CInt)]
 --    u_proj   = undefined -- :: [GLmatrix GLfloat]
+    --u_cam    = DT.trace ("camera: " ++ (show $ replicate n $ view (camera . controller . Controllable.transform) game)) $ replicate n $ view (camera . controller . Controllable.transform) game :: [M44 Double]
     u_cam    = replicate n $ view (camera . controller . Controllable.transform) game :: [M44 Double]
     --u_xform  = undefined :: [(M44 Double)] -- concat $ replicate n $ toListOf (objects . traverse . Object.transform) game :: [(M44 Double)]  -- :: [GLmatrix GLfloat]
     u_xform  = concat $ toListOf (objects . traverse . Object.transform) game :: [(M44 Double)]  -- :: [GLmatrix GLfloat]
