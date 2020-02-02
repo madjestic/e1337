@@ -181,13 +181,16 @@ initUniforms (Uniforms u_mat' u_prog' u_mouse' u_time' u_res' u_cam' u_xform') =
     -- | Shaders
     -- _ <- DT.trace ("vertShader: " ++ show (_vertShader u_mat')) $ return ()
     -- _ <- DT.trace ("vertShader: " ++ show (_fragShader u_mat')) $ return ()
-    
-    -- program <- loadShaders
-    --   [ ShaderInfo VertexShader   (FileSource (_vertShader u_mat' ))
-    --   , ShaderInfo FragmentShader (FileSource (_fragShader u_mat' )) ]
-    -- currentProgram $= Just program
-    let program = u_prog'
+
+    -- This will init every frame - useful for shader prototyping, at the expense of performance.
+    program <- loadShaders
+      [ ShaderInfo VertexShader   (FileSource (_vertShader u_mat' ))
+      , ShaderInfo FragmentShader (FileSource (_fragShader u_mat' )) ]
     currentProgram $= Just program
+
+    -- This is a standard version of shader init prior to game loop init.
+    -- let program = u_prog'
+    -- currentProgram $= Just program
 
     -- | Set Uniforms
     let u_mouse       = Vector2 (realToFrac $ fst u_mouse') (realToFrac $ snd u_mouse') :: Vector2 GLfloat

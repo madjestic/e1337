@@ -1,5 +1,6 @@
 #!/bin/sh
 
+# REDUNDANT.  There no prof.specific options here, so just use run.sh
 
 # Spinning Objects
 # a spinning box.

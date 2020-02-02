@@ -26,8 +26,8 @@ initCam
     (
       (V4
         (V4 1 0 0 0)
-        (V4 0 1 0 0)
-        (V4 0 0 1 (-1.5))
+        (V4 0 1 0 0) -- <- . . . y ...
+        (V4 0 0 1 0) -- <- . . . z-component of transform
         (V4 0 0 0 1)))
     (V3 0 0 0) -- rotation
     (Device (Keyboard keys0 kvs0) (Mouse Nothing Nothing (0,0) mvs0 )))
