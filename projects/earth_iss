@@ -6,8 +6,10 @@
 	"resy"  : 600,
 	"models":
 	[
-	    { "path": "models/iss.vgeo" }  ,
-            { "path": "models/earth.vgeo" }
+	    { "path": "models/octahedron.vgeo" },
+	    { "path": "models/unitsphere.vgeo" },
+	    { "path": "models/iss.vgeo" },
+	    { "path": "models/earth.vgeo" }
 	]
     }
 }

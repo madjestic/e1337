@@ -1,19 +1,19 @@
 [
-	"fileversion","17.5.333",
+	"fileversion","18.0.327",
 	"hasindex",false,
 	"pointcount",4,
 	"vertexcount",6,
 	"primitivecount",2,
 	"info",{
-		"date":"2019-10-24 22:22:36",
-		"timetocook":0.000219999999999999981,
-		"software":"Houdini 17.5.333",
+		"date":"2020-02-03 22:08:07",
+		"timetocook":0.00217000000000000005,
+		"software":"Houdini 18.0.327",
 		"artist":"madjestic",
 		"hostname":"nu",
-		"time":0,
+		"time":0.0416666666666666644,
 		"bounds":[-0.5,0.5,-0.5,0.5,0,0],
 		"primcount_summary":"          2 Polygons\n",
-		"attribute_summary":"     5 vertex attributes:\tN, uv, shop_materialpath, Cd, Alpha\n     1 point attributes:\tP\n"
+		"attribute_summary":"     5 vertex attributes:\tN, uv, shop_materialpath, Cd, Alpha\n     1 point attributes:\tP\n     1 global attributes:\txform\n"
 	},
 	"topology",[
 		"pointref",[
@@ -98,7 +98,7 @@
 					"values",[
 						"size",3,
 						"storage","fpreal32",
-						"tuples",[[0,0,-1],[0,0,-1],[0,0,-1],[0,0,-1],[0,0,-1],[0,0,-1]
+						"tuples",[[0,0,1],[0,0,1],[0,0,1],[0,0,1],[0,0,1],[0,0,1]
 						]
 					]
 				]
@@ -114,12 +114,12 @@
 				[
 					"size",1,
 					"storage","int32",
-					"strings",["/mat/square/constant_A","/mat/square/constant_B"
+					"strings",["/mat/constant/constant"
 					],
 					"indices",[
 						"size",1,
 						"storage","int32",
-						"arrays",[[0,0,0,1,1,1]
+						"arrays",[[0,0,0,0,0,0]
 						]
 					]
 				]
@@ -178,6 +178,32 @@
 						"size",3,
 						"storage","fpreal32",
 						"tuples",[[-0.5,-0.5,0],[0.5,-0.5,0],[-0.5,0.5,0],[0.5,0.5,0]
+						]
+					]
+				]
+			]
+		],
+		"globalattributes",[
+			[
+				[
+					"scope","public",
+					"type","numeric",
+					"name","xform",
+					"options",{
+					}
+				],
+				[
+					"size",16,
+					"storage","fpreal64",
+					"defaults",[
+						"size",16,
+						"storage","fpreal64",
+						"values",[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]
+					],
+					"values",[
+						"size",16,
+						"storage","fpreal64",
+						"tuples",[[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]
 						]
 					]
 				]

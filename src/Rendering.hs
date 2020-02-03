@@ -145,7 +145,7 @@ toDrawables game time = drs
 render :: Backend -> BackendOptions -> SDL.Window -> Game -> IO ()
 render Rendering.OpenGL opts window game =
   do
-    GL.clearColor $= Color4 0.5 0.5 1.0 1.0
+    GL.clearColor $= Color4 0.0 0.0 0.0 1.0
     GL.clear [ColorBuffer, DepthBuffer]
 
     ticks             <- SDL.ticks
@@ -210,7 +210,7 @@ initUniforms (Uniforms u_mat' u_prog' u_mouse' u_time' u_res' u_cam' u_xform') =
     let proj =          
           fmap realToFrac . concat $ fmap DF.toList . DF.toList -- convert to GLfloat
           --               FOV    Aspect    Near   Far
-          $ LP.perspective (pi/2.0) (resX/resY) (0.01) 1.5 :: [GLfloat]
+          $ LP.perspective (pi/3.0) (resX/resY) (0.01) 2.0 :: [GLfloat]
 
     persp             <- GL.newMatrix RowMajor proj :: IO (GLmatrix GLfloat)
     location3         <- get (uniformLocation program "persp")
@@ -283,11 +283,12 @@ initVAO (idx', st', vs', matPath) =
         vertexAttribPointer (AttribLocation 4) $= (ToFloat, VertexArrayDescriptor 3 Float stride ((plusPtr nullPtr . fromIntegral) (10 * floatSize)))
         vertexAttribArray   (AttribLocation 4) $= Enabled
         
-        -- -- | Assign Textures
-        -- activeTexture            $= TextureUnit 0
-        -- texture Texture2D        $= Enabled
-        -- tx0 <- loadTex "textures/4096_earth_clouds.jpg"
-        -- textureBinding Texture2D $= Just tx0
+        -- | Assign Textures
+        activeTexture            $= TextureUnit 0
+        texture Texture2D        $= Enabled
+        --tx0 <- loadTex "textures/8192_earth_clouds.jpg"
+        tx0 <- loadTex "textures/8192_earth_daymap.jpg"
+        textureBinding Texture2D $= Just tx0
 
     return $ Descriptor vao (fromIntegral numIndices)
 

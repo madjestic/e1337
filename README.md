@@ -12,6 +12,36 @@ It supports loading and rendering simple projects files, describing a model, a m
 * Supports transformation stack per object.
 * Uses Houdini as a game-editor.
 
+** TODO:
+	- export unit sphere (1m radius sphere with a constant material)
+	- make sure that all shaders are in complience with material earth/Earth
+	
+	- solve the space-precision mistery:
+		- make a Mandelbrot example
+			- export a grid with constant material
+			- set up the render mode to render Triangles/Points
+			- experiment with zoom and precision limit
+			
+{
+    "project":
+    {
+	"name"   : "Square",
+	"resx"   : 800,
+	"resy"   : 600,
+	"models" :
+	[
+             { "path": "models/square.vgeo" },
+			 { "path": "models/sphere.vgeo" }
+	]
+	"solvers":
+	[
+		[{ "spin": [px0,py0,pz0,rx0,ry0,rz0] }],
+		[{ "spin": [px1,py1,pz1,rx1,ry1,rz1] }, { "spin": [px2,py2,pz2,rx2,ry2,rz2] }]
+	]
+    }
+}
+			
+
 [a youtube demo](https://www.youtube.com/watch?v=Oqiyv4zhxWE)
 
 ![](https://github.com/madjestic/e1337/blob/master/output.png)

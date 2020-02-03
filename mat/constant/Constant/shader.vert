@@ -13,6 +13,7 @@ uniform mat4  transform;
 // Output data ; will be interpolated for each fragment.
 out float A;
 out vec3  N;
+out vec3  Ng;
 out vec3  Cd;
 out vec3  uv;
 
@@ -24,12 +25,33 @@ void main()
 			, camera[2]
 			, vec4(0,0,0,1));
 
+	mat3 viewM33 =
+		mat3( camera[0].xyz
+			, camera[1].xyz
+			, camera[2].xyz );
+
+	mat3 perspM33 =
+		mat3 ( persp[0].xyz
+			 , persp[1].xyz
+			 , persp[2].xyz );
+
+	mat3 xformM33 =
+		mat3 ( transform[0].xyz
+			 , transform[1].xyz
+			 , transform[2].xyz );	
+	
 	A  = alpha;
-	N  = normal;
+	N  = normalize(perspM33 * viewM33 * ((xformM33)*normal));
+	Ng = normalize(normal);//normalize(perspM33 * viewM33 * ((xformM33)*normal));
 	Cd = color;
 	uv = uvCoords;
-	vec4 position = vec4(vPosition,1);
+	vec4 position = vec4(vPosition,1)*1.0f;
 
 	position    = transform * position;
 	gl_Position = persp * viewM44 * (position + (camera)[3]);
+
+	// To logarithmic Depth Buffer.
+	float Near = 0.5; //  Near Clippng  Plane
+	float Far  = 10000000.0; // Far  Clipping Plane
+	gl_Position.z = (2*log(Near*gl_Position.z + 1) / log(Near*Far + 1) - 1) * gl_Position.z;
 }
