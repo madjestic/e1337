@@ -6,10 +6,10 @@
 	"resy"  : 600,
 	"models":
 	[
-	    { "path": "models/octahedron.vgeo" },
-	    { "path": "models/unitsphere.vgeo" },
-	    { "path": "models/iss.vgeo" },
-	    { "path": "models/earth.vgeo" }
+	    { "path": "models/box.vgeo" },
+	    { "path": "models/earth.vgeo" },
+	    { "path": "models/iss_L9.vgeo" },
+	    { "path": "models/moon.vgeo" }
 	]
     }
 }

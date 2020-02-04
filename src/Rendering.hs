@@ -210,7 +210,7 @@ initUniforms (Uniforms u_mat' u_prog' u_mouse' u_time' u_res' u_cam' u_xform') =
     let proj =          
           fmap realToFrac . concat $ fmap DF.toList . DF.toList -- convert to GLfloat
           --               FOV    Aspect    Near   Far
-          $ LP.perspective (pi/3.0) (resX/resY) (0.01) 2.0 :: [GLfloat]
+          $ LP.perspective (pi/2) (resX/resY) (0.01) 1.0 :: [GLfloat]
 
     persp             <- GL.newMatrix RowMajor proj :: IO (GLmatrix GLfloat)
     location3         <- get (uniformLocation program "persp")

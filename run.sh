@@ -8,7 +8,7 @@
 
 # Earth and ISS
 # planet Earth modelling and shading
-# mvlink ./app/Main.hs /home/madjestic/Projects/Haskell/e1337/app/Main.hs.earth
+mvlink ./app/Main.hs /home/madjestic/Projects/Haskell/e1337/app/Main.hs.earth
 cabal new-build
 cabal new-run e1337 ./projects/earth_iss
 
@@ -16,3 +16,10 @@ cabal new-run e1337 ./projects/earth_iss
 # mvlink ./app/Main.hs /home/madjestic/Projects/Haskell/e1337/app/Main.hs.earth
 # cabal new-build
 # cabal new-run e1337 ./projects/test
+
+# Mandelbrot
+# playing with Mandelbrot
+# mvlink ./app/Main.hs /home/madjestic/Projects/Haskell/e1337/app/Main.hs.mandelbrot
+# cabal new-build
+# cabal new-run e1337 ./projects/mandelbrot
+
