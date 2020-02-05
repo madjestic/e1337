@@ -1,0 +1,10 @@
+{
+  "Material": {
+    "name":"iss",
+    "Shaders": {
+      "vertex":   "mat/iss/ISS/shader.vert",
+      "fragment": "mat/iss/ISS/shader.frag"
+    },
+    "textures": [""]
+  }
+}

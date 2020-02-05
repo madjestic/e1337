@@ -38,11 +38,11 @@ void main()
 	mat3 xformM33 =
 		mat3 ( transform[0].xyz
 			 , transform[1].xyz
-			 , transform[2].xyz );
-
+			 , transform[2].xyz );	
+	
 	A  = alpha;
 	N  = normalize(perspM33 * viewM33 * ((xformM33)*normal));
-	Ng = normalize(normal);
+	Ng = normalize(normal);//normalize(perspM33 * viewM33 * ((xformM33)*normal));
 	Cd = color;
 	uv = uvCoords;
 	vec4 position = vec4(vPosition,1)*1.0f;
@@ -52,10 +52,6 @@ void main()
 
 	// To logarithmic Depth Buffer.
 	float Near = 0.5; //  Near Clippng  Plane
-	float Far  = 1000.0; // Far  Clipping Plane
-	// Logarithmic Depth
+	float Far  = 100000000.0; // Far  Clipping Plane
 	gl_Position.z = (2*log(Near*gl_Position.z + 1) / log(Near*Far + 1) - 1) * gl_Position.z;
-
-	// Linear Depth
-	//gl_Position.z = gl_Position.z/Far;
 }

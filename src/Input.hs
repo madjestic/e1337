@@ -313,6 +313,22 @@ nextAppInput inp (SDL.KeyboardEvent ev)
              -> inp { inpKeyXPressed  = Nothing
                     , inpKeyXReleased = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev }
 
+    | (scancode ev) == SDL.ScancodeLShift
+      = if | SDL.keyboardEventKeyMotion ev == SDL.Pressed
+             -> inp { inpKeyZPressed  = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev
+                    , inpKeyZReleased = Nothing }
+           | otherwise      
+             -> inp { inpKeyZPressed  = Nothing
+                    , inpKeyZReleased = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev }
+                
+    | (scancode ev) == SDL.ScancodeLCtrl
+      = if | SDL.keyboardEventKeyMotion ev == SDL.Pressed
+             -> inp { inpKeyXPressed  = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev
+                    , inpKeyXReleased = Nothing }
+           | otherwise      
+             -> inp { inpKeyXPressed  = Nothing
+                    , inpKeyXReleased = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev }
+
     | (scancode ev) == SDL.ScancodeUp
       = if | SDL.keyboardEventKeyMotion ev == SDL.Pressed
              -> inp { inpKeyUpPressed  = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev

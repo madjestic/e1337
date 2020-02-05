@@ -40,6 +40,13 @@ void main()
 			 , transform[1].xyz
 			 , transform[2].xyz );
 
+	mat4 testM44 =
+		mat4 ( vec4 (0.75, 0, 0, 0)
+			 , vec4 (0,    1, 0, 0)
+			 , vec4 (0,    0,-1,-2)
+			 , vec4 (0,    0, 0, 1) );
+	
+
 	A  = alpha;
 	N  = normalize(perspM33 * viewM33 * ((xformM33)*normal));
 	Ng = normalize(normal);
@@ -49,13 +56,15 @@ void main()
 
 	position    = transform * position;
 	gl_Position = persp * viewM44 * (position + (camera)[3]);
+	//gl_Position = viewM44 * (position + (camera)[3]);
 
 	// To logarithmic Depth Buffer.
-	float Near = 0.5; //  Near Clippng  Plane
-	float Far  = 1000.0; // Far  Clipping Plane
+	float Near = 0.1; //  Near Clippng  Plane
+	float Far  = 100.0; // Far  Clipping Plane
 	// Logarithmic Depth
-	gl_Position.z = (2*log(Near*gl_Position.z + 1) / log(Near*Far + 1) - 1) * gl_Position.z;
+	//gl_Position.z = (2*log(Near*gl_Position.z + 1) / log(Near*Far + 1) - 1) * gl_Position.z;
+	//gl_Position = testM44 * gl_Position;
 
 	// Linear Depth
-	//gl_Position.z = gl_Position.z/Far;
+	gl_Position.z = gl_Position.z/Far;
 }

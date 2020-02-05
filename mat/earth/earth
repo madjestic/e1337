@@ -1,0 +1,10 @@
+{
+  "Material": {
+    "name":"earth",
+    "Shaders": {
+      "vertex":   "mat/earth/Earth/shader.vert",
+      "fragment": "mat/earth/Earth/shader.frag"
+    },
+    "textures": [""]
+  }
+}

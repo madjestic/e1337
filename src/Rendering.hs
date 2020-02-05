@@ -206,10 +206,9 @@ initUniforms (Uniforms u_mat' u_prog' u_mouse' u_time' u_res' u_cam' u_xform') =
     location2         <- get (uniformLocation program "u_time'")
     uniform location2 $= (u_time' :: GLfloat)
 
-
     let proj =          
           fmap realToFrac . concat $ fmap DF.toList . DF.toList -- convert to GLfloat
-          --               FOV    Aspect    Near   Far
+          --               FOV    Aspect      Near   Far
           $ LP.perspective (pi/2) (resX/resY) (0.01) 1.0 :: [GLfloat]
 
     persp             <- GL.newMatrix RowMajor proj :: IO (GLmatrix GLfloat)
@@ -230,6 +229,11 @@ initUniforms (Uniforms u_mat' u_prog' u_mouse' u_time' u_res' u_cam' u_xform') =
     transform         <- GL.newMatrix RowMajor mtx :: IO (GLmatrix GLfloat)
     location5         <- get (uniformLocation program "transform")
     uniform location5 $= transform --u_xform'
+
+    location6 <- get (uniformLocation program "tex_00")
+    uniform location6 $= (TextureUnit 0)
+    location7 <- get (uniformLocation program "tex_01")
+    uniform location7 $= (TextureUnit 1)
     
     -- | Unload buffers
     --bindVertexArrayObject         $= Nothing
@@ -289,6 +293,11 @@ initVAO (idx', st', vs', matPath) =
         --tx0 <- loadTex "textures/8192_earth_clouds.jpg"
         tx0 <- loadTex "textures/8192_earth_daymap.jpg"
         textureBinding Texture2D $= Just tx0
+
+        activeTexture            $= TextureUnit 1
+        texture Texture2D        $= Enabled
+        tx1 <- loadTex "textures/8192_moon.jpg"
+        textureBinding Texture2D $= Just tx1                
 
     return $ Descriptor vao (fromIntegral numIndices)
 
