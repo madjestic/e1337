@@ -23,3 +23,6 @@ current:
 	# ghc ./app/Main.hs -threaded -prof -rtsopts -fprof-auto -fprof-cafs -fforce-recomp "-with-rtsopts=-N -p -s -h -i0.1"
 	#./Main +RTS -sstderr -RTS
 
+        # $ cabal new-build
+	# $ gpu ./run.sh
+        # $ hp2ps -e8in -c ./e1337.hp && gv ./e1337.ps

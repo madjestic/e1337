@@ -6,10 +6,7 @@
 	"resy"  : 600,
 	"models":
 	[
-	    { "path": "models/box.vgeo" },
-	    { "path": "models/earth.vgeo" },
-	    { "path": "models/iss_L9.vgeo" },
-	    { "path": "models/moon.vgeo" }
+	    { "path": "models/moon.bgeo" }
 	]
     }
 }
