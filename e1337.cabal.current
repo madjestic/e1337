@@ -43,6 +43,7 @@ library
               , vector     >= 0.12.0.2
               , store      >= 0.4.3.2
               , blaze-builder >= 0.4.1.0
+--              , sdl2-image >= 2.0.0
   exposed-modules:
                 Input
               , PGeo

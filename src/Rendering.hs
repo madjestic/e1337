@@ -22,7 +22,9 @@ import Foreign.Ptr                            (plusPtr, nullPtr)
 import Foreign.Storable                       (sizeOf)
 import Graphics.Rendering.OpenGL as GL hiding (color, normal, Size)
 import SDL                             hiding (Point, Event, Timer, (^+^), (*^), (^-^), dot, project)
-import Graphics.GLUtil                        (readTexture, texture2DWrap)
+-- import SDL.Image (loadTexture)
+import Graphics.GLUtil                        (readTexture, texture2DWrap, loadTexture)
+import Graphics.GLUtil.JuicyTextures (readTexInfo)
 
 import LoadShaders
 import Game
@@ -230,10 +232,10 @@ initUniforms (Uniforms u_mat' u_prog' u_mouse' u_time' u_res' u_cam' u_xform') =
     location5         <- get (uniformLocation program "transform")
     uniform location5 $= transform --u_xform'
 
-    -- location6 <- get (uniformLocation program "tex_00")
-    -- uniform location6 $= (TextureUnit 0)
-    -- location7 <- get (uniformLocation program "tex_01")
-    -- uniform location7 $= (TextureUnit 1)
+    location6 <- get (uniformLocation program "tex_00")
+    uniform location6 $= (TextureUnit 0)
+    location7 <- get (uniformLocation program "tex_01")
+    uniform location7 $= (TextureUnit 1)
     
     -- | Unload buffers
     --bindVertexArrayObject         $= Nothing
@@ -286,20 +288,48 @@ initVAO (idx', st', vs', matPath) =
         -- | Positions
         vertexAttribPointer (AttribLocation 4) $= (ToFloat, VertexArrayDescriptor 3 Float stride ((plusPtr nullPtr . fromIntegral) (10 * floatSize)))
         vertexAttribArray   (AttribLocation 4) $= Enabled
-        
-        -- -- | Assign Textures
-        -- activeTexture            $= TextureUnit 0
-        -- texture Texture2D        $= Enabled
-        -- --tx0 <- loadTex "textures/8192_earth_clouds.jpg"
-        -- tx0 <- loadTex "textures/8192_earth_daymap.jpg"
-        -- textureBinding Texture2D $= Just tx0
 
-        -- activeTexture            $= TextureUnit 1
-        -- texture Texture2D        $= Enabled
-        -- tx1 <- loadTex "textures/8192_moon.jpg"
-        -- textureBinding Texture2D $= Just tx1                
+        
+        print "Loading Textures..."
+        -- | Assign Textures
+        activeTexture            $= TextureUnit 0
+        texture Texture2D        $= Enabled
+        tx0 <- loadTex' "textures/8192_earth_daymap.jpg"
+        textureBinding Texture2D $= Just tx0
+
+        activeTexture            $= TextureUnit 1
+        texture Texture2D        $= Enabled
+        tx1 <- loadTex' "textures/8192_moon.jpg"
+        textureBinding Texture2D $= Just tx1
+        print "Finished loading textures."
 
     return $ Descriptor vao (fromIntegral numIndices)
+
+--texname = "textures/8192_moon.jpg"
+
+loadTex' :: FilePath -> IO TextureObject
+loadTex' texname =
+  do
+    imgresult <- readTexture texname
+    finaltexture <- extract $ readTexInfo texname loadTexture
+    texture Texture2D $= Enabled
+    activeTexture $= TextureUnit 0
+    textureBinding Texture2D $= Just finaltexture
+    textureFilter  Texture2D $= ((Linear', Just Nearest), Linear')
+    textureWrapMode    Texture2D S $= (Mirrored, ClampToEdge)
+    textureWrapMode    Texture2D T $= (Mirrored, ClampToEdge)
+    blend $= Enabled
+    blendFunc $= (SrcAlpha, OneMinusSrcAlpha)
+    generateMipmap' Texture2D
+    return finaltexture    
+
+extract :: (IO (Either String a)) -> IO a
+extract act =
+  do
+    e <- act
+    case e of
+      Left err -> error err
+      Right val -> return val    
 
 loadTex :: FilePath -> IO TextureObject
 loadTex f =

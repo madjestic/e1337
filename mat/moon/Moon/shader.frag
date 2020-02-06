@@ -2,8 +2,8 @@
 
 uniform float     u_time;
 uniform vec2      u_resolution;
-// uniform sampler2D tex_00;
-// uniform sampler2D tex_01;
+//uniform sampler2D tex_00;
+uniform sampler2D tex_01;
 
 in vec4 gl_FragCoord;
 in float A;
@@ -23,8 +23,8 @@ void main()
 			, N.y*0.5+0.5
 			,-N.z*0.5+0.5 );
 	
-  fragColor = vec4( Cd.x, Cd.y, Cd.z, A );
+  //fragColor = vec4( Cd.x, Cd.y, Cd.z, A );
   //fragColor = vec4( normal, 1.0);
   //fragColor = vec4(texture(tex_00, vec2(uv.x, uv.y)).rgb * dot(Ng, normalize(SunP)), 1.0);
-  //fragColor = vec4(texture(tex_01, vec2(uv.x, uv.y)).rgb, 1.0);
+  fragColor = vec4(texture(tex_01, vec2(uv.x, uv.y)).rgb, 1.0);
 }
