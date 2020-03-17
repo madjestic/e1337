@@ -90,6 +90,10 @@ Implemented * and planned -- features:
 $ cabal new-build
 $ gpu ./run.sh
 ```
+or, if optirun works for you:
+```
+$ optirun ./rungl.hs
+```
 
 ## Rebuilding assets:
 ```bash
@@ -105,6 +109,10 @@ $ cabal new-repl exe:e1337
 
 ## Profiling
 ```bash
+$ make prof
+$ cabal new-clean
+$ cabal new-build
+$ gpu ./run.sh
 $ hp2ps -e8in -c ./e1337.hp && gv ./e1337.ps
 ```
 

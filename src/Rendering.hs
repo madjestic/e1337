@@ -79,7 +79,7 @@ openWindow title (sizex,sizey) =
     window <- SDL.createWindow
               title
               SDL.defaultWindow { SDL.windowInitialSize = V2 sizex sizey
-                                , SDL.windowOpenGL      = Just config
+                                , SDL.windowGraphicsContext = OpenGLContext config
                                 }
 
     SDL.showWindow window
@@ -185,14 +185,14 @@ initUniforms (Uniforms u_mat' u_prog' u_mouse' u_time' u_res' u_cam' u_xform') =
     -- _ <- DT.trace ("vertShader: " ++ show (_fragShader u_mat')) $ return ()
 
     -- This will init every frame - useful for shader prototyping, at the expense of performance.
-    program <- loadShaders
-      [ ShaderInfo VertexShader   (FileSource (_vertShader u_mat' ))
-      , ShaderInfo FragmentShader (FileSource (_fragShader u_mat' )) ]
-    currentProgram $= Just program
+    -- program <- loadShaders
+    --   [ ShaderInfo VertexShader   (FileSource (_vertShader u_mat' ))
+    --   , ShaderInfo FragmentShader (FileSource (_fragShader u_mat' )) ]
+    -- currentProgram $= Just program
 
     -- This is a standard version of shader init prior to game loop init.
-    -- let program = u_prog'
-    -- currentProgram $= Just program
+    let program = u_prog'
+    currentProgram $= Just program
 
     -- | Set Uniforms
     let u_mouse       = Vector2 (realToFrac $ fst u_mouse') (realToFrac $ snd u_mouse') :: Vector2 GLfloat
@@ -294,12 +294,12 @@ initVAO (idx', st', vs', matPath) =
         -- | Assign Textures
         activeTexture            $= TextureUnit 0
         texture Texture2D        $= Enabled
-        tx0 <- loadTex' "textures/8192_earth_daymap.jpg"
+        tx0 <- loadTex' "textures/512_earth_daymap.jpg"
         textureBinding Texture2D $= Just tx0
 
         activeTexture            $= TextureUnit 1
         texture Texture2D        $= Enabled
-        tx1 <- loadTex' "textures/8192_moon.jpg"
+        tx1 <- loadTex' "textures/256_moon.jpg"
         textureBinding Texture2D $= Just tx1
         print "Finished loading textures."
 
@@ -320,7 +320,7 @@ loadTex' texname =
     textureWrapMode    Texture2D T $= (Mirrored, ClampToEdge)
     blend $= Enabled
     blendFunc $= (SrcAlpha, OneMinusSrcAlpha)
-    generateMipmap' Texture2D
+    --generateMipmap' Texture2D
     return finaltexture    
 
 extract :: (IO (Either String a)) -> IO a

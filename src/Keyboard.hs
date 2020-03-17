@@ -14,16 +14,20 @@ data Keyboard
 
 data Keys =
      Keys
-     { keyW     :: Bool
-     , keyS     :: Bool
-     , keyA     :: Bool
-     , keyD     :: Bool
-     , keyQ     :: Bool
-     , keyE     :: Bool
-     , keyZ     :: Bool
-     , keyX     :: Bool
-     , keyUp    :: Bool
-     , keyDown  :: Bool
-     , keyLeft  :: Bool
-     , keyRight :: Bool
+     { keyW      :: Bool
+     , keyS      :: Bool
+     , keyA      :: Bool
+     , keyD      :: Bool
+     , keyQ      :: Bool
+     , keyE      :: Bool
+--     , keyZ      :: Bool
+--     , keyX      :: Bool
+     , keyUp     :: Bool
+     , keyDown   :: Bool
+     , keyLeft   :: Bool
+     , keyRight  :: Bool
+     , keyPageUp :: Bool
+     , keyPageDown :: Bool
+     , keyLShift :: Bool
+     , keyLCtrl  :: Bool
      } deriving Show

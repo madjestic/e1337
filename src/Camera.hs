@@ -27,14 +27,14 @@ initCam
       (V4
         (V4 1 0 0 0)
         (V4 0 1 0 0) -- <- . . . y ...
-        (V4 0 0 1 0) -- <- . . . z-component of transform
+        (V4 0 0 1 (-60)) -- <- . . . z-component of transform
         (V4 0 0 0 1)))
     (V3 0 0 0) -- rotation
     (Device (Keyboard keys0 kvs0) (Mouse Nothing Nothing (0,0) mvs0 )))
   where
     mvs0   = [] --undefined
     -- mvs0 - mouse vectors
-    keys0  = ( Keys False False False False False False False False False False False False )
+    keys0  = ( Keys False False False False False False False False False False False False False False )
     -- kvs0 - key vectors
     kvs0   = [ fVel, bVel, lVel, rVel, uVel, dVel, pPitch, nPitch, pYaw, nYaw, pRoll, nRoll ]
     fVel   = V3 ( 0  )( 0  )( 0.1)   -- forwards  velocity

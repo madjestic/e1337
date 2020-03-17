@@ -103,7 +103,19 @@ keyInput code mode =
            | otherwise         -> inpKeyLeftReleased           
       | code == SDL.ScancodeRight
       = if | mode == "Pressed" -> inpKeyRightPressed
-           | otherwise         -> inpKeyRightReleased           
+           | otherwise         -> inpKeyRightReleased
+      | code == SDL.ScancodePageUp
+      = if | mode == "Pressed" -> inpKeyPageUpPressed
+           | otherwise         -> inpKeyPageUpReleased           
+      | code == SDL.ScancodePageDown
+      = if | mode == "Pressed" -> inpKeyPageDownPressed
+           | otherwise         -> inpKeyPageDownReleased
+      | code == SDL.ScancodeLShift
+      = if | mode == "Pressed" -> inpKeyLShiftPressed
+           | otherwise         -> inpKeyLShiftReleased           
+      | code == SDL.ScancodeLCtrl
+      = if | mode == "Pressed" -> inpKeyLCtrlPressed
+           | otherwise         -> inpKeyLCtrlReleased
 
 quitEvent :: SF AppInput (Event ())
 quitEvent = arr inpQuit >>> edge
@@ -161,6 +173,18 @@ data AppInput =
      -- Right
      , inpKeyRightPressed   :: Maybe SDL.Scancode
      , inpKeyRightReleased  :: Maybe SDL.Scancode
+     -- PageUp
+     , inpKeyPageUpPressed   :: Maybe SDL.Scancode
+     , inpKeyPageUpReleased  :: Maybe SDL.Scancode
+     -- PageDown
+     , inpKeyPageDownPressed   :: Maybe SDL.Scancode
+     , inpKeyPageDownReleased  :: Maybe SDL.Scancode
+     -- LShift
+     , inpKeyLShiftPressed   :: Maybe SDL.Scancode
+     , inpKeyLShiftReleased  :: Maybe SDL.Scancode     
+     -- LCtrl
+     , inpKeyLCtrlPressed   :: Maybe SDL.Scancode
+     , inpKeyLCtrlReleased  :: Maybe SDL.Scancode     
      }
 
 type WinInput = Event SDL.EventPayload    
@@ -213,6 +237,18 @@ initAppInput =
      -- Right
      , inpKeyRightPressed   = Nothing
      , inpKeyRightReleased  = Nothing
+     -- PageUp
+     , inpKeyPageUpPressed   = Nothing
+     , inpKeyPageUpReleased  = Nothing
+     -- PageDown
+     , inpKeyPageDownPressed   = Nothing
+     , inpKeyPageDownReleased  = Nothing
+     -- LShift
+     , inpKeyLShiftPressed   = Nothing
+     , inpKeyLShiftReleased  = Nothing     
+     -- LCtrl
+     , inpKeyLCtrlPressed   = Nothing
+     , inpKeyLCtrlReleased  = Nothing     
      }
 
 -- | Filter and transform SDL events into events which are relevant to our
@@ -329,6 +365,22 @@ nextAppInput inp (SDL.KeyboardEvent ev)
              -> inp { inpKeyXPressed  = Nothing
                     , inpKeyXReleased = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev }
 
+    | (scancode ev) == SDL.ScancodePageUp
+      = if | SDL.keyboardEventKeyMotion ev == SDL.Pressed
+             -> inp { inpKeyXPressed  = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev
+                    , inpKeyXReleased = Nothing }
+           | otherwise      
+             -> inp { inpKeyXPressed  = Nothing
+                    , inpKeyXReleased = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev }
+
+    | (scancode ev) == SDL.ScancodePageDown
+      = if | SDL.keyboardEventKeyMotion ev == SDL.Pressed
+             -> inp { inpKeyXPressed  = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev
+                    , inpKeyXReleased = Nothing }
+           | otherwise      
+             -> inp { inpKeyXPressed  = Nothing
+                    , inpKeyXReleased = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev }
+
     | (scancode ev) == SDL.ScancodeUp
       = if | SDL.keyboardEventKeyMotion ev == SDL.Pressed
              -> inp { inpKeyUpPressed  = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev
@@ -354,6 +406,38 @@ nextAppInput inp (SDL.KeyboardEvent ev)
                     , inpKeyLeftReleased = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev }
 
     | (scancode ev) == SDL.ScancodeRight
+      = if | SDL.keyboardEventKeyMotion ev == SDL.Pressed
+             -> inp { inpKeyRightPressed  = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev
+                    , inpKeyRightReleased = Nothing }
+           | otherwise      
+             -> inp { inpKeyRightPressed  = Nothing
+                    , inpKeyRightReleased = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev }
+
+    | (scancode ev) == SDL.ScancodePageUp
+      = if | SDL.keyboardEventKeyMotion ev == SDL.Pressed
+             -> inp { inpKeyRightPressed  = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev
+                    , inpKeyRightReleased = Nothing }
+           | otherwise      
+             -> inp { inpKeyRightPressed  = Nothing
+                    , inpKeyRightReleased = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev }
+                
+    | (scancode ev) == SDL.ScancodePageDown
+      = if | SDL.keyboardEventKeyMotion ev == SDL.Pressed
+             -> inp { inpKeyRightPressed  = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev
+                    , inpKeyRightReleased = Nothing }
+           | otherwise      
+             -> inp { inpKeyRightPressed  = Nothing
+                    , inpKeyRightReleased = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev }
+
+    | (scancode ev) == SDL.ScancodeLShift
+      = if | SDL.keyboardEventKeyMotion ev == SDL.Pressed
+             -> inp { inpKeyRightPressed  = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev
+                    , inpKeyRightReleased = Nothing }
+           | otherwise      
+             -> inp { inpKeyRightPressed  = Nothing
+                    , inpKeyRightReleased = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev }
+
+    | (scancode ev) == SDL.ScancodeLCtrl
       = if | SDL.keyboardEventKeyMotion ev == SDL.Pressed
              -> inp { inpKeyRightPressed  = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev
                     , inpKeyRightReleased = Nothing }
