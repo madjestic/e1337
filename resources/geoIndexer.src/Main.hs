@@ -3,7 +3,7 @@
 module Main where
 
 import Data.Text.Lazy            (Text)
-import Data.Text.Lazy.IO as I
+import Data.Text.Lazy.IO as I    hiding (putStrLn)
 import Data.ByteString   as BS   (writeFile)
 import Blaze.ByteString.Builder  (toByteString)
 import Data.Binary.Builder       (toLazyByteString, Builder)
@@ -62,7 +62,9 @@ main = do
       fileOut =  (unsafeCoerce (args!!1) :: FilePath)
   
   pgeo <- readPGeo fileIn
+  putStrLn "running indexer..."
   let vgeo = fromPGeo pgeo
+  putStrLn "OK"
   --writeVGeo fileOut vgeo
   writeBGeo fileOut vgeo
   -- print $ "is :" ++ (show $ is vgeo)

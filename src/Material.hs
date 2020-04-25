@@ -9,13 +9,16 @@ module Material
   , name
   , defaultMat
   , readMaterial
+  , writeMaterial
   ) where  
 
-import Control.Monad (mzero)
-import Data.Aeson                             
-import Data.Maybe                             (fromMaybe)
+import Control.Monad         (mzero)
+import Data.Aeson
+import Data.Aeson.Encode.Pretty
+import Data.ByteString as BS
+import Data.Maybe            (fromMaybe)
 import qualified Data.ByteString.Lazy as B
-import Control.Lens
+import Control.Lens hiding ((.=))
 
 data Material
   =  Material
@@ -54,6 +57,21 @@ instance FromJSON Material where
        <*> ((o .: "Material") >>= (.: "textures"))
   parseJSON _ = mzero
 
+instance ToJSON Material where
+  toJSON (Material name vertShader fragShader textures) =
+    object
+    ["Material" .=
+      object
+      [ "name" .= name
+      , "Shaders" .=
+        object
+        [ "vertex" .= vertShader
+        , "fragment" .= fragShader
+        ]
+      , "textures" .= textures
+      ]
+    ]
+
 readMaterial :: FilePath -> IO Material
 readMaterial jsonFile =
   do
@@ -68,4 +86,11 @@ readMaterial jsonFile =
         fromEither d =
           case d of
             Left err -> Nothing
-            Right pt -> Just pt            
+            Right pt -> Just pt
+
+writeMaterial :: Material -> FilePath -> IO ()
+writeMaterial mat fileOut =
+  do
+    --encodeFile fileOut $ mat
+    --encodePretty fileOut mat
+    B.writeFile fileOut $ encodePretty mat

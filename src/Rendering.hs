@@ -9,6 +9,7 @@ module Rendering
   , draw
   , initVAO
   , initUniforms
+  , initGlobalUniforms
   , render
   , Backend (..)
   , BackendOptions (..)
@@ -174,8 +175,24 @@ draw opts window (Drawable
     
     GL.pointSize $= 10
 
-    cullFace  $= Just Back
+    cullFace  $= Just Front
     depthFunc $= Just Less
+
+initGlobalUniforms :: IO ()
+initGlobalUniforms =
+  do
+    print "Loading Textures..."
+    -- | Assign Textures
+    activeTexture            $= TextureUnit 0
+    texture Texture2D        $= Enabled
+    tx0 <- loadTex "textures/512_earth_daymap.jpg"
+    textureBinding Texture2D $= Just tx0
+
+    activeTexture            $= TextureUnit 1
+    texture Texture2D        $= Enabled
+    tx1 <- loadTex "textures/256_moon.jpg"
+    textureBinding Texture2D $= Just tx1
+    print "Finished loading textures."
 
 initUniforms :: Uniforms -> IO ()
 initUniforms (Uniforms u_mat' u_prog' u_mouse' u_time' u_res' u_cam' u_xform') = 
@@ -185,14 +202,14 @@ initUniforms (Uniforms u_mat' u_prog' u_mouse' u_time' u_res' u_cam' u_xform') =
     -- _ <- DT.trace ("vertShader: " ++ show (_fragShader u_mat')) $ return ()
 
     -- This will init every frame - useful for shader prototyping, at the expense of performance.
-    -- program <- loadShaders
-    --   [ ShaderInfo VertexShader   (FileSource (_vertShader u_mat' ))
-    --   , ShaderInfo FragmentShader (FileSource (_fragShader u_mat' )) ]
-    -- currentProgram $= Just program
+    program <- loadShaders
+      [ ShaderInfo VertexShader   (FileSource (_vertShader u_mat' ))
+      , ShaderInfo FragmentShader (FileSource (_fragShader u_mat' )) ]
+    currentProgram $= Just program
 
     -- This is a standard version of shader init prior to game loop init.
-    let program = u_prog'
-    currentProgram $= Just program
+    -- let program = u_prog'
+    -- currentProgram $= Just program
 
     -- | Set Uniforms
     let u_mouse       = Vector2 (realToFrac $ fst u_mouse') (realToFrac $ snd u_mouse') :: Vector2 GLfloat
@@ -290,25 +307,25 @@ initVAO (idx', st', vs', matPath) =
         vertexAttribArray   (AttribLocation 4) $= Enabled
 
         
-        print "Loading Textures..."
-        -- | Assign Textures
-        activeTexture            $= TextureUnit 0
-        texture Texture2D        $= Enabled
-        tx0 <- loadTex' "textures/512_earth_daymap.jpg"
-        textureBinding Texture2D $= Just tx0
+        -- print "Loading Textures..."
+        -- -- | Assign Textures
+        -- activeTexture            $= TextureUnit 0
+        -- texture Texture2D        $= Enabled
+        -- tx0 <- loadTex "textures/512_earth_daymap.jpg"
+        -- textureBinding Texture2D $= Just tx0
 
-        activeTexture            $= TextureUnit 1
-        texture Texture2D        $= Enabled
-        tx1 <- loadTex' "textures/256_moon.jpg"
-        textureBinding Texture2D $= Just tx1
-        print "Finished loading textures."
+        -- activeTexture            $= TextureUnit 1
+        -- texture Texture2D        $= Enabled
+        -- tx1 <- loadTex "textures/256_moon.jpg"
+        -- textureBinding Texture2D $= Just tx1
+        -- print "Finished loading textures."
 
     return $ Descriptor vao (fromIntegral numIndices)
 
 --texname = "textures/8192_moon.jpg"
 
-loadTex' :: FilePath -> IO TextureObject
-loadTex' texname =
+loadTex :: FilePath -> IO TextureObject
+loadTex texname =
   do
     imgresult <- readTexture texname
     finaltexture <- extract $ readTexInfo texname loadTexture
@@ -331,10 +348,10 @@ extract act =
       Left err -> error err
       Right val -> return val    
 
-loadTex :: FilePath -> IO TextureObject
-loadTex f =
-  do
-    t <- either error id <$> readTexture f
-    textureFilter Texture2D $= ((Linear', Nothing), Linear')
-    texture2DWrap $= (Repeated, ClampToEdge)
-    return t
+-- loadTex :: FilePath -> IO TextureObject
+-- loadTex f =
+--   do
+--     t <- either error id <$> readTexture f
+--     textureFilter Texture2D $= ((Linear', Nothing), Linear')
+--     texture2DWrap $= (Repeated, ClampToEdge)
+--     return t

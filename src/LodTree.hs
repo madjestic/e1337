@@ -1,6 +1,7 @@
 module LodTree where
 
 import Data.Tree
+import Data.Tree.Zipper
 
 test :: Tree (String, Double)
 test = Node ("iss_L9", 1.0) [ Node ("iss_L8", 0.5) [ Node ("iss_S3_S4_L7", 0.25) []
@@ -12,6 +13,8 @@ test = Node ("iss_L9", 1.0) [ Node ("iss_L8", 0.5) [ Node ("iss_S3_S4_L7", 0.25)
 
 toTreeString :: Tree (String, Double) -> Tree String
 toTreeString = fmap (\(x,y) -> (x ++ ", " ++ ( show y) ))
+
+-- | first $ nextSpace $ fromTree test and others to move around the tree
 
 -- | putStr . drawTree . toTreeString $ test
 -- iss_L9, 1.0
