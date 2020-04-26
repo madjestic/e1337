@@ -9,11 +9,11 @@ import Linear.V3
 data Mouse
   =  Mouse
   { -- | Mouse State
-    lmb :: Maybe (Double, Double)
+    lmb   :: Maybe (Double, Double)
   --, mmb
-  , rmb :: Maybe (Double, Double)
-  , _pos ::       (Double, Double)
-  , mvecs :: [V3 Double]
+  , rmb   :: Maybe (Double, Double)
+  , _pos  ::       (Double, Double)
+  , mVecs ::       [V3 Double]
   } deriving Show
 
 pos :: Lens' Mouse (Double, Double)

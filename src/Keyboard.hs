@@ -20,8 +20,8 @@ data Keys =
      , keyD      :: Bool
      , keyQ      :: Bool
      , keyE      :: Bool
---     , keyZ      :: Bool
---     , keyX      :: Bool
+     , keyZ      :: Bool
+     , keyC      :: Bool
      , keyUp     :: Bool
      , keyDown   :: Bool
      , keyLeft   :: Bool
