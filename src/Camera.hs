@@ -30,7 +30,7 @@ initCam
         (V4 0 0 1 (-60)) -- <- . . . z-component of transform
         (V4 0 0 0 1)))
     (V3 0 0 0) -- rotation
-    (Device (Keyboard keys0 kvs0) (Mouse Nothing Nothing (0,0) mvs0 )))
+    (Device (Keyboard keys0 kvs0) (Mouse Nothing Nothing (0,0) (0.0, 0.0) mvs0 )))
   where
     mvs0   = [] --undefined
     -- mvs0 - mouse vectors

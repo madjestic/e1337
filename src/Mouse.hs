@@ -13,6 +13,7 @@ data Mouse
   --, mmb
   , rmb   :: Maybe (Double, Double)
   , _pos  ::       (Double, Double)
+  , rpos  ::       (Double, Double)
   , mVecs ::       [V3 Double]
   } deriving Show
 

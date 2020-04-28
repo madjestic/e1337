@@ -3,6 +3,9 @@ module Input
     ( AppInput
     , parseWinInput
     , mousePos
+    , mouseMotion
+    , mouseRelPos
+    , mouseEvent
     , lbp
     , lbpPos
     , lbDown
@@ -11,8 +14,6 @@ module Input
     , rbDown
     , keyInput
     , quitEvent
-    , mouseEvent
-    , mouseEventPos
     , module SDL.Input.Keyboard.Codes
     ) where
 
@@ -35,6 +36,12 @@ import Debug.Trace as DT
 mousePos :: SF AppInput (Double,Double)
 mousePos = arr inpMousePos
 
+mouseMotion :: SF AppInput (Event ())
+mouseMotion = mouseRelPos >>^ tagWith ()
+
+mouseRelPos :: SF AppInput (Event (Double,Double))
+mouseRelPos = inpMouseRelPos ^>> edgeJust
+
 -- | Events that indicate left button click
 lbp :: SF AppInput (Event ())
 lbp = lbpPos >>^ tagWith ()
@@ -42,6 +49,12 @@ lbp = lbpPos >>^ tagWith ()
 -- | Events that indicate left button click and are tagged with mouse position
 lbpPos :: SF AppInput (Event (Double,Double))
 lbpPos = inpMouseLeft ^>> edgeJust
+
+-- mme :: SF AppInput (Event ())
+-- mme = mmePos >>^ tagWith ()
+
+-- mmePos :: SF AppInput (Event (Double, Double))
+-- mmePos = inpMousePos ^>> edgeJust
 
 -- | Is left button down
 lbDown :: SF AppInput Bool
@@ -58,6 +71,12 @@ rbpPos = inpMouseRight ^>> edgeJust
 -- | Is right button down
 rbDown :: SF AppInput Bool
 rbDown = arr (isJust . inpMouseRight)
+
+mouseEvent :: SF AppInput (Event ())
+mouseEvent = arr inpMouseMoving >>> edge
+
+quitEvent :: SF AppInput (Event ())
+quitEvent = arr inpQuit >>> edge
 
 keyInput :: SDL.Scancode -> String -> SF AppInput (Event ())
 keyInput code mode =
@@ -126,19 +145,12 @@ keyInput code mode =
       = if | mode == "Pressed" -> inpKeyRCtrlPressed
            | otherwise         -> inpKeyRCtrlReleased
 
-quitEvent :: SF AppInput (Event ())
-quitEvent = arr inpQuit >>> edge
-
-mouseEvent :: SF AppInput (Event ())
-mouseEvent = arr inpMouseMoving >>> edge
-
-mouseEventPos :: SF AppInput (Double, Double)
-mouseEventPos = arr inpMousePos
+--mouseInput ::            
 
 data AppInput =
      AppInput
      { inpMousePos          :: (Double, Double)       -- ^ Current mouse position
-     , inpMouseRelPos       :: (Double, Double)       -- ^ Relative mouse motion
+     , inpMouseRelPos       :: Maybe (Double, Double) -- ^ Relative mouse motion
      , inpMouseLeft         :: Maybe (Double, Double) -- ^ Left   button currently down
      , inpMouseRight        :: Maybe (Double, Double) -- ^ Right  button currently down
      --, inpMouseMiddle       :: Maybe (Double, Double) -- ^ Middle button currently down
@@ -211,12 +223,12 @@ type WinInput = Event SDL.EventPayload
 initAppInput :: AppInput
 initAppInput =
      AppInput 
-     { inpMousePos          = (0, 0)
-     , inpMouseRelPos       = (0, 0)
+     { inpMousePos          = (0.0, 0.0)
+     , inpMouseRelPos       = Just (0.0, 0.0)
      , inpMouseLeft         = Nothing
      , inpMouseRight        = Nothing
-     , inpMouseMoving       = True
-     , inpMouseStopped      = False
+     , inpMouseMoving       = False
+     , inpMouseStopped      = True
      --, inpMouseMiddle       = Nothing
      , inpQuit              = False
      , inpKeySpacePressed   = Nothing
@@ -285,11 +297,6 @@ initAppInput =
 parseWinInput :: SF WinInput AppInput
 parseWinInput = accumHoldBy nextAppInput initAppInput
 
--- mousecode :: SDL.MouseMotionEventData -> (Double, Double)
--- mousecode mev = (fromIntegral x, fromIntegral y)
---   where
---     P (V2 x y) = SDL.mouseMotionEventPos mev
-
 scancode :: SDL.KeyboardEventData -> Scancode
 scancode ev =
   SDL.keysymScancode $ SDL.keyboardEventKeysym ev
@@ -303,7 +310,7 @@ nextAppInput inp (SDL.MouseMotionEvent ev) =
     inp { inpMouseMoving  = True
         , inpMouseStopped = False
         , inpMousePos     = (fromIntegral x, fromIntegral y)
-        , inpMouseRelPos  = (fromIntegral x', fromIntegral y') }
+        , inpMouseRelPos  = Just (fromIntegral x', fromIntegral y') }
     where (P (V2 x  y ))  = SDL.mouseMotionEventPos ev
           (  (V2 x' y'))  = SDL.mouseMotionEventRelMotion ev
 -- | keyInput events
@@ -488,8 +495,9 @@ nextAppInput inp (SDL.KeyboardEvent ev)
                     , inpKeyRCtrlReleased = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev }
                 
 -- | mouse button events              
-nextAppInput inp (SDL.MouseButtonEvent ev) = inp { inpMouseLeft  = lmb
-                                                 , inpMouseRight = rmb }
+nextAppInput inp (SDL.MouseButtonEvent ev)
+  = inp { inpMouseLeft  = lmb
+        , inpMouseRight = rmb }
     where motion = SDL.mouseButtonEventMotion ev
           button = SDL.mouseButtonEventButton ev
           pos    = inpMousePos inp
@@ -503,5 +511,10 @@ nextAppInput inp (SDL.MouseButtonEvent ev) = inp { inpMouseLeft  = lmb
                 -- (SDL.Released, SDL.ButtonMiddle) -> second (const Nothing)
                 -- (SDL.Pressed,  SDL.ButtonMiddle) -> second (const (Just pos))
                 _ -> id
+nextAppInput inp _ =
+  inp { inpMouseMoving  = False
+      , inpMouseStopped = True
+      , inpMouseRelPos  = Nothing
+      }
 
-nextAppInput inp _ = inp
+-- nextAppInput inp _ = inp
