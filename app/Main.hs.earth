@@ -9,9 +9,11 @@ import Control.Arrow.List.Class  --(arrL)
 import Control.Lens       hiding (transform, indexed, ids)
 import Data.Text                 (pack)
 import Data.IORef
+import Data.Maybe
 import Foreign.C
 import FRP.Yampa          hiding (identity)
 import FRP.Yampa.Switches
+import FRP.Yampa.EventS
 import Data.Functor              (($>))
 
 import SDL                hiding ( Point
@@ -96,15 +98,7 @@ animate window sf =
               --(BackendOptions { primitiveMode = Points})
               window
               game
-            --R.render R.OpenGL window game
-            -- TODO : add mouse centering logic here:
-            warpMouse
-              (WarpInWindow window) (P (V2 400 300))
-              -- (P (V2
-              --      (view (options . Game.resx) game)
-              --      (view (options . Game.resy) game)
-              --    ) * (V2 0.5 0.5)
-              -- )
+            --setMouseLocationMode RelativeLocation 
             return shouldExit
 
 -- | Updates the time in an IO Ref and returns the time difference
@@ -370,22 +364,15 @@ updateController ctl0 =
           ctl           <- updateController' ctl0  -< ctl0
           mtx           <- returnA          -< Controllable._transform ctl
           ypr           <- returnA          -< Controllable._ypr ctl
-          (rpos0, mevs)   <- (mouseRelPos &&& mouseMotion) -< input
-          -- (rp, mevs)   <- ( (case mouseRelPos of
-          --                          (Event p) ->  p
-          --                          (noEvent) -> (0.0, 0.0)) &&& mouseEvent) -< input
+          (rpos, mevs)  <- (mouseRelPos &&& repeatedly 0.1 () ) -< input
           (kkeys, kevs) <- updateKeys  ctl0 -< input
-          --_ <- DT.trace ("rpos0 :" ++ show rpos0) $ return ()
-          let rp = case (DT.trace ("rpos0 :" ++ show rpos0) rpos0) of
-                     (Event p) -> p
-                     (noEvent) -> rpos._mouse._device $ ctl --(0.0, 0.0)
-           
+          
           result <-
             returnA -<
             ( Controller (0,0) mtx ypr
               ( Device
                 ( Keyboard kkeys (keyVecs (_keyboard (_device ctl))) )
-                ( Mouse Nothing Nothing (0, 0) (rp) [] ) ) )
+                ( Mouse Nothing Nothing (0, 0) (maybe (0.0, 0.0) id rpos) [] ) ) )
           returnA -< 
             ( ctl
             , catEvents (mevs:kevs)
@@ -418,8 +405,8 @@ updateController' ctl0 =
             ypr' :: V3 Double
             ypr'  =
               --(99999 * ) $
-              ((V3 dt dt dt) * ) $
-              (((0.000001 * ) (V3 y' x' 0.0)) + ) $
+              ((V3 dt dt dt*0.001) * ) $
+              (((0.01 * ) (V3 y' x' 0.0)) + ) $
               foldr (+) (V3 0 0 0) $
               zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys0) <$>
                             [ keyUp,  keyDown, keyLeft, keyRight, keyQ,  keyE ])
@@ -551,6 +538,8 @@ main = do
   window    <- openWindow
                title
                (resX, resY)
+  -- SDL Mouse Options
+  setMouseLocationMode RelativeLocation          
 
   game <- initGame proj
   print "Starting Game."

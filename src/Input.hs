@@ -3,7 +3,7 @@ module Input
     ( AppInput
     , parseWinInput
     , mousePos
-    , mouseMotion
+--    , mouseMotion
     , mouseRelPos
     , mouseEvent
     , lbp
@@ -37,11 +37,8 @@ import Debug.Trace as DT
 mousePos :: SF AppInput (Double,Double)
 mousePos = arr inpMousePos
 
-mouseMotion :: SF AppInput (Event ())
-mouseMotion = mouseRelPos >>^ tagWith ()
-
-mouseRelPos :: SF AppInput (Event (Double,Double))
-mouseRelPos = inpMouseRelPos ^>> edgeJust
+mouseRelPos :: SF AppInput (Maybe (Double,Double))
+mouseRelPos = arr inpMouseRelPos
 
 -- | Events that indicate left button click
 lbp :: SF AppInput (Event ())
