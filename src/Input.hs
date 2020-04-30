@@ -14,6 +14,7 @@ module Input
     , rbDown
     , keyInput
     , quitEvent
+    , centerEvent
     , module SDL.Input.Keyboard.Codes
     ) where
 
@@ -77,6 +78,9 @@ mouseEvent = arr inpMouseMoving >>> edge
 
 quitEvent :: SF AppInput (Event ())
 quitEvent = arr inpQuit >>> edge
+
+centerEvent :: SF AppInput (Event ())
+centerEvent = arr inpCenter >>> edge
 
 keyInput :: SDL.Scancode -> String -> SF AppInput (Event ())
 keyInput code mode =
@@ -155,6 +159,7 @@ data AppInput =
      , inpMouseRight        :: Maybe (Double, Double) -- ^ Right  button currently down
      --, inpMouseMiddle       :: Maybe (Double, Double) -- ^ Middle button currently down
      , inpQuit              :: Bool                   -- ^ SDL's QuitEvent
+     , inpCenter            :: Bool
      , inpMouseMoving       :: Bool
      , inpMouseStopped      :: Bool
      , inpKeySpacePressed   :: Maybe SDL.Scancode
@@ -231,6 +236,7 @@ initAppInput =
      , inpMouseStopped      = True
      --, inpMouseMiddle       = Nothing
      , inpQuit              = False
+     , inpCenter            = True
      , inpKeySpacePressed   = Nothing
      , inpKeySpaceReleased  = Nothing
      -- W
@@ -307,12 +313,12 @@ nextAppInput inp SDL.QuitEvent
   = inp { inpQuit = True }
 -- | mouse movement/position
 nextAppInput inp (SDL.MouseMotionEvent ev) =
-    inp { inpMouseMoving  = True
-        , inpMouseStopped = False
-        , inpMousePos     = (fromIntegral x, fromIntegral y)
-        , inpMouseRelPos  = Just (fromIntegral x', fromIntegral y') }
-    where (P (V2 x  y ))  = SDL.mouseMotionEventPos ev
-          (  (V2 x' y'))  = SDL.mouseMotionEventRelMotion ev
+  inp { inpMouseMoving  = True
+      , inpMouseStopped = False
+      -- , inpMousePos     = (fromIntegral x, fromIntegral y)
+      , inpMouseRelPos  = Just (fromIntegral x', fromIntegral y') }
+  where (P (V2 x  y ))  = SDL.mouseMotionEventPos ev
+        (  (V2 x' y'))  = SDL.mouseMotionEventRelMotion ev
 -- | keyInput events
 nextAppInput inp (SDL.KeyboardEvent ev)
     | scancode ev == SDL.ScancodeEscape
@@ -512,9 +518,9 @@ nextAppInput inp (SDL.MouseButtonEvent ev)
                 -- (SDL.Pressed,  SDL.ButtonMiddle) -> second (const (Just pos))
                 _ -> id
 nextAppInput inp _ =
-  inp { inpMouseMoving  = False
-      , inpMouseStopped = True
-      , inpMouseRelPos  = Nothing
+  inp { --inpMouseMoving  = False
+      --, inpMouseStopped = True
+      inpMouseRelPos  = Nothing
       }
 
 -- nextAppInput inp _ = inp
