@@ -7,6 +7,7 @@ module Main where
 import Control.Concurrent
 import Control.Arrow.List.Class  --(arrL)
 import Control.Lens       hiding (transform, indexed, ids)
+import Data.Bifoldable           (biList)
 import Data.Text                 (pack)
 import Data.IORef
 import Data.Maybe
@@ -65,7 +66,7 @@ import Debug.Trace    as DT
 
 -- -- < Animate > ------------------------------------------------------------
 type WinInput = Event SDL.EventPayload
-type WinOutput = (Game, (Bool, Bool))
+type WinOutput = (Game, Bool)
 
 animate :: SDL.Window
         -> SF WinInput WinOutput  -- ^ signal function to animate
@@ -81,16 +82,16 @@ animate window sf =
       where
         senseInput _ =
           do
-            -- lastInteraction <- newMVar =<< SDL.time
-            -- currentTime <- SDL.time                          
-            -- dt <- (currentTime -) <$> swapMVar lastInteraction currentTime
-            timeRef <- newIORef (0 :: Int) --
-            dt <- yampaSDLTimeSense timeRef
+            lastInteraction <- newMVar =<< SDL.time
+            currentTime <- SDL.time                          
+            dt <- (currentTime -) <$> swapMVar lastInteraction currentTime --dtime
+            timeRef <- newIORef (0 :: Int) 
+            t <- yampaSDLTimeSense timeRef -- time
             mEvent <- SDL.pollEvent
             return (dt, Event . SDL.eventPayload <$> mEvent)
             -- return (dt, Event . SDL.eventPayload <$> mEvent) 
 
-        renderOutput _ (game, (shouldExit, shouldCenter)) =
+        renderOutput _ (game, shouldExit) =
           do
             R.render
               R.OpenGL
@@ -364,8 +365,20 @@ updateController ctl0 =
           ctl           <- updateController' ctl0  -< ctl0
           mtx           <- returnA          -< Controllable._transform ctl
           ypr           <- returnA          -< Controllable._ypr ctl
-          (rpos, mevs)  <- (mouseRelPos &&& repeatedly 0.1 () ) -< input
+          (rpos1, mevs)  <- (mouseRelPos &&& repeatedly 0.00001 () ) -< input
           (kkeys, kevs) <- updateKeys  ctl0 -< input
+
+          -- | A hack to fix camera mouse spinning
+          let rpos = if diff < 1.1
+                then Just (0.0, 0.0)
+                else rpos1
+                where
+                  diff  =
+                    abs $
+                    (\(x,y)(x',y') -> sqrt $ (x-x')^2 + (y-y')^2)
+                    (maybe (0.0, 0.0) id rpos1)
+                    (rpos0)
+                  rpos0 = _rpos._mouse._device $ ctl0
           
           result <-
             returnA -<
@@ -373,12 +386,12 @@ updateController ctl0 =
               ( Device
                 ( Keyboard kkeys (keyVecs (_keyboard (_device ctl))) )
                 ( Mouse Nothing Nothing (0, 0) (maybe (0.0, 0.0) id rpos) [] ) ) )
+            
           returnA -< 
             ( ctl
-            , catEvents (mevs:kevs)
-              $> result) -- :: (Controllable, Event Controllable)
-      cont result = updateController result          
-
+            , catEvents (mevs:kevs) $> result) -- :: (Controllable, Event Controllable)
+      cont result = updateController result
+      
 updateController' :: Controllable -> SF Controllable Controllable
 updateController' ctl0 =
   iterFrom update1 ctl0
@@ -389,12 +402,13 @@ updateController' ctl0 =
         kvs  = keyVecs._keyboard._device $ ctl0
         -- mvs  = mVecs._mouse._device      $ ctl0
         pos0 = _pos._mouse._device       $ ctl0
-        rpos0 = rpos._mouse._device      $ ctl0
+        rpos0 = _rpos._mouse._device $ ctl0
+        -- rpos0 = (\s(x,y) ->  (s*x, s*y)) 0.99 (_rpos._mouse._device $ ctl0)
 
         ctl = (Controller
                (0,0)
                mtx
-               ypr'
+               (ypr')
                (Device
                 (Keyboard keys0 kvs)
                 (Mouse Nothing Nothing pos0 rpos0 [])))
@@ -404,9 +418,9 @@ updateController' ctl0 =
 
             ypr' :: V3 Double
             ypr'  =
-              --(99999 * ) $
-              ((V3 dt dt dt*0.001) * ) $
-              (((0.01 * ) (V3 y' x' 0.0)) + ) $
+              (99999 * ) $
+              ((V3 dt dt dt*0.1) * ) $
+              (((0.1 * ) (V3 y' x' 0.0)) + ) $
               foldr (+) (V3 0 0 0) $
               zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys0) <$>
                             [ keyUp,  keyDown, keyLeft, keyRight, keyQ,  keyE ])
@@ -418,10 +432,7 @@ updateController' ctl0 =
                 nYaw   = (keyVecs._keyboard._device $ ctl0)!!9  -- negative  yaw
                 pRoll  = (keyVecs._keyboard._device $ ctl0)!!10 -- positive  roll
                 nRoll  = (keyVecs._keyboard._device $ ctl0)!!11 -- negative  roll
-                -- (x',y') = case (rpos._mouse._device $ ctl0) of
-                --             Nothing -> (0.0, 0.0)
-                --             Just p -> p
-                (x',y') = (rpos._mouse._device $ ctl2)
+                (x',y') = (_rpos._mouse._device $ ctl2)
             
             mtx = 
               mkTransformationMat
@@ -503,7 +514,7 @@ updateMouse ctl0 =
           (lmb._mouse._device $ ctl0)
           (rmb._mouse._device $ ctl0)
           (_pos._mouse._device $ ctl0)
-          (rpos._mouse._device $ ctl0)
+          (_rpos._mouse._device $ ctl0)
           []
     returnA -< (mouse, events)
 
@@ -546,5 +557,5 @@ main = do
   
   animate
     window
-    (parseWinInput >>> (mainGame game &&& handleExit &&& centerView))
+    (parseWinInput >>> (mainGame game &&& handleExit))
   return ()

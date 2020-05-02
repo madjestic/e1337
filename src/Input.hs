@@ -5,7 +5,8 @@ module Input
     , mousePos
 --    , mouseMotion
     , mouseRelPos
-    , mouseEvent
+    , mouseMoving
+    , mouseStopped
     , lbp
     , lbpPos
     , lbDown
@@ -48,12 +49,6 @@ lbp = lbpPos >>^ tagWith ()
 lbpPos :: SF AppInput (Event (Double,Double))
 lbpPos = inpMouseLeft ^>> edgeJust
 
--- mme :: SF AppInput (Event ())
--- mme = mmePos >>^ tagWith ()
-
--- mmePos :: SF AppInput (Event (Double, Double))
--- mmePos = inpMousePos ^>> edgeJust
-
 -- | Is left button down
 lbDown :: SF AppInput Bool
 lbDown = arr (isJust . inpMouseLeft)
@@ -70,8 +65,11 @@ rbpPos = inpMouseRight ^>> edgeJust
 rbDown :: SF AppInput Bool
 rbDown = arr (isJust . inpMouseRight)
 
-mouseEvent :: SF AppInput (Event ())
-mouseEvent = arr inpMouseMoving >>> edge
+mouseMoving :: SF AppInput (Event ())
+mouseMoving = arr inpMouseMoving >>> edge
+
+mouseStopped :: SF AppInput (Event ())
+mouseStopped = arr inpMouseStopped >>> edge
 
 quitEvent :: SF AppInput (Event ())
 quitEvent = arr inpQuit >>> edge
@@ -206,9 +204,12 @@ data AppInput =
      -- PageDown
      , inpKeyPageDownPressed   :: Maybe SDL.Scancode
      , inpKeyPageDownReleased  :: Maybe SDL.Scancode
-     -- LShift
+     -- -- LShift
      , inpKeyLShiftPressed   :: Maybe SDL.Scancode
-     , inpKeyLShiftReleased  :: Maybe SDL.Scancode     
+     , inpKeyLShiftReleased  :: Maybe SDL.Scancode
+     -- LShift
+     -- , inpKeyLShiftPressed   :: Maybe SDL.KeyModifier
+     -- , inpKeyLShiftReleased  :: Maybe SDL.KeyModifier
      -- LCtrl
      , inpKeyLCtrlPressed   :: Maybe SDL.Scancode
      , inpKeyLCtrlReleased  :: Maybe SDL.Scancode
@@ -304,6 +305,10 @@ scancode :: SDL.KeyboardEventData -> Scancode
 scancode ev =
   SDL.keysymScancode $ SDL.keyboardEventKeysym ev
 
+keyModifier :: SDL.KeyboardEventData -> SDL.KeyModifier
+keyModifier ev =
+  SDL.keysymModifier $ SDL.keyboardEventKeysym ev
+
 nextAppInput :: AppInput -> SDL.EventPayload -> AppInput
 -- | quit event
 nextAppInput inp SDL.QuitEvent
@@ -312,8 +317,8 @@ nextAppInput inp SDL.QuitEvent
 nextAppInput inp (SDL.MouseMotionEvent ev) =
   inp { inpMouseMoving  = True
       , inpMouseStopped = False
-      -- , inpMousePos     = (fromIntegral x, fromIntegral y)
-      , inpMouseRelPos  = Just (fromIntegral x', fromIntegral y') }
+      , inpMousePos     = (fromIntegral x, fromIntegral y)
+      , inpMouseRelPos  = Just (fromIntegral x', fromIntegral y') } --Just (0.0::Double, 0.0::Double) }
   where (P (V2 x  y ))  = SDL.mouseMotionEventPos ev
         (  (V2 x' y'))  = SDL.mouseMotionEventRelMotion ev
 -- | keyInput events
@@ -408,7 +413,7 @@ nextAppInput inp (SDL.KeyboardEvent ev)
            | otherwise      
              -> inp { inpKeyLShiftPressed  = Nothing
                     , inpKeyLShiftReleased = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev }
-                
+    
     | (scancode ev) == SDL.ScancodeLCtrl
       = if | SDL.keyboardEventKeyMotion ev == SDL.Pressed
              -> inp { inpKeyLCtrlPressed  = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev
@@ -480,22 +485,6 @@ nextAppInput inp (SDL.KeyboardEvent ev)
            | otherwise      
              -> inp { inpKeyRightPressed  = Nothing
                     , inpKeyRightReleased = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev }
-
-    | (scancode ev) == SDL.ScancodeRShift
-      = if | SDL.keyboardEventKeyMotion ev == SDL.Pressed
-             -> inp { inpKeyRShiftPressed  = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev
-                    , inpKeyRShiftReleased = Nothing }
-           | otherwise      
-             -> inp { inpKeyRShiftPressed  = Nothing
-                    , inpKeyRShiftReleased = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev }
-                
-    | (scancode ev) == SDL.ScancodeRCtrl
-      = if | SDL.keyboardEventKeyMotion ev == SDL.Pressed
-             -> inp { inpKeyRCtrlPressed  = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev
-                    , inpKeyRCtrlReleased = Nothing }
-           | otherwise      
-             -> inp { inpKeyRCtrlPressed  = Nothing
-                    , inpKeyRCtrlReleased = Just $ SDL.keysymScancode $ SDL.keyboardEventKeysym ev }
                 
 -- | mouse button events              
 nextAppInput inp (SDL.MouseButtonEvent ev)
@@ -514,10 +503,12 @@ nextAppInput inp (SDL.MouseButtonEvent ev)
                 -- (SDL.Released, SDL.ButtonMiddle) -> second (const Nothing)
                 -- (SDL.Pressed,  SDL.ButtonMiddle) -> second (const (Just pos))
                 _ -> id
+-- nextAppInput inp (SDL.KeyModifier ev)
+--   = undefined
 nextAppInput inp _ =
-  inp { --inpMouseMoving  = False
-      --, inpMouseStopped = True
-      inpMouseRelPos  = Nothing
+  inp { inpMouseMoving  = False
+      , inpMouseStopped = True
+      , inpMouseRelPos  = Nothing
       }
 
 -- nextAppInput inp _ = inp
