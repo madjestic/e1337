@@ -86,10 +86,9 @@ animate window sf =
             currentTime <- SDL.time                          
             dt <- (currentTime -) <$> swapMVar lastInteraction currentTime --dtime
             timeRef <- newIORef (0 :: Int) 
-            t <- yampaSDLTimeSense timeRef -- time
+            -- t <- yampaSDLTimeSense timeRef -- time
             mEvent <- SDL.pollEvent
             return (dt, Event . SDL.eventPayload <$> mEvent)
-            -- return (dt, Event . SDL.eventPayload <$> mEvent) 
 
         renderOutput _ (game, shouldExit) =
           do
@@ -99,7 +98,6 @@ animate window sf =
               --(BackendOptions { primitiveMode = Points})
               window
               game
-            --setMouseLocationMode RelativeLocation 
             return shouldExit
 
 -- | Updates the time in an IO Ref and returns the time difference
@@ -199,7 +197,7 @@ loadObjects project =
         offset = fmap ((view _w).fromList) (xform_)
         preTransform = fmap fromList xform_
 
-    initGlobalUniforms
+    _ <- initGlobalUniforms
     ds <- mapM initVAO args
 
     progs <- mapM (\mat -> loadShaders
@@ -365,7 +363,7 @@ updateController ctl0 =
           ctl           <- updateController' ctl0  -< ctl0
           mtx           <- returnA          -< Controllable._transform ctl
           ypr           <- returnA          -< Controllable._ypr ctl
-          (rpos1, mevs)  <- (mouseRelPos &&& repeatedly 0.00001 () ) -< input
+          (rpos1, mevs)  <- (mouseRelPos &&& repeatedly 0.000001 () ) -< input
           (kkeys, kevs) <- updateKeys  ctl0 -< input
 
           -- | A hack to fix camera mouse spinning
@@ -419,8 +417,8 @@ updateController' ctl0 =
             ypr' :: V3 Double
             ypr'  =
               (99999 * ) $
-              ((V3 dt dt dt*0.1) * ) $
-              (((0.1 * ) (V3 y' x' 0.0)) + ) $
+              ((V3 dt dt dt) * ) $
+              (((0.025 * ) (V3 y' x' 0.0)) + ) $
               foldr (+) (V3 0 0 0) $
               zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys0) <$>
                             [ keyUp,  keyDown, keyLeft, keyRight, keyQ,  keyE ])
@@ -550,7 +548,7 @@ main = do
                title
                (resX, resY)
   -- SDL Mouse Options
-  setMouseLocationMode RelativeLocation          
+  setMouseLocationMode RelativeLocation
 
   game <- initGame proj
   print "Starting Game."

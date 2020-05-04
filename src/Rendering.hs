@@ -2,6 +2,7 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE CPP    #-}
 
 module Rendering
   ( openWindow
@@ -48,6 +49,12 @@ import Unsafe.Coerce
 
 import Control.Lens       hiding (transform, indexed)
 import Debug.Trace as DT
+
+#ifdef DEBUG
+debug = True
+#else
+debug = False
+#endif
 
 data Backend
   = OpenGL
@@ -100,7 +107,7 @@ data Uniforms
   =  Uniforms
      {
        u_mats  :: Material 
-     , u_prog  :: Program  -- TODO : finish (shader program) assignment at the load object stage, rather than re-initializing it every frame.
+     , u_prog  :: Program
      , u_mouse :: (Double, Double)
      , u_time  :: Float
      , u_res   :: (CInt, CInt)
@@ -138,12 +145,45 @@ toDrawables game time = drs
     --u_cam    = DT.trace ("camera: " ++ (show $ replicate n $ view (camera . controller . Controllable.transform) game)) $ replicate n $ view (camera . controller . Controllable.transform) game :: [M44 Double]
     u_cam    = replicate n $ view (camera . controller . Controllable.transform) game :: [M44 Double]
     --u_xform  = undefined :: [(M44 Double)] -- concat $ replicate n $ toListOf (objects . traverse . Object.transform) game :: [(M44 Double)]  -- :: [GLmatrix GLfloat]
-    u_xform  = concat $ toListOf (objects . traverse . Object.transform) game :: [(M44 Double)]  -- :: [GLmatrix GLfloat]
+    u_xform  = concat $ replicate n $ concat $ toListOf (objects . traverse . Object.transform) game :: [(M44 Double)]  -- :: [GLmatrix GLfloat]
     
     drs      = 
       (\  u_mats' u_prog' u_mouse' u_time' u_res' u_cam' u_xform' ds' ps'
         -> (Drawable (Uniforms u_mats' u_prog' u_mouse' u_time' u_res' u_cam' u_xform') ds' ps')) 
       <$.> u_mats <*.> u_prog <*.> u_mouse <*.> u_time <*.> u_res <*.> u_cam <*.> u_xform <*.> ds <*.> u_prog
+
+    -- Useful debug code: shows what actually gets drawn
+    -- drs      = 
+    --   (\  u_mats'
+    --       u_prog'
+    --       u_mouse'
+    --       u_time'
+    --       u_res'
+    --       u_cam'
+    --       u_xform'
+    --       ds'
+    --       ps'
+    --     -> (Drawable
+    --         (Uniforms
+    --          u_mats'
+    --          u_prog'
+    --          u_mouse'
+    --          u_time'
+    --          u_res'
+    --          u_cam'
+    --          u_xform')
+    --          ds'
+    --          ps'))
+    --   <$.> (DT.trace ("u_mats :" ++ show u_mats) $ u_mats)    --u_mats
+    --   <*.> (DT.trace ("u_prog :" ++ show u_prog) $ u_prog)    --u_prog
+    --   <*.> (DT.trace ("u_mouse :" ++ show u_mouse) $ u_mouse) --u_mouse
+    --   <*.> (DT.trace ("u_time :" ++ show u_time) $ u_time)    --u_time
+    --   <*.> (DT.trace ("u_res :" ++ show u_res) $ u_res)       --u_res
+    --   <*.> (DT.trace ("u_cam :" ++ show u_cam) $ u_cam)       --u_cam
+    --   <*.> (DT.trace ("u_xform :" ++ show u_xform) $ u_xform) --u_xform
+    --   <*.> (DT.trace ("ds :" ++ show ds) $ ds)                --ds
+    --   <*.> (DT.trace ("u_prog :" ++ show u_prog) $ u_prog)    --u_prog
+      
 
 render :: Backend -> BackendOptions -> SDL.Window -> Game -> IO ()
 render Rendering.OpenGL opts window game =
@@ -175,7 +215,7 @@ draw opts window (Drawable
     
     GL.pointSize $= 10
 
-    cullFace  $= Just Front
+    cullFace  $= Just Back
     depthFunc $= Just Less
 
 initGlobalUniforms :: IO ()
@@ -201,15 +241,13 @@ initUniforms (Uniforms u_mat' u_prog' u_mouse' u_time' u_res' u_cam' u_xform') =
     -- _ <- DT.trace ("vertShader: " ++ show (_vertShader u_mat')) $ return ()
     -- _ <- DT.trace ("vertShader: " ++ show (_fragShader u_mat')) $ return ()
 
-    -- This will init every frame - useful for shader prototyping, at the expense of performance.
-    program <- loadShaders
-      [ ShaderInfo VertexShader   (FileSource (_vertShader u_mat' ))
-      , ShaderInfo FragmentShader (FileSource (_fragShader u_mat' )) ]
+    programDebug <- loadShaders
+               [ ShaderInfo VertexShader   (FileSource (_vertShader u_mat' ))
+               , ShaderInfo FragmentShader (FileSource (_fragShader u_mat' )) ]
+    let program = case debug of
+                    True  -> programDebug
+                    False -> u_prog'
     currentProgram $= Just program
-
-    -- This is a standard version of shader init prior to game loop init.
-    -- let program = u_prog'
-    -- currentProgram $= Just program
 
     -- | Set Uniforms
     let u_mouse       = Vector2 (realToFrac $ fst u_mouse') (realToFrac $ snd u_mouse') :: Vector2 GLfloat
@@ -288,7 +326,7 @@ initVAO (idx', st', vs', matPath) =
         
         -- | Bind the pointer to the vertex attribute data
         let floatSize  = (fromIntegral $ sizeOf (0.0::GLfloat)) :: GLsizei
-            stride     = (fromIntegral st') * floatSize -- TODO : stride value should come from a single location
+            stride     = (fromIntegral st') * floatSize
         
         -- | Alpha
         vertexAttribPointer (AttribLocation 0) $= (ToFloat, VertexArrayDescriptor 1 Float stride ((plusPtr nullPtr . fromIntegral) (0 * floatSize)))
@@ -299,7 +337,7 @@ initVAO (idx', st', vs', matPath) =
         -- | Normals
         vertexAttribPointer (AttribLocation 2) $= (ToFloat, VertexArrayDescriptor 3 Float stride ((plusPtr nullPtr . fromIntegral) (4 * floatSize)))
         vertexAttribArray   (AttribLocation 2) $= Enabled
-        -- | UV
+        -- | UVW
         vertexAttribPointer (AttribLocation 3) $= (ToFloat, VertexArrayDescriptor 3 Float stride ((plusPtr nullPtr . fromIntegral) (7 * floatSize)))
         vertexAttribArray   (AttribLocation 3) $= Enabled
         -- | Positions

@@ -14,10 +14,15 @@
 
 # Earth and ISS
 # planet Earth modelling and shading
-mvlink ./app/Main.hs /home/madjestic/Projects/Haskell/e1337/app/Main.hs.earth
-# cabal new-build
+# mvlink ./app/Main.hs /home/madjestic/Projects/Haskell/e1337/app/Main.hs.earth
+cabal new-build
 cabal new-run e1337 ./projects/iss_S3_L1
 
+# Cornel Box
+# a test scene
+# mvlink ./app/Main.hs /home/madjestic/Projects/Haskell/e1337/app/Main.hs.earth
+# cabal new-build
+# cabal new-run e1337 ./projects/cornel_box
 
 # Test
 # mvlink ./app/Main.hs /home/madjestic/Projects/Haskell/e1337/app/Main.hs.earth
