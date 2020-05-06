@@ -34,7 +34,7 @@ import FromVector
 import VGeo
 import Utils
 
--- import Debug.Trace   as DT
+import Debug.Trace   as DT
 
 instance FromVector Vec3 where
   toVertex4 :: Vec3 -> Vertex4 Double
@@ -120,17 +120,17 @@ readPGeo jsonFile =
             Right pt -> Just pt
 
 fromPGeo :: PGeo -> VGeo
-fromPGeo (PGeo idx' as' cs' ns' uvw' ps' ms' xf') = (VGeo idxs st vaos ms' xf')
+fromPGeo (PGeo idx' as' cs' ns' uvw' ps' ms' xf') = (VGeo (DT.trace ("fromPGeo.idxs :" ++ show idxs) $ idxs) st (DT.trace ("fromPGeo.vaos :" ++ show vaos) $ vaos) ms' xf')
   where
     stride = 13 -- TODO: make it more elegant, right now VBO's are hard-coded to be have stride = 13...
-    --_ = (DT.trace ("idx' :" ++ show $ fromList idx') ())
-    --vao = DT.trace ("toVAO :" ++ show (toVAO idx' as' cs' ns' uvw' ps')) $ (toVAO idx' as' cs' ns' uvw' ps')
+    vao = (toVAO idx' as' cs' ns' uvw' ps')
+    (idxs, vaos) = unzip $ fmap (toIdxVAO stride) (DT.trace ("fromPGeo.vao :" ++ show vao) $ vao)
     -- (idxs, vaos) = unzip $ fmap (toIdxVAO stride) (toVAO
-    --                                                (DT.trace ("idx' :" ++ show idx') $ idx')
-    --                                                (DT.trace ("as' :" ++ show as') $ as')
-    --                                                (DT.trace ("cs' :" ++ show cs') $ cs')
-    --                                                (DT.trace ("ns' :" ++ show ns') $ ns')
-    --                                                (DT.trace ("uvw' :" ++ show uvw') $ uvw')
-    --                                                (DT.trace ("ps' :" ++ show ps') $ ps'))
-    (idxs, vaos) = unzip $ fmap (toIdxVAO stride) (toVAO idx' as' cs' ns' uvw' ps')
+    --                                                (DT.trace ("fromPGeo.idx' :" ++ show idx') $ idx')
+    --                                                (DT.trace ("fromPGeo.as' :" ++ show as') $ as')
+    --                                                (DT.trace ("fromPGeo.cs' :" ++ show cs') $ cs')
+    --                                                (DT.trace ("fromPGeo.ns' :" ++ show ns') $ ns')
+    --                                                (DT.trace ("fromPGeo.uvw' :" ++ show uvw') $ uvw')
+    --                                                (DT.trace ("fromPGeo.ps' :" ++ show ps') $ ps'))
+    -- (idxs, vaos) = unzip $ fmap (toIdxVAO stride) (toVAO idx' as' cs' ns' uvw' ps')
     st           = take (length vaos) $ repeat stride

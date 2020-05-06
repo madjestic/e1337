@@ -7,7 +7,7 @@ import json
 import sys
 import subprocess
 from itertools import chain
-from numpy import argsort,array
+from numpy import argsort,array,concatenate
 
 # from itertools import izip
 
@@ -29,6 +29,9 @@ def rpcShuffler(arg=[]):
 
 def concat(mlist):
     return list(chain.from_iterable(mlist))
+
+def reorder(order_=[], source_order=[], target_order=[]):
+    return (concatenate((array(order_))[array(concat(source_order)) [array([argsort(concat(target_order))])]]))
 
 # Fix `/` in a file path
 def fixPaths(vtxAttrMatDictVals):
@@ -165,30 +168,53 @@ def parseJSON(jsonFile):
     jsonEntry = {'indices' : indices}
     #print("jsonEntry: ", jsonEntry["indices"])
     idx = jsonEntry["indices"]
+    print ("geoParser.idx :", idx)
 
     jsonEntry = {'material' : vtxAttrMatIndices}
     value = jsonEntry["material"]
-    #print("initial value  :", value)
+    print("initial value  :", value)
     value = concat(value)
     value = eval(rpcShuffler(value))
+    source_order = value
+    print("shuffled value :", value)
+    print("source_order :", source_order)
     # print("material indices:", vtxAttrMatIndices)
     # print("shuffled value type :", type(value))
-    # print("shuffled value :", value)
     # print("shuffled value element type :", type((array(value)[0][0])))
     # print("value element :", ((array(value)[0][0])))
     # print("idx :", type(array(idx)))
     # print("idx :", idx)
-    list_ = []
-    for elem in (array(value)):
-        list_.append((array(idx)[elem]).tolist())
-        #print("list_ :", list_)
-    value = list_  #value.tolist()
-    #print("shuffled result :", value)
+    target_order = []
+    for elem in (array(source_order)):
+        target_order.append((array(idx)[elem]).tolist())
+        #print("target_order :", target_order)
+    value = target_order  #value.tolist()
+    print("target_order :", value)
     jsonEntry = {'indices' : value}
     data.get('PGeo').update(jsonEntry)
 
     jsonEntry = {'Alpha' : list(chain.from_iterable(vtxAttrAlphaArrays))}    
     data.get('PGeo').update(jsonEntry)
+
+# color tuples: [... [0,1,0]]    
+# [[0, 1, 2, 12, 13, 14], [3, 4, 5, 6, 7, 8], [9, 10, 11]]    
+
+    print("pre_vtxAttrCdTuples :", vtxAttrCdTuples)
+    #print("type(vtxAttrCdTuples) :", type(chain.from_iterable(vtxAttrCdTuples)))
+    # print(type(vtxAttrCdTuples))
+    # print(type(array(vtxAttrCdTuples)))
+    # print(type((reorder ((array(vtxAttrCdTuples)), source_order, target_order))))
+    # print((reorder ((array(vtxAttrCdTuples)), source_order, target_order)).tolist())
+    #print(array(chain.from_iterable(vtxAttrCdTuples)))
+    # shuffle color tuples acording to the shuffled index
+    # target_order = []
+    # for elem in (array(idx_value)):
+    #     target_order.append((array(vtxAttrCdTuples)[elem]).tolist())
+    # vtxAttrCdTuples = target_order    
+    # print("vtxAttrCdTuples :", vtxAttrCdTuples)
+
+    vtxAttrCdTuples = (reorder ((array(vtxAttrCdTuples)), source_order, target_order)).tolist()
+    print("vtxAttrCdTuples :", vtxAttrCdTuples)
     
     jsonEntry = {'Cd' : vtxAttrCdTuples}
     data.get('PGeo').update(jsonEntry)
@@ -214,7 +240,7 @@ def parseJSON(jsonFile):
     return data
 
 
-def Main(fileIn = "models/model.geo", fileOut = "models/model.pgeo"):
+def Main(fileIn = "models/cornel_box.geo", fileOut = "models/cornel_box.pgeo"):
     
     #jsonFile = readJSON(fileIn)
     data = parseJSON(readJSON(fileIn))
@@ -231,7 +257,7 @@ PGeo is homeomorphic json geo container, suitable for standard haskell.\n\
 Usage: $ python geoParser.py inputFile.geo outputFile.pgeo\n")
     
     if len(sys.argv) <= 1:
-        print("Parsing default ./models/model.geo")
+        print("Parsing default ./models/cornel_box.geo")
         Main()
     else:
         print("Parsing %s" % sys.argv[1])

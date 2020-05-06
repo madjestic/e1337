@@ -30,30 +30,21 @@ import PGeo
 import VGeo
 import Utils
 
--- import Debug.Trace as DT
+import Debug.Trace as DT
 
-writeVGeo :: FilePath -> VGeo -> IO ()
-writeVGeo fileOut vgeo =
-  do
-    I.writeFile fileOut (encodeToLazyText ( is vgeo
-                                          , st vgeo
-                                          , vs vgeo
-                                          , ms vgeo
-                                          , xf vgeo ))
+-- writeVGeo :: FilePath -> VGeo -> IO ()
+-- writeVGeo fileOut vgeo =
+--   do
+--     I.writeFile fileOut (encodeToLazyText ( is vgeo
+--                                           , st vgeo
+--                                           , vs vgeo
+--                                           , ms vgeo
+--                                           , xf vgeo ))
 
 writeBGeo :: FilePath -> VGeo -> IO ()
 writeBGeo fileOut vgeo =
   do
-    --let bar = encodeToTextBuilder ( is vgeo, st vgeo, vs vgeo, ms vgeo, xf vgeo )
-    -- let foo = toByteString $ (fromEncoding . toEncoding) ( is vgeo, st vgeo, vs vgeo, ms vgeo, xf vgeo ) --(bar)
-    -- let txt = (encodeToLazyText ( is vgeo
-    --                             , st vgeo
-    --                             , vs vgeo
-    --                             , ms vgeo
-    --                             , xf vgeo ))
-    --     encTxt = encodeUtf8 txt
     BS.writeFile fileOut $ encode $ ( is vgeo, st vgeo, vs vgeo, ms vgeo, xf vgeo )
-    --return ()
 
 main :: IO ()
 main = do
@@ -63,7 +54,8 @@ main = do
   
   pgeo <- readPGeo fileIn
   putStrLn "running indexer..."
-  let vgeo = fromPGeo pgeo
+  let vgeo = fromPGeo pgeo -- goes wrong
+  _ <- DT.trace ("geoIndexer.vgeo :" ++ show vgeo) $ return ()
   putStrLn "OK"
   --writeVGeo fileOut vgeo
   writeBGeo fileOut vgeo
