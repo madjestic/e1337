@@ -55,7 +55,7 @@ main = do
   pgeo <- readPGeo fileIn
   putStrLn "running indexer..."
   let vgeo = fromPGeo pgeo -- goes wrong
-  _ <- DT.trace ("geoIndexer.vgeo :" ++ show vgeo) $ return ()
+  -- _ <- DT.trace ("geoIndexer.vgeo :" ++ show vgeo) $ return ()
   putStrLn "OK"
   --writeVGeo fileOut vgeo
   writeBGeo fileOut vgeo

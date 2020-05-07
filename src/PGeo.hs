@@ -119,12 +119,13 @@ readPGeo jsonFile =
             Left err -> Nothing
             Right pt -> Just pt
 
+-- fromPGeo (PGeo idx' as' cs' ns' uvw' ps' ms' xf') = (VGeo (DT.trace ("fromPGeo.idxs :" ++ show idxs) $ idxs) st (DT.trace ("fromPGeo.vaos :" ++ show vaos) $ vaos) ms' xf')
 fromPGeo :: PGeo -> VGeo
-fromPGeo (PGeo idx' as' cs' ns' uvw' ps' ms' xf') = (VGeo (DT.trace ("fromPGeo.idxs :" ++ show idxs) $ idxs) st (DT.trace ("fromPGeo.vaos :" ++ show vaos) $ vaos) ms' xf')
+fromPGeo (PGeo idx' as' cs' ns' uvw' ps' ms' xf') = (VGeo idxs st vaos ms' xf')
   where
     stride = 13 -- TODO: make it more elegant, right now VBO's are hard-coded to be have stride = 13...
     vao = (toVAO idx' as' cs' ns' uvw' ps')
-    (idxs, vaos) = unzip $ fmap (toIdxVAO stride) (DT.trace ("fromPGeo.vao :" ++ show vao) $ vao)
+    (idxs, vaos) = unzip $ fmap (toIdxVAO stride) vao
     -- (idxs, vaos) = unzip $ fmap (toIdxVAO stride) (toVAO
     --                                                (DT.trace ("fromPGeo.idx' :" ++ show idx') $ idx')
     --                                                (DT.trace ("fromPGeo.as' :" ++ show as') $ as')

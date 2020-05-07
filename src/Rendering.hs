@@ -305,7 +305,7 @@ initVAO (idx', st', vs', matPath) =
     let
       idx = (fmap unsafeCoerce idx') :: [GLuint]
       vs  = (fmap unsafeCoerce vs')  :: [GLfloat]
-    _ <- DT.trace ("Rendering.initVAO.vs :" ++ show vs) $ return ()
+    --_ <- DT.trace ("Rendering.initVAO.vs :" ++ show vs) $ return ()
     -- | VAO
     vao <- genObjectName
     bindVertexArrayObject $= Just vao 

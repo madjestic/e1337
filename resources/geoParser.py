@@ -126,7 +126,7 @@ def parseJSON(jsonFile):
     vtxAttrMatDict     = toDict (vtxAttrMat [1])
     vtxAttrMatDictVals = vtxAttrMatDict ["strings"] # material paths strings
     vtxAttrMatIndices  = toDict (vtxAttrMatDict["indices"])["arrays"]
-
+    # TODO : use /mat/genMaterial.hs matName (/mat/foo/bar)
 
     ### UV
     vtxAttrUV         = vtxAttrs [4]
@@ -168,57 +168,40 @@ def parseJSON(jsonFile):
     jsonEntry = {'indices' : indices}
     #print("jsonEntry: ", jsonEntry["indices"])
     idx = jsonEntry["indices"]
-    print ("geoParser.idx :", idx)
+    # print ("geoParser.idx :", idx)
 
     jsonEntry = {'material' : vtxAttrMatIndices}
     value = jsonEntry["material"]
-    print("initial value  :", value)
+    # print("initial value  :", value)
     value = concat(value)
     value = eval(rpcShuffler(value))
     source_order = value
-    print("shuffled value :", value)
-    print("source_order :", source_order)
-    # print("material indices:", vtxAttrMatIndices)
-    # print("shuffled value type :", type(value))
-    # print("shuffled value element type :", type((array(value)[0][0])))
-    # print("value element :", ((array(value)[0][0])))
-    # print("idx :", type(array(idx)))
-    # print("idx :", idx)
+    # print("shuffled value :", value)
+    # print("source_order :", source_order)
     target_order = []
     for elem in (array(source_order)):
         target_order.append((array(idx)[elem]).tolist())
         #print("target_order :", target_order)
     value = target_order  #value.tolist()
-    print("target_order :", value)
+    # print("target_order :", value)
     jsonEntry = {'indices' : value}
     data.get('PGeo').update(jsonEntry)
 
-    jsonEntry = {'Alpha' : list(chain.from_iterable(vtxAttrAlphaArrays))}    
+    # Reorder Alpha according to the shuffled indices.
+    # print("DEBUG :", vtxAttrAlphaArrays)
+    vtxAttrAlphaArrays = (reorder ((concatenate(vtxAttrAlphaArrays)), source_order, target_order)).tolist()
+    # jsonEntry = {'Alpha' : list(chain.from_iterable(vtxAttrAlphaArrays))}
+    jsonEntry = {'Alpha' : vtxAttrAlphaArrays}    
     data.get('PGeo').update(jsonEntry)
 
-# color tuples: [... [0,1,0]]    
-# [[0, 1, 2, 12, 13, 14], [3, 4, 5, 6, 7, 8], [9, 10, 11]]    
-
-    print("pre_vtxAttrCdTuples :", vtxAttrCdTuples)
-    #print("type(vtxAttrCdTuples) :", type(chain.from_iterable(vtxAttrCdTuples)))
-    # print(type(vtxAttrCdTuples))
-    # print(type(array(vtxAttrCdTuples)))
-    # print(type((reorder ((array(vtxAttrCdTuples)), source_order, target_order))))
-    # print((reorder ((array(vtxAttrCdTuples)), source_order, target_order)).tolist())
-    #print(array(chain.from_iterable(vtxAttrCdTuples)))
-    # shuffle color tuples acording to the shuffled index
-    # target_order = []
-    # for elem in (array(idx_value)):
-    #     target_order.append((array(vtxAttrCdTuples)[elem]).tolist())
-    # vtxAttrCdTuples = target_order    
+    # print("pre_vtxAttrCdTuples :", vtxAttrCdTuples)
+    # Reorder colors according to the shuffled indices.
     # print("vtxAttrCdTuples :", vtxAttrCdTuples)
-
     vtxAttrCdTuples = (reorder ((array(vtxAttrCdTuples)), source_order, target_order)).tolist()
-    print("vtxAttrCdTuples :", vtxAttrCdTuples)
-    
     jsonEntry = {'Cd' : vtxAttrCdTuples}
     data.get('PGeo').update(jsonEntry)
 
+    vtxAttrNTuples = (reorder ((array(vtxAttrNTuples)), source_order, target_order)).tolist()
     jsonEntry = {'N' : vtxAttrNTuples}
     data.get('PGeo').update(jsonEntry)
 
@@ -228,6 +211,7 @@ def parseJSON(jsonFile):
     jsonEntry = {'material' : vtxAttrMatDictVals}
     data.get('PGeo').update(jsonEntry)
 
+    vtxAttrUVTuples = (reorder ((array(vtxAttrUVTuples)), source_order, target_order)).tolist()
     jsonEntry = {'uv' : vtxAttrUVTuples}
     data.get('PGeo').update(jsonEntry)
 

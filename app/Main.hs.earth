@@ -178,8 +178,12 @@ loadObjects project =
   do
     -- _ <- DT.trace ("project :" ++ show project) $ return ()
     print "Loading Models..."
-    vgeos <- mapM loadModels $ toListOf (models . traverse . path) project
-    _ <- DT.trace ("loadObjects.vgeos :" ++ show vgeos) $ return ()
+    vgeos <- mapM (\modelPath ->
+                      do { vgeo <- readBGeo modelPath
+                         ; return vgeo
+                         }
+                  ) $ toListOf (models . traverse . path) project
+    -- _ <- DT.trace ("loadObjects.vgeos :" ++ show vgeos) $ return ()
     let vgeo =
           foldr1 (\(VGeo idxs st vaos matPaths xform)(VGeo idxs' st' vaos' matPaths' xform')
                   -> (VGeo
@@ -240,17 +244,6 @@ toList (V4 (V4 x y z w) (V4 x1 y1 z1 w1) (V4 x2 y2 z2 w2) (V4 x3 y3 z3 w3))
     , x2,y2,z2,w2
     , x3,y3,z3,w3 ] :: [Float]
                                                                             
-loadModels :: String -> IO VGeo
-loadModels path =
-  do
-    --(VGeo idxs st vaos matPaths xf) <- readBGeo path
-    vgeo <- readBGeo (DT.trace ("path :" ++ show path) $ path)
-    pgeo <- readPGeo "models/cornel_box.pgeo"
-    _ <- DT.trace ( "loadModels.pgeo :" ++ show pgeo) $ return ()
-    _ <- DT.trace ( "loadModels.vgeo :" ++ show vgeo) $ return ()
-    -- return (VGeo idxs st vaos matPaths xf)
-    return vgeo 
-
 initGame :: Project -> IO Game
 initGame project =
   do
