@@ -345,52 +345,18 @@ initVAO (idx', st', vs', matPath) =
         vertexAttribPointer (AttribLocation 4) $= (ToFloat, VertexArrayDescriptor 3 Float stride ((plusPtr nullPtr . fromIntegral) (10 * floatSize)))
         vertexAttribArray   (AttribLocation 4) $= Enabled
 
-        
-        -- print "Loading Textures..."
-        -- -- | Assign Textures
-        -- activeTexture            $= TextureUnit 0
-        -- texture Texture2D        $= Enabled
-        -- tx0 <- loadTex "textures/512_earth_daymap.jpg"
-        -- textureBinding Texture2D $= Just tx0
-
-        -- activeTexture            $= TextureUnit 1
-        -- texture Texture2D        $= Enabled
-        -- tx1 <- loadTex "textures/256_moon.jpg"
-        -- textureBinding Texture2D $= Just tx1
-        -- print "Finished loading textures."
-
     return $ Descriptor vao (fromIntegral numIndices)
 
---texname = "textures/8192_moon.jpg"
+--f = "textures/8192_moon.jpg"
 
 loadTex :: FilePath -> IO TextureObject
-loadTex texname =
+loadTex f =
   do
-    imgresult <- readTexture texname
-    finaltexture <- extract $ readTexInfo texname loadTexture
-    texture Texture2D $= Enabled
-    activeTexture $= TextureUnit 0
-    textureBinding Texture2D $= Just finaltexture
+    t <- either error id <$> readTexture f
+    texture2DWrap $= (Repeated, ClampToEdge)
+    --textureFilter Texture2D $= ((Linear', Nothing), Linear')
     textureFilter  Texture2D $= ((Linear', Just Nearest), Linear')
-    textureWrapMode    Texture2D S $= (Mirrored, ClampToEdge)
-    textureWrapMode    Texture2D T $= (Mirrored, ClampToEdge)
     blend $= Enabled
     blendFunc $= (SrcAlpha, OneMinusSrcAlpha)
-    --generateMipmap' Texture2D
-    return finaltexture    
-
-extract :: (IO (Either String a)) -> IO a
-extract act =
-  do
-    e <- act
-    case e of
-      Left err -> error err
-      Right val -> return val    
-
--- loadTex :: FilePath -> IO TextureObject
--- loadTex f =
---   do
---     t <- either error id <$> readTexture f
---     textureFilter Texture2D $= ((Linear', Nothing), Linear')
---     texture2DWrap $= (Repeated, ClampToEdge)
---     return t
+    generateMipmap' Texture2D
+    return t
