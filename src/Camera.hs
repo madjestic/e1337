@@ -43,12 +43,12 @@ initCam
     rVel   = V3 (-0.1)( 0  )( 0  )   -- right     velocity
     uVel   = V3 ( 0  )(-0.1)( 0  )   -- right     velocity
     dVel   = V3 ( 0  )( 0.1)( 0  )   -- right     velocity
-    pPitch = V3 ( 0.1)( 0  )( 0  )   -- positive  pitch
-    nPitch = V3 (-0.1)( 0  )( 0  )   -- negative  pitch
-    pYaw   = V3 ( 0  )(-0.1)( 0  )   -- positive  yaw
-    nYaw   = V3 ( 0  )( 0.1)( 0  )   -- negative  yaw
-    pRoll  = V3 ( 0  )(  0 )(-0.1)   -- positive  roll
-    nRoll  = V3 ( 0  )(  0 )( 0.1)   -- negative  roll
+    pPitch = V3 (-1.0)( 0  )( 0  )   -- positive  pitch
+    nPitch = V3 ( 1.0)( 0  )( 0  )   -- negative  pitch
+    pYaw   = V3 ( 0  )(-1.0)( 0  )   -- positive  yaw
+    nYaw   = V3 ( 0  )( 1.0)( 0  )   -- negative  yaw
+    pRoll  = V3 ( 0  )(  0 )(-1.0)   -- positive  roll
+    nRoll  = V3 ( 0  )(  0 )( 1.0)   -- negative  roll
 
 controller :: Lens' Camera Controllable
 controller = lens _controller (\camera newController -> Camera { _controller = newController })

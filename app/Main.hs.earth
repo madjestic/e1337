@@ -361,7 +361,7 @@ updateController ctl0 =
           ctl           <- updateController' ctl0  -< ctl0
           mtx           <- returnA          -< Controllable._transform ctl
           ypr           <- returnA          -< Controllable._ypr ctl
-          (rpos1, mevs)  <- (mouseRelPos &&& repeatedly 0.000001 () ) -< input
+          (rpos1, mevs)  <- (mouseRelPos &&& repeatedly 0.00000001 () ) -< input
           (kkeys, kevs) <- updateKeys  ctl0 -< input
 
           -- | A hack to fix camera mouse spinning

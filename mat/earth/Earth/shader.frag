@@ -24,5 +24,6 @@ void main()
 	
   //fragColor = vec4( Cd.x, Cd.y, Cd.z, A );
   //fragColor = vec4( normal, 1.0);
-  fragColor = vec4(texture(tex_00, vec2(uv.x, uv.y)).rgb * dot(Ng, normalize(SunP)), 1.0);
+  //fragColor = vec4(texture(tex_00, vec2(uv.x, uv.y)).rgb * dot(Ng, normalize(SunP)), 1.0);
+	fragColor = vec4(texture(tex_00, vec2(uv.x, uv.y)).rgb, 1.0);
 }

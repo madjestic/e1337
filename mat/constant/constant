@@ -2,8 +2,8 @@
   "Material": {
     "name":"constant",
     "Shaders": {
-      "vertex":   "mat/constant/Constant/shader.vert",
-      "fragment": "mat/constant/Constant/shader.frag"
+      "vertex":   "mat/constant/src/shader.vert",
+      "fragment": "mat/constant/src/shader.frag"
     },
     "textures": [""]
   }
