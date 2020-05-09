@@ -1,0 +1,16 @@
+{
+    "project":
+    {
+	"name"  : "Debug Camera",
+	"resx"  : 400,
+	"resy"  : 300,
+	"models":
+	[
+	    { "path": "models/debug.bgeo" }
+	],
+	"camera": [1, 0, 0, 0,
+		   0, 1, 0, 0,
+		   0, 0, 1,-1,
+		   0, 0, 0, 1]
+    }
+}

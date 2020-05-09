@@ -21,8 +21,21 @@
 # Cornel Box
 # a test scene
 # mvlink ./app/Main.hs /home/madjestic/Projects/Haskell/e1337/app/Main.hs.earth
+# cabal new-build
+# cabal new-run e1337 ./projects/cornel_box
+
+# Indexer Debug
+# a test scene
+# mvlink ./app/Main.hs /home/madjestic/Projects/Haskell/e1337/app/Main.hs.debug
+# cabal new-build
+# cabal new-run e1337 ./projects/debug
+
+# Camera Debug
+# a test scene
+mvlink ./app/Main.hs /home/madjestic/Projects/Haskell/e1337/app/Main.hs.debug
 cabal new-build
-cabal new-run e1337 ./projects/cornel_box
+cabal new-run e1337 ./projects/debug_camera
+
 
 # Test
 # mvlink ./app/Main.hs /home/madjestic/Projects/Haskell/e1337/app/Main.hs.earth

@@ -1,0 +1,12 @@
+{
+    "project":
+    {
+	"name"  : "Debug",
+	"resx"  : 400,
+	"resy"  : 300,
+	"models":
+	[
+	    { "path": "models/debug.bgeo" }
+	]
+    }
+}

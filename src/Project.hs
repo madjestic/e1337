@@ -6,6 +6,7 @@ module Project
   , resx
   , resy
   , models
+  , cameraP
   , path
   ) where
 
@@ -19,6 +20,7 @@ data Project
      , resx    :: Int
      , resy    :: Int
      , _models :: [Model]
+     , _cameraP :: [Float]
      } deriving Show
 
 data Model
@@ -38,6 +40,9 @@ data Model
 
 models :: Lens' Project [Model]
 models = lens _models (\project newModels -> Project { _models = newModels })
+
+cameraP :: Lens' Project [Float]
+cameraP = lens _cameraP (\project newCameraP -> Project { _cameraP = newCameraP })
 -- TOODO : finish lensing:..
 path :: Lens' Model String
 path = lens _path (\model newPath -> Model { _path = newPath })

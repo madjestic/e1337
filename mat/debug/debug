@@ -1,0 +1,10 @@
+{
+    "Material": {
+        "textures": [],
+        "Shaders": {
+            "fragment": "mat/debug/src/shader.frag",
+            "vertex": "mat/debug/src/shader.vert"
+        },
+        "name": "debug"
+    }
+}

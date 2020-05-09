@@ -2,6 +2,7 @@ module Camera
   ( Camera (..)
   , initCam
   , controller
+  , initCamController
   ) where
 
 import Control.Lens
@@ -18,8 +19,12 @@ data Camera =
        _controller :: Controllable
      } deriving Show
 
+initCam :: Camera
 initCam
-  = Camera
+  = Camera initCamController
+
+initCamController :: Controllable
+initCamController =
   ( Controller
     (0,0)
     -- (transpose (identity :: M44 Double))

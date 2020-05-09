@@ -1,1 +1,1 @@
-/home/madjestic/Projects/Haskell/e1337/app/Main.hs.earth
+/home/madjestic/Projects/Haskell/e1337/app/Main.hs.debug
