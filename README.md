@@ -1,7 +1,7 @@
 # What is it?
 
 At the moment it's a Shader-Toy-like application with blackjack and exotic dancers:
-Exotic dancers being Haskell, Arrowized FRP (Yampa), OpenGL.
+exotic dancers being Haskell, Arrowized FRP (Yampa), OpenGL.
 
 Supported features:
 * Project Files.
@@ -12,6 +12,7 @@ Supported features:
 * OpenGL 4.5+ and Vulkan (placeholder) backends.
 * Uses SideFX Houdini as a game-editor.
 * Support solver stack per object (transformation stack).
+* Realistic space distances.
 
 TODO : Fix logarithmic space artifacts in materials.
 
@@ -40,17 +41,18 @@ Recent Changes:
 
 Implemented * and planned -- features:
 
-* Spaceships (ISS with mandelbrot fractal shading).
+- Spaceships
 
--- Spacestations.
+* Spacestations.
 
--- Planets.
+* Planets.
 
 -- Asteroids.
-
--- Dynamic Space Bodies with Realistic Gravitational Space Physics.
---- Realistic Newtonian physics and Inertia.
---- Relativistic Space-Time model.
+P
+-- Dynamic Space Bodies with Gravitational Space Physics.
+-- Newtonian physics and Inertia.
+-- Realistic space distances.
+-- Relativistic Space-Time model.
 
 -- Planet Landing.
 
