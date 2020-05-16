@@ -9,15 +9,18 @@ It supports loading and rendering simple projects files, describing a model, a m
 * Applies a solver-controller per object.
 * Has a camera that supports user-input.
 * Renders a scene of objects.
-* Uses Houdini as a game-editor.						
+* Uses Houdini as a game-editor.
+* Support solver stack per object (transformation stack).
 
-TODO : Support transformation stack per object.
+TODO : Fix logarithmic space artifacts in materials.
 
-[a youtube demo](https://youtu.be/W4Ry082HYCA)
+[a youtube demo](https://youtu.be/A5U13pmyawI)
 
 ![](https://github.com/madjestic/e1337/blob/master/output.png)
 
 Recent Changes:
+
+[cleanup and various fixes](https://youtu.be/A5U13pmyawI)
 
 [earth_iss_scene_prototype](https://youtu.be/W4Ry082HYCA)
 
