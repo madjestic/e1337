@@ -176,16 +176,17 @@ pCloud =
 loadObjects :: Project -> IO [Object]
 loadObjects project = 
   do
-    -- _ <- DT.trace ("project :" ++ show project) $ return ()
+    _ <- DT.trace ("project :" ++ show project) $ return ()
     print "Loading Models..."
     vgeos <- mapM (\modelPath ->
                       do { vgeo <- readBGeo modelPath
                          ; return vgeo
                          }
                   ) $ toListOf (models . traverse . path) project
-    -- _ <- DT.trace ("loadObjects.vgeos :" ++ show vgeos) $ return ()
+    _ <- DT.trace ("loadObjects.vgeos :" ++ show vgeos) $ return ()
     let vgeo =
-          foldr1 (\(VGeo idxs st vaos matPaths xform)(VGeo idxs' st' vaos' matPaths' xform')
+          foldr1 (\(VGeo idxs st vaos matPaths xform)
+                   (VGeo idxs' st' vaos' matPaths' xform')
                   -> (VGeo
                       (concat [idxs,idxs'])
                       (concat [st, st'])
@@ -193,7 +194,7 @@ loadObjects project =
                       (concat [matPaths, matPaths'])
                       (xform ++ xform')
                      )) vgeos
-    -- _ <- DT.trace ("vgeo :" ++ show vgeo) $ return ()
+    _ <- DT.trace ("vgeo :" ++ show vgeo) $ return ()
     -- mats  <- mapM readMaterial ( DT.trace ("ms vgeo" ++ show (ms vgeo)) $ ms vgeo)
     mats  <- mapM readMaterial $ ms vgeo
     let (VGeo idxs_ st_ vaos_ matPaths_ xform_) = vgeo
@@ -250,6 +251,7 @@ initGame project =
     --_ <- DT.trace ("initializing game resources...") $ return ()
     print "initializing game resources..."
     objs  <- (loadObjects project)
+    let camPos = fromList $ view cameraP project
     --pc <- fromVGeo $ fromPGeo pCloud
     --let objs = [pc]
     let game =
@@ -261,7 +263,8 @@ initGame project =
           )
           GamePlaying
           objs
-         initCam
+          --initCam -- TODO: read campos from project file
+          (Camera  initCamController { Controllable._transform = camPos })
     return game
       where        
         name' = Project.name  $ project
@@ -305,12 +308,12 @@ gamePlay game =
 updateGame :: Game -> SF AppInput Game
 updateGame game = 
   proc input -> do
-    cam  <- updateCamera  $ _camera  game -< input
+    cam  <- updateCamera  $ Game._camera  game -< input
     -- let cam = _camera  game
     objs <- updateObjects $ _objects game -< ()
     --let objs = _objects game
-    returnA  -< game { _objects = objs
-                     , _camera  = cam }
+    returnA  -< game { Game._objects = objs
+                     , Game._camera  = cam }
 
 solve :: Object -> SF () Object
 solve obj =
@@ -364,6 +367,9 @@ updateController ctl0 =
           (rpos1, mevs)  <- (mouseRelPos &&& repeatedly 0.00000001 () ) -< input
           (kkeys, kevs) <- updateKeys  ctl0 -< input
 
+          -- debug camera transform matrix
+          --_ <- DT.trace ("camera transform" ++ show (view Controllable.transform ctl0)) $ returnA -< ()
+          
           -- | A hack to fix camera mouse spinning
           let rpos = if diff < 1.1
                 then Just (0.0, 0.0)
@@ -415,7 +421,7 @@ updateController' ctl0 =
             ypr' :: V3 Double
             ypr'  =
               (99999 * ) $
-              ((V3 dt dt dt) * ) $
+              (((0.25 * ) (V3 dt dt dt)) * ) $
               (((0.025 * ) (V3 y' x' 0.0)) + ) $
               foldr (+) (V3 0 0 0) $
               zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys0) <$>
@@ -443,7 +449,7 @@ updateController' ctl0 =
 
                 tr  =
                   foldr (+) (view translation mtx0) $
-                  fmap (10 *) $ -- <- make it keyboard controllabe: speed up/down
+                  fmap (5 *) $ -- <- make it keyboard controllabe: speed up/down
                   fmap (transpose (rot) !*) $
                   zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys0) <$>
                                 [keyW, keyS, keyA, keyD, keyZ, keyC])

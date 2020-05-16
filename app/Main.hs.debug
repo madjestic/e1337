@@ -140,10 +140,10 @@ fromVGeo (VGeo idxs st vaos matPaths xform) =
   do
     mats <- mapM readMaterial matPaths -- (ms vgeo)
     let
-      args         = (\idx' st' vao' mat' ->  (idx', st', vao', mat')) <$.> idxs <*.> st <*.> vaos <*.> mats
+      vaoargs         = (\idx' st' vao' mat' ->  (idx', st', vao', mat')) <$.> idxs <*.> st <*.> vaos <*.> mats
       offset = view _w (fromList (xform!!0) :: M44 Double) -- xform!!0 - at conversion stage, there can be only a single element in a list of transforms, therefore I don't want to overcomplicate it at the moment and keep it adhoc.
 
-    ds   <- mapM initVAO args
+    ds   <- mapM initVAO vaoargs
     
     let object =
           defaultObj
@@ -178,54 +178,65 @@ loadObjects project =
   do
     -- _ <- DT.trace ("project :" ++ show project) $ return ()
     print "Loading Models..."
-    vgeos <- mapM (\modelPath ->
-                      do { vgeo <- readBGeo modelPath
+    objVGeos <- mapM (\modelPath ->
+                      do { vgeo <- readBGeo modelPath :: IO VGeo
                          ; return vgeo
                          }
-                  ) $ toListOf (models . traverse . path) project
-    -- _ <- DT.trace ("loadObjects.vgeos :" ++ show vgeos) $ return ()
-    let vgeo =
-          foldr1 (\(VGeo idxs st vaos matPaths xform)(VGeo idxs' st' vaos' matPaths' xform')
-                  -> (VGeo
-                      (concat [idxs,idxs'])
-                      (concat [st, st'])
-                      (concat [vaos, vaos'])
-                      (concat [matPaths, matPaths'])
-                      (xform ++ xform')
-                     )) vgeos
-    -- _ <- DT.trace ("vgeo :" ++ show vgeo) $ return ()
+                  ) $ toListOf (models . traverse . path) project :: IO [VGeo]
+    -- _ <- DT.trace ("loadObjects.objVGeos :" ++ show objVGeos) $ return ()
+    objs <- mapM initObject objVGeos :: IO [Object] -- object per vgeo
+    print "Finished loading models."
+    
+    -- return (DT.trace("loadObjects.objs :" ++ show objs)$ objs)
+    return (objs)
+
+initObject :: VGeo -> IO Object
+initObject vgeo =
+  do
+    -- let vgeo =
+    --       foldr1 (\(VGeo idxs st vaos matPaths xform)
+    --                (VGeo idxs' st' vaos' matPaths' xform')
+    --               -> (VGeo
+    --                   (concat [idxs,idxs'])
+    --                   (concat [st, st'])
+    --                   (concat [vaos, vaos'])
+    --                   (concat [matPaths, matPaths'])
+    --                   --(xform ++ xform')
+    --                   (concat [xform, xform'])
+    --                  )) objVGeos
+    -- _ <- DT.trace ("loadObjects.vgeo :" ++ show vgeo) $ return ()
     -- mats  <- mapM readMaterial ( DT.trace ("ms vgeo" ++ show (ms vgeo)) $ ms vgeo)
-    mats  <- mapM readMaterial $ ms vgeo
-    let (VGeo idxs_ st_ vaos_ matPaths_ xform_) = vgeo
-        args         = (\idx' st' vao' mat' ->  (idx', st', vao', mat')) <$.> idxs_ <*.> st_ <*.> vaos_ <*.> mats
-        offset = fmap ((view _w).fromList) (xform_)
-        preTransform = fmap fromList xform_
+    mats  <- mapM readMaterial $ ms vgeo :: IO [Material]
+    let (VGeo is_ st_ vs_ ms_ xf_) = vgeo
+        vaoArgs = (\idx' st' vao' mat' ->  (idx', st', vao', mat')) <$.> is_ <*.> st_ <*.> vs_ <*.> mats
+        -- vaoargs   = (is_, st_, vs_, ms_)
+        offset = fmap ((view _w).fromList) (xf_)
+        --preTransforms = fmap fromList (DT.trace("loadObjects.xf_ :" ++ show xf_)$ (xf_))
+        preTransforms = fmap fromList ((xf_))
 
     _ <- initGlobalUniforms
-    ds <- mapM initVAO args
+    --ds <- mapM initVAO (DT.trace ("initObject.vaoArgs :" ++ show vaoArgs) $ vaoArgs)
+    ds <- mapM initVAO vaoArgs
 
     progs <- mapM (\mat -> loadShaders
                            [ ShaderInfo VertexShader   (FileSource (_vertShader (mat) ))
                            , ShaderInfo FragmentShader (FileSource (_fragShader (mat) )) ]) mats
-    
-    let objects =
-          fmap
-          ((\ _ ->
-              defaultObj
-              { Obj._descriptors = ds
-              , Obj._materials   = mats
-              , Obj._programs    = progs --[program0, program1] --undefined
-              , Obj._transforms  = preTransform
-              -- , Obj._pivot       = view _xyz offset
-              -- , Obj._solvers     =
-              --   [(Rotate (view _xyz offset) (V3 0 0 1000))] -- TODO: a solver per ()transform) object
-              , Obj._solvers = fmap (\offset' -> (Rotate (view _xyz offset') (V3 0 0 1000))) offset
-              }
-           ) . _path)
-          (_models project) :: [Object]
 
-    print "Finished loading models."
-    return objects
+    let obj =
+          defaultObj
+          { Obj._descriptors = ds
+          , Obj._materials   = mats
+          , Obj._programs    = progs --[program0, program1] --undefined
+          , Obj._transforms  = (DT.trace("loadObjects.preTransforms :" ++ show preTransforms)$ preTransforms)
+          --, Obj._transforms  = preTransforms
+          -- , Obj._pivot       = view _xyz offset
+          -- , Obj._solvers     =
+          --   [(Rotate (view _xyz offset) (V3 0 0 1000))] -- TODO: a solver per ()transform) object
+          , Obj._solvers = [] -- fmap (\offset' -> (Rotate (view _xyz offset') (V3 0 0 1000))) offset
+          } :: Object
+
+    return obj
+
 
 fromList :: [Float] -> M44 Double
 fromList xs' = V4 x y z w
@@ -261,6 +272,7 @@ initGame project =
             resY'
           )
           GamePlaying
+          --(DT.trace ("initGame.objs :" ++ show objs) $ objs)
           objs
           --initCam -- TODO: read campos from project file
           (Camera  initCamController { Controllable._transform = camPos })
@@ -311,16 +323,20 @@ updateGame game =
     -- let cam = _camera  game
     objs <- updateObjects $ _objects game -< ()
     --let objs = _objects game
-    returnA  -< game { _objects = objs
+    --let objs = _objects game
+    --returnA  -< game { Game._objects = (DT.trace ("updateGame.objs :" ++ show objs)$ objs)
+    returnA  -< game { Game._objects = objs
                      , Game._camera  = cam }
 
+-- TODO : Object -> Solver -> SF () Object
 solve :: Object -> SF () Object
 solve obj =
   proc () -> do
--- TODO: read pivot from the object preTransform
+-- TODO: read pivot from the object preTransforms
     mtxs <- (parB . fmap (\mtx -> spin (V3 0 0 0) (V3 0 (0) (0*1000)) mtx)) (_transforms obj) -< ()
     --obj' <- mapM (\pv0' -> solver (Rotate (pv0') (V3 0 0 1000)) obj) pv0 -< ()
     returnA -< obj { _transforms = mtxs }
+    --returnA -< obj-- { _transforms = mtxs }
       -- where
       --   pv0 = toListOf (Obj.transform . traverse . _w . _xyz) obj
 
@@ -342,7 +358,8 @@ spin pv0 ypr0 mtx0 =
               tr  = view (_w._xyz) mtx0
 
     returnA -< mtx
-     
+
+-- TODO: [Object] -> [Solver] -> SF () [Object]
 updateObjects :: [Object] -> SF () [Object]
 updateObjects = parB . fmap solve
 
@@ -366,8 +383,9 @@ updateController ctl0 =
           (rpos1, mevs)  <- (mouseRelPos &&& repeatedly 0.00000001 () ) -< input
           (kkeys, kevs) <- updateKeys  ctl0 -< input
 
-          -- _ <- DT.trace ("camera transform" ++ show (view Controllable.transform ctl0)) $ returnA -< ()
-
+          -- debug camera transform matrix
+          --_ <- DT.trace ("camera transform" ++ show (view Controllable.transform ctl0)) $ returnA -< ()
+          
           -- | A hack to fix camera mouse spinning
           let rpos = if diff < 1.1
                 then Just (0.0, 0.0)
@@ -419,7 +437,7 @@ updateController' ctl0 =
             ypr' :: V3 Double
             ypr'  =
               (99999 * ) $
-              ((V3 dt dt dt) * ) $
+              (((0.25 * ) (V3 dt dt dt)) * ) $
               (((0.025 * ) (V3 y' x' 0.0)) + ) $
               foldr (+) (V3 0 0 0) $
               zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys0) <$>
@@ -447,7 +465,7 @@ updateController' ctl0 =
 
                 tr  =
                   foldr (+) (view translation mtx0) $
-                  fmap (10 *) $ -- <- make it keyboard controllabe: speed up/down
+                  fmap (5 *) $ -- <- make it keyboard controllabe: speed up/down
                   fmap (transpose (rot) !*) $
                   zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys0) <$>
                                 [keyW, keyS, keyA, keyD, keyZ, keyC])
@@ -539,8 +557,8 @@ loadDelay = 2.0  :: Double
 -- < Main Function > -----------------------------------------------------------
 main :: IO ()
 main = do
-  args <- getArgs
-  proj <- Project.Parser.parse (unsafeCoerce (args!!0) :: FilePath)
+  vaoargs <- getArgs
+  proj <- Project.Parser.parse (unsafeCoerce (vaoargs!!0) :: FilePath)
 
   let title = pack $ Project.name $ proj
       resX  = (unsafeCoerce $ Project.resx $ proj) :: CInt

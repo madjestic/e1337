@@ -9,12 +9,14 @@
 # Earth and ISS
 # planet Earth modelling and shading
 # mvlink ./app/Main.hs /home/madjestic/Projects/Haskell/e1337/app/Main.hs.earth
+# mvlink ./app/Main.hs /home/madjestic/Projects/Haskell/e1337/app/Main.hs.debug
 # cabal new-build
 # cabal new-run e1337 ./projects/earth_iss_v02
 
-# Earth and ISS
+# Earth and ISS S3 L1
 # planet Earth modelling and shading
 # mvlink ./app/Main.hs /home/madjestic/Projects/Haskell/e1337/app/Main.hs.earth
+# mvlink ./app/Main.hs /home/madjestic/Projects/Haskell/e1337/app/Main.hs.debug
 # cabal new-build
 # cabal new-run e1337 ./projects/iss_S3_L1
 
@@ -26,16 +28,15 @@
 
 # Indexer Debug
 # a test scene
-# mvlink ./app/Main.hs /home/madjestic/Projects/Haskell/e1337/app/Main.hs.debug
-# cabal new-build
-# cabal new-run e1337 ./projects/debug
+mvlink ./app/Main.hs /home/madjestic/Projects/Haskell/e1337/app/Main.hs.debug
+cabal new-build
+cabal new-run e1337 ./projects/debug
 
 # Camera Debug
 # a test scene
-mvlink ./app/Main.hs /home/madjestic/Projects/Haskell/e1337/app/Main.hs.debug
-cabal new-build
-cabal new-run e1337 ./projects/debug_camera
-
+# mvlink ./app/Main.hs /home/madjestic/Projects/Haskell/e1337/app/Main.hs.debug
+# cabal new-build
+# cabal new-run e1337 ./projects/debug_camera
 
 # Test
 # mvlink ./app/Main.hs /home/madjestic/Projects/Haskell/e1337/app/Main.hs.earth

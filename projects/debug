@@ -6,7 +6,17 @@
 	"resy"  : 300,
 	"models":
 	[
-	    { "path": "models/debug.bgeo" }
-	]
+	    { "path": "models/earth.bgeo" },
+	    { "path": "models/moon.bgeo" },
+	    { "path": "models/debug1.bgeo" },
+	    { "path": "models/cornel_box.bgeo" },
+	    { "path": "models/iss_S3_L1.bgeo" },
+	    { "path": "models/debug2.bgeo" }
+	],
+	"camera": [1, 0, 0, 0,
+		   0, 1, 0, 0,
+		   0, 0, 1,-5,
+		   0, 0, 0, 1]
+
     }
 }

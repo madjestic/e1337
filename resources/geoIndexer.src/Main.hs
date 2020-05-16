@@ -32,14 +32,15 @@ import Utils
 
 import Debug.Trace as DT
 
--- writeVGeo :: FilePath -> VGeo -> IO ()
--- writeVGeo fileOut vgeo =
---   do
---     I.writeFile fileOut (encodeToLazyText ( is vgeo
---                                           , st vgeo
---                                           , vs vgeo
---                                           , ms vgeo
---                                           , xf vgeo ))
+writeVGeo :: FilePath -> VGeo -> IO ()
+writeVGeo fileOut vgeo =
+  do
+    I.writeFile "../models/debug.vgeo"
+      (encodeToLazyText ( is vgeo
+                        , st vgeo
+                        , vs vgeo
+                        , ms vgeo
+                        , xf vgeo ))
 
 writeBGeo :: FilePath -> VGeo -> IO ()
 writeBGeo fileOut vgeo =
@@ -58,7 +59,9 @@ main = do
   -- _ <- DT.trace ("geoIndexer.vgeo :" ++ show vgeo) $ return ()
   putStrLn "OK"
   --writeVGeo fileOut vgeo
+  -- DT.trace ("geoIndexer.src.Main.fileOut :" ++ show fileOut) $ return ()
   writeBGeo fileOut vgeo
+  -- writeVGeo fileOut vgeo
   -- print $ "is :" ++ (show $ is vgeo)
   -- I.writeFile fileOut (encodeToLazyText ( is vgeo
   --                                       , st vgeo

@@ -129,62 +129,47 @@ data Drawable
 (<*.>) :: [a -> b] -> [a] -> [b]
 (<*.>) = zipWith ($)
 
-toDrawables :: Game -> Float -> [Drawable]
-toDrawables game time = drs
+fromGame :: Game -> Float -> [Drawable]
+fromGame game time = drs
   where
-    ds       = concat $ toListOf (objects . traverse . descriptors) game :: [Descriptor]
-    n        = length ds :: Int
-    u_mats   = concat $ toListOf (objects . traverse . materials) game   :: [Material]
-    u_prog   = concat $ toListOf (objects . traverse . programs) game    :: [Program]
-    u_mouse  = replicate n $ unsafeCoerce $ view (camera . controller . device . mouse . pos) game :: [(Double, Double)]
-    u_time   = replicate n $ time      :: [Float]
-    resX     = fromEnum $ view (options . resx) game :: Int
-    resY     = fromEnum $ view (options . resy) game :: Int
-    u_res    = replicate n $ ((toEnum resX), (toEnum resY)) :: [(CInt, CInt)]
---    u_proj   = undefined -- :: [GLmatrix GLfloat]
-    --u_cam    = DT.trace ("camera: " ++ (show $ replicate n $ view (camera . controller . Controllable.transform) game)) $ replicate n $ view (camera . controller . Controllable.transform) game :: [M44 Double]
-    u_cam    = replicate n $ view (camera . controller . Controllable.transform) game :: [M44 Double]
-    --u_xform  = undefined :: [(M44 Double)] -- concat $ replicate n $ toListOf (objects . traverse . Object.transform) game :: [(M44 Double)]  -- :: [GLmatrix GLfloat]
-    u_xform  = concat $ replicate n $ concat $ toListOf (objects . traverse . Object.transform) game :: [(M44 Double)]  -- :: [GLmatrix GLfloat]
+    objs = (view objects game) :: [Object]
+    mpos = unsafeCoerce $ view (camera . controller . device . mouse . pos) game :: (Double, Double)
+    resX = fromEnum $ view (options . resx) game :: Int
+    resY = fromEnum $ view (options . resy) game :: Int
+    res  = ((toEnum resX), (toEnum resY)) :: (CInt, CInt)
+    cam  = view (camera . controller . Controllable.transform) game :: M44 Double
+    drs  = concat $ fmap (fromObject mpos time res cam) objs :: [Drawable]
+
+fromObject :: (Double, Double) -> Float -> (CInt, CInt) -> M44 Double -> Object -> [Drawable]
+--fromObject mpos time res cam obj = (DT.trace ("drs :" ++ show drs) $  drs)
+fromObject mpos time res cam obj = drs
+  where
+    drs      = --undefined :: [Drawable]
+      (\u_mats' u_prog' u_mouse' u_time' u_res' u_cam' u_xform' ds' ps'
+        -> (Drawable (Uniforms u_mats' u_prog' u_mouse' u_time' u_res' u_cam' u_xform') ds' ps'))
+      <$.> mats <*.> progs <*.> mpos_ <*.> time_ <*.> res_ <*.> cam_ <*.> xforms <*.> ds <*.> progs
+      -- DEBUG code, see what gets rendered
+      -- <$.> (DT.trace ("mats  :" ++ show mats)   $ mats  )
+      -- <*.> (DT.trace ("progs :" ++ show progs ) $ progs ) 
+      -- <*.> (DT.trace ("mpos_ :" ++ show mpos_ ) $ mpos_ ) 
+      -- <*.> (DT.trace ("time_ :" ++ show time_ ) $ time_ ) 
+      -- <*.> (DT.trace ("res_  :" ++ show res_  ) $ res_  ) 
+      -- <*.> (DT.trace ("cam_  :" ++ show cam_  ) $ cam_  ) 
+      -- <*.> (DT.trace ("xforms:" ++ show xforms) $ xforms) 
+      -- <*.> (DT.trace ("ds    :" ++ show ds    ) $ ds    ) 
+      -- <*.> (DT.trace ("progs :" ++ show progs ) $ progs ) 
+
+    n      = length $ view descriptors obj:: Int
+    mpos_  = replicate n $ mpos :: [(Double, Double)]
+    time_  = replicate n $ time :: [Float]
+    res_   = replicate n $ res  :: [(CInt, CInt)]
+    cam_   = replicate n $ cam  :: [M44 Double]
+
+    mats   = view Object.materials   obj :: [Material]
+    progs  = view Object.programs    obj :: [Program]
+    xforms = concat $ replicate n $ view Object.transform   obj :: [M44 Double]
+    ds     = view Object.descriptors obj :: [Descriptor]
     
-    drs      = 
-      (\  u_mats' u_prog' u_mouse' u_time' u_res' u_cam' u_xform' ds' ps'
-        -> (Drawable (Uniforms u_mats' u_prog' u_mouse' u_time' u_res' u_cam' u_xform') ds' ps')) 
-      <$.> u_mats <*.> u_prog <*.> u_mouse <*.> u_time <*.> u_res <*.> u_cam <*.> u_xform <*.> ds <*.> u_prog
-
-    -- Useful debug code: shows what actually gets drawn
-    -- drs      = 
-    --   (\  u_mats'
-    --       u_prog'
-    --       u_mouse'
-    --       u_time'
-    --       u_res'
-    --       u_cam'
-    --       u_xform'
-    --       ds'
-    --       ps'
-    --     -> (Drawable
-    --         (Uniforms
-    --          u_mats'
-    --          u_prog'
-    --          u_mouse'
-    --          u_time'
-    --          u_res'
-    --          u_cam'
-    --          u_xform')
-    --          ds'
-    --          ps'))
-    --   <$.> (DT.trace ("u_mats :" ++ show u_mats) $ u_mats)    --u_mats
-    --   <*.> (DT.trace ("u_prog :" ++ show u_prog) $ u_prog)    --u_prog
-    --   <*.> (DT.trace ("u_mouse :" ++ show u_mouse) $ u_mouse) --u_mouse
-    --   <*.> (DT.trace ("u_time :" ++ show u_time) $ u_time)    --u_time
-    --   <*.> (DT.trace ("u_res :" ++ show u_res) $ u_res)       --u_res
-    --   <*.> (DT.trace ("u_cam :" ++ show u_cam) $ u_cam)       --u_cam
-    --   <*.> (DT.trace ("u_xform :" ++ show u_xform) $ u_xform) --u_xform
-    --   <*.> (DT.trace ("ds :" ++ show ds) $ ds)                --ds
-    --   <*.> (DT.trace ("u_prog :" ++ show u_prog) $ u_prog)    --u_prog
-      
-
 render :: Backend -> BackendOptions -> SDL.Window -> Game -> IO ()
 render Rendering.OpenGL opts window game =
   do
@@ -193,7 +178,7 @@ render Rendering.OpenGL opts window game =
 
     ticks             <- SDL.ticks
     let currentTime = fromInteger (unsafeCoerce ticks :: Integer) :: Float
-        drs = toDrawables game currentTime
+        drs = fromGame game currentTime :: [Drawable]
 
     mapM_ (draw opts window) drs
 
