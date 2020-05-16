@@ -201,7 +201,7 @@ initObject vgeo =
         --preTransforms = fmap fromList (DT.trace("loadObjects.xf_ :" ++ show xf_)$ (xf_))
         preTransforms = fmap fromList ((xf_))
 
-    _ <- initGlobalUniforms
+    --_ <- initGlobalUniforms
     -- ds <- mapM initVAO (DT.trace ("initObject.vaoArgs :" ++ show vaoArgs) $ vaoArgs)
     ds <- mapM initVAO vaoArgs
 
@@ -213,9 +213,8 @@ initObject vgeo =
           defaultObj
           { Obj._descriptors = ds
           , Obj._materials   = mats
-          , Obj._programs    = progs --[program0, program1] --undefined
+          , Obj._programs    = progs
           , Obj._transforms  = preTransforms
-          --, Obj._transforms  = preTransforms
           -- , Obj._pivot       = view _xyz offset
           -- , Obj._solvers     =
           --   [(Rotate (view _xyz offset) (V3 0 0 1000))] -- TODO: a solver per ()transform) object
@@ -247,6 +246,7 @@ initGame project =
   do
     --_ <- DT.trace ("initializing game resources...") $ return ()
     print "initializing game resources..."
+    _ <- initGlobalUniforms
     objs  <- (loadObjects project)
     let camPos = fromList $ view cameraP project
     --pc <- fromVGeo $ fromPGeo pCloud

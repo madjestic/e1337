@@ -210,7 +210,7 @@ initGlobalUniforms =
     -- | Assign Textures
     activeTexture            $= TextureUnit 0
     texture Texture2D        $= Enabled
-    tx0 <- loadTex "textures/512_earth_daymap.jpg"
+    tx0 <- loadTex "textures/1024_earth_daymap.jpg"
     textureBinding Texture2D $= Just tx0
 
     activeTexture            $= TextureUnit 1

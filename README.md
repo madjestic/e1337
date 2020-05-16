@@ -1,15 +1,16 @@
 # What is it?
 
 At the moment it's a Shader-Toy-like application with blackjack and exotic dancers:
+Exotic dancers being Haskell, Arrowized FRP (Yampa), OpenGL.
 
-It supports loading and rendering simple projects files, describing a model, a material, it has a camera and supports user-input.
-
-* Loads one or more models.
-* Supports multiple materials per model.
-* Applies a solver-controller per object.
-* Has a camera that supports user-input.
-* Renders a scene of objects.
-* Uses Houdini as a game-editor.
+Supported features:
+* Project Files.
+* Multiple materials per model.
+* Animation.
+* User-controlled camera with initial position.
+* Keyboard and mouse input.
+* OpenGL 4.5+ and Vulkan (placeholder) backends.
+* Uses SideFX Houdini as a game-editor.
 * Support solver stack per object (transformation stack).
 
 TODO : Fix logarithmic space artifacts in materials.
@@ -48,6 +49,8 @@ Implemented * and planned -- features:
 -- Asteroids.
 
 -- Dynamic Space Bodies with Realistic Gravitational Space Physics.
+--- Realistic Newtonian physics and Inertia.
+--- Relativistic Space-Time model.
 
 -- Planet Landing.
 
@@ -61,15 +64,11 @@ Implemented * and planned -- features:
 
 -- Korovan Robbing.
 
--- Realistic Newtonian physics and Inertia.
-
 -- Ship components, crew and materials can be damaged due to overloads, including, but not limited to, extreme changes of acceleration applied a mass with certain material properties.
 
 -- Crew-management with survivial elements.
 
 -- Component-based destruction model.
-
--- Relativistic Space-Time model.
 
 -- Dynamic Evolving Civilisations.
 
