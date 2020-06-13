@@ -24,6 +24,7 @@ import Foreign.Ptr                            (plusPtr, nullPtr)
 import Foreign.Storable                       (sizeOf)
 import Graphics.Rendering.OpenGL as GL hiding (color, normal, Size)
 import SDL                             hiding (Point, Event, Timer, (^+^), (*^), (^-^), dot, project)
+import qualified SDL.Font
 -- import SDL.Image (loadTexture)
 import Graphics.GLUtil                        (readTexture, texture2DWrap, loadTexture)
 import Graphics.GLUtil.JuicyTextures (readTexInfo)
@@ -169,6 +170,9 @@ fromObject mpos time res cam obj = drs
     progs  = view Object.programs    obj :: [Program]
     xforms = concat $ replicate n $ view Object.transform   obj :: [M44 Double]
     ds     = view Object.descriptors obj :: [Descriptor]
+
+red :: SDL.Font.Color
+red = SDL.V4 255 0 0 0
     
 render :: Backend -> BackendOptions -> SDL.Window -> Game -> IO ()
 render Rendering.OpenGL opts window game =
@@ -180,9 +184,25 @@ render Rendering.OpenGL opts window game =
     let currentTime = fromInteger (unsafeCoerce ticks :: Integer) :: Float
         drs = fromGame game currentTime :: [Drawable]
 
-    mapM_ (draw opts window) drs
+    -- mapM_ (draw opts window) drs
 
-    SDL.glSwapWindow window
+    SDL.Font.initialize
+
+    let w = 100.0 :: Float
+        h = 100.0 :: Float
+    GL.loadIdentity
+    GL.translate $ Vector3 (w) (h) 0.0
+    
+    font <- SDL.Font.load "./resources/fonts/orbitron/orbitron-medium.ttf" 30
+    --font <- SDL.Font.load "./DejaVuSansMono.ttf" 30
+    text <- SDL.Font.solid font red "SUKA!"
+    SDL.Font.free font
+    screen <- SDL.getWindowSurface window
+    SDL.surfaceBlit text Nothing screen Nothing
+    SDL.freeSurface text
+    SDL.updateWindowSurface window    
+
+    -- SDL.glSwapWindow window
     
 render Vulkan _ _ _ = undefined
 

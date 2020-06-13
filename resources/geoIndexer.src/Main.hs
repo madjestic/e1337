@@ -2,35 +2,18 @@
 
 module Main where
 
-import Data.Text.Lazy            (Text)
 import Data.Text.Lazy.IO as I    hiding (putStrLn)
 import Data.ByteString   as BS   (writeFile)
-import Blaze.ByteString.Builder  (toByteString)
-import Data.Binary.Builder       (toLazyByteString, Builder)
-import Data.Text.Encoding        (encodeUtf8)
-import Data.Aeson.Text           (encodeToLazyText, encodeToTextBuilder)
-import Data.Aeson                (fromEncoding, toEncoding, ToJSON)
-import Data.List.Split           (chunksOf)
-import Data.List.Index           (indexed)
-import Data.List                 (elemIndex)
-import Data.Vector       as DV   (fromList, toList, zipWith
-                                 , (!)
-                                 , Vector (..))
-import Data.Set          as DS   (fromList, toList)
-import Graphics.Rendering.OpenGL ( GLfloat (..)
-                                 , GLuint (..)
-                                 , Vertex4 (..)
-                                 , TexCoord3 (..))
-import Data.Store        as DST
+import Data.Aeson.Text           (encodeToLazyText)
+import Data.Store                (encode)
        
 import Unsafe.Coerce
 import System.Environment        (getArgs)
 
 import PGeo
 import VGeo
-import Utils
 
-import Debug.Trace as DT
+--import Debug.Trace as DT
 
 writeVGeo :: FilePath -> VGeo -> IO ()
 writeVGeo fileOut vgeo =
@@ -58,13 +41,5 @@ main = do
   let vgeo = fromPGeo pgeo -- goes wrong
   -- _ <- DT.trace ("geoIndexer.vgeo :" ++ show vgeo) $ return ()
   putStrLn "OK"
-  --writeVGeo fileOut vgeo
-  -- DT.trace ("geoIndexer.src.Main.fileOut :" ++ show fileOut) $ return ()
   writeBGeo fileOut vgeo
   -- writeVGeo fileOut vgeo
-  -- print $ "is :" ++ (show $ is vgeo)
-  -- I.writeFile fileOut (encodeToLazyText ( is vgeo
-  --                                       , st vgeo
-  --                                       , vs vgeo
-  --                                       , ms vgeo
-  --                                       , xf vgeo ))
