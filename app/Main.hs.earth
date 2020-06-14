@@ -26,7 +26,6 @@ import SDL                hiding ( Point
                                  , (^+^)
                                  , (*^)
                                  , _xyz)
-import qualified SDL.Font       
 
 import Graphics.Rendering.OpenGL ( PrimitiveMode(..)
                                  , ShaderType(..)
@@ -553,14 +552,13 @@ main = do
       resY  = (unsafeCoerce $ Project.resy $ proj) :: CInt
 
   -- SDL.initialize [SDL.InitVideo]
-  -- SDL.Font.initialize
+  -- sdl.Font.initialize
       
-
   window    <- openWindow
                title
                (resX, resY)
 
-  window' <- SDL.createWindow "SUKA" SDL.defaultWindow               
+  -- window' <- SDL.createWindow "SUKA" SDL.defaultWindow               
   -- SDL Mouse Options
   setMouseLocationMode RelativeLocation
 
@@ -568,6 +566,6 @@ main = do
   print "Starting Game."
   
   animate
-    window'
+    window
     (parseWinInput >>> (mainGame game &&& handleExit))
   return ()

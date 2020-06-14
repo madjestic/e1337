@@ -81,6 +81,7 @@ openWindow title (sizex,sizey) =
                               , glStencilPrecision = 8
                               , glMultisampleSamples = 8
                               , glProfile = Compatibility Normal 2 1
+                              --, glProfile = Core Normal 4 5
                               }
 
     depthFunc $= Just Less
@@ -180,14 +181,20 @@ render Rendering.OpenGL opts window game =
     GL.clearColor $= Color4 0.0 0.0 0.0 1.0
     GL.clear [ColorBuffer, DepthBuffer]
 
-    ticks             <- SDL.ticks
+    ticks           <- SDL.ticks
     let currentTime = fromInteger (unsafeCoerce ticks :: Integer) :: Float
         drs = fromGame game currentTime :: [Drawable]
 
-    -- mapM_ (draw opts window) drs
+    mapM_ (draw opts window) drs
 
+    SDL.glSwapWindow window
+    
+render Vulkan _ _ _ = undefined
+
+renderFont :: SDL.Window -> IO ()
+renderFont window =
+  do
     SDL.Font.initialize
-
     let w = 100.0 :: Float
         h = 100.0 :: Float
     GL.loadIdentity
@@ -201,10 +208,6 @@ render Rendering.OpenGL opts window game =
     SDL.surfaceBlit text Nothing screen Nothing
     SDL.freeSurface text
     SDL.updateWindowSurface window    
-
-    -- SDL.glSwapWindow window
-    
-render Vulkan _ _ _ = undefined
 
 draw :: BackendOptions -> SDL.Window -> Drawable -> IO ()
 draw opts window (Drawable
