@@ -27,6 +27,8 @@ import SDL                hiding ( Point
                                  , (*^)
                                  , _xyz)
 
+import qualified SDL.Font      
+
 import Graphics.Rendering.OpenGL ( PrimitiveMode(..)
                                  , ShaderType(..)
                                  , Program(..))
@@ -68,10 +70,10 @@ import Debug.Trace    as DT
 type WinInput = Event SDL.EventPayload
 type WinOutput = (Game, Bool)
 
-animate :: SDL.Window
+animate :: (SDL.Window, SDL.Renderer, SDL.Font.Font)
         -> SF WinInput WinOutput  -- ^ signal function to animate
         -> IO ()
-animate window sf =
+animate (window, srenderer, fnt) sf =
   do
     reactimate (return NoEvent)
                senseInput
@@ -96,7 +98,7 @@ animate window sf =
               R.OpenGL
               (BackendOptions { primitiveMode = Triangles})
               --(BackendOptions { primitiveMode = Points})
-              window
+              (window, srenderer, fnt)
               game
             return shouldExit
 
@@ -551,9 +553,14 @@ main = do
       resX  = (unsafeCoerce $ Project.resx $ proj) :: CInt
       resY  = (unsafeCoerce $ Project.resy $ proj) :: CInt
 
-  window    <- openWindow
-               title
-               (resX, resY)
+  
+  (window, srenderer) <-
+    openWindow
+    title
+    (resX, resY)
+
+  SDL.Font.initialize
+  font <- SDL.Font.load "./DejaVuSansMono.ttf" 60
 
   -- SDL Mouse Options
   setMouseLocationMode RelativeLocation
@@ -562,6 +569,6 @@ main = do
   print "Starting Game."
   
   animate
-    window
+    (window, srenderer, font)
     (parseWinInput >>> (mainGame game &&& handleExit))
   return ()

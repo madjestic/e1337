@@ -51,6 +51,9 @@ library
               , blaze-builder      >= 0.4.1.0
               , directory          >= 1.3.3.0
               , FTGL               >= 2.1
+              , hashtables         >= 1.2.3.4
+              , GLUT               >= 2.7.0.15
+              , hashtables         >= 1.2.3.4
   exposed-modules:
                 Input
               , PGeo
@@ -107,6 +110,8 @@ executable e1337
               , vector             >= 0.12.0.2
               , store              >= 0.4.3.2
               , FTGL               >= 2.1
+              , GLUT               >= 2.7.0.15
+              , hashtables         >= 1.2.3.4
   other-modules:
                 Paths_e1337
               , Rendering
@@ -127,5 +132,8 @@ executable e1337
               , Material
               , Solvable
               , Utils
+              , TGA
+              , TextureFonts
+              , Textures
   default-language:
                 Haskell2010
