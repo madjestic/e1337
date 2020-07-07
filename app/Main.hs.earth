@@ -5,7 +5,7 @@
 module Main where 
 
 import Control.Concurrent
-import Control.Arrow.List.Class  --(arrL)
+--import Control.Arrow.List.Class  --(arrL)
 import Control.Lens       hiding (transform, indexed, ids)
 import Data.Bifoldable           (biList)
 import Data.Text                 (pack)
@@ -36,7 +36,7 @@ import System.Environment       (getArgs)
 import Linear.Matrix
 import Linear.V4
 import Unsafe.Coerce
-import Data.Vector              (slice)
+-- import Data.Vector              (slice)
        
 import LoadShaders
 import Camera         as Cam

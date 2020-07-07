@@ -44,7 +44,7 @@ data Object
                 -- data Descriptor =
                      -- Descriptor VertexArrayObject NumArrayIndices
      , _materials   :: [Material]   -- | hence [Material] is present on the Object level too, we use that value, instead of looking it up from respective VGeo.
-     , _programs    :: [Program]    -- 
+     , _programs    :: [Program]    -- | Shader Programs
      , _transforms  :: [M44 Double]
      , _velocity    :: V3 Double
      , _avelocity   :: V3 Double    -- | Angular velocity

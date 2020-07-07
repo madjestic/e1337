@@ -10,6 +10,7 @@
 
 # Earth and ISS
 # planet Earth modelling and shading
+mvlink ./e1337.cabal      /home/madjestic/Projects/Haskell/e1337/e1337.cabal.earth 
 mvlink ./app/Main.hs      /home/madjestic/Projects/Haskell/e1337/app/Main.hs.earth
 mvlink ./src/Rendering.hs /home/madjestic/Projects/Haskell/e1337/src/Rendering.hs.earth 
 cabal new-build
@@ -17,6 +18,7 @@ cabal new-run e1337 ./projects/earth_iss_v02
 
 # Font Rendering
 # learning to render ttf with SDL/OpenGL
+# mvlink ./e1337.cabal      /home/madjestic/Projects/Haskell/e1337/e1337.cabal.font 
 # mvlink ./app/Main.hs      /home/madjestic/Projects/Haskell/e1337/app/Main.hs.font
 # mvlink ./src/Rendering.hs /home/madjestic/Projects/Haskell/e1337/src/Rendering.hs.font
 # cabal new-build
