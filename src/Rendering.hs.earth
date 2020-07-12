@@ -178,11 +178,11 @@ render Rendering.OpenGL opts window game =
     GL.clear [ColorBuffer, DepthBuffer]
 
     ticks   <- SDL.ticks
-    dfps    <- drawText "0"
+    -- dfps    <- drawString "0"
     let currentTime = fromInteger (unsafeCoerce ticks :: Integer) :: Float
         drs  = fromGame game currentTime :: [Drawable]
         -- fps  = ticks
-        --dfps = drawText fps :: [Drawable]
+        --dfps = drawString fps :: [Drawable]
 
     --mapM_ (draw opts window) (drs ++ fps)
     mapM_ (draw opts window) (drs)
@@ -191,11 +191,14 @@ render Rendering.OpenGL opts window game =
     
 render Vulkan _ _ _ = undefined
 
-drawText :: String -> IO [Drawable]
-drawText s =
+drawString :: String -> IO [Drawable]
+drawString s =
   do
-    let drawable = undefined
-    return drawable
+    ds <- mapM drawChar s
+    return ds
+
+drawChar :: Char -> IO Drawable
+drawChar = undefined
 
 draw :: BackendOptions -> SDL.Window -> Drawable -> IO ()
 draw opts window (Drawable

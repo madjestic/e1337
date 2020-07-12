@@ -27,9 +27,9 @@ readTempFile file =
 main :: IO ()
 main =
   do
-    d <- readTempFile "./rpcShuffler/.p2h" 
+    d <- readTempFile "./resources/rpcShuffler/.p2h" 
 
     let result = (shuffle d) :: [[Int]]
-        fileOut =  ( "./rpcShuffler/.h2p" :: FilePath)
+        fileOut =  ( "./resources/rpcShuffler/.h2p" :: FilePath)
         
     IO.writeFile fileOut (encodeToLazyText (result))  

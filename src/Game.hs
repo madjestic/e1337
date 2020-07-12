@@ -36,6 +36,7 @@ data Game =
        _options  :: Options
      , _gStg     :: Stage
      , _objects  :: [Object]
+     , _fonts    :: [Object] 
      , _camera   :: Camera
      } deriving Show
 

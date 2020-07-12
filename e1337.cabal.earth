@@ -71,7 +71,7 @@ executable e1337
   --cpp-options:         -DDEBUG
   build-depends:
                 e1337
-              , base ^>=4.13.0.0
+              , base         ^>= 4.13.0.0
               , aeson        ^>= 1.4.7.1
               , aeson-pretty ^>= 0.8.8
               , bytestring ^>= 0.10.8.2
@@ -118,33 +118,81 @@ executable genMaterial
   --cpp-options:         -DDEBUG
   build-depends:
                 e1337
-              , base ^>=4.13.0.0
+              , base         ^>=4.13.0.0
               , aeson        ^>= 1.4.7.1
               , aeson-pretty ^>= 0.8.8
               , bytestring   ^>= 0.10.8.2
               , directory    ^>= 1.3.6.0
               , split        ^>= 0.2.3.4
               , lens         ^>= 4.19.1
+              , OpenGL       ^>= 3.0.2.2
 
   other-modules:
                 Paths_e1337
-              -- , Rendering
-              -- , LoadShaders
-              -- , Project
-              -- , Project.Parser
-              -- , Object
-              -- , Camera
-              -- , Controllable
-              -- , Descriptor
-              -- , FromVector
-              -- , Game
-              -- , PGeo
-              -- , VGeo
-              -- , Input
-              -- , Keyboard
-              -- , Mouse
-              -- , Material
-              -- , Solvable
-              -- , Utils
+              , Material
+              , FromVector
+
   default-language:
-                Haskell2010                
+                Haskell2010
+
+executable geoIndexer
+  main-is:       geoIndexer.hs
+  hs-source-dirs:
+                app
+              , src
+  ghc-options:         -threaded -O2
+  --cpp-options:         -DDEBUG
+  build-depends:
+                e1337
+              , base       ^>= 4.13.0.0
+              , OpenGL     ^>= 3.0.2.2
+              , aeson        ^>= 1.4.7.1
+              , aeson-pretty ^>= 0.8.8
+              , bytestring ^>= 0.10.8.2
+              , lens       ^>= 4.19.1
+              , containers ^>= 0.6.0.1
+              , ilist      ^>= 0.2.0.0
+              , store      ^>= 0.7.4
+              , text       ^>= 1.2.2.2                                           
+              
+  other-modules:
+                Paths_e1337
+              , Material
+              , FromVector
+              , PGeo
+              , VGeo
+              , Utils
+
+  default-language:
+                Haskell2010
+
+executable rpcShuffler
+  main-is:       rpcShuffler.hs
+  hs-source-dirs:
+                app
+              , src
+  ghc-options:         -threaded -O2
+  --cpp-options:         -DDEBUG
+  build-depends:
+                e1337
+              , base       ^>= 4.13.0.0
+              , aeson      ^>= 1.4.7.1
+              , aeson-pretty ^>= 0.8.8
+              , bytestring ^>= 0.10.8.2
+              , containers ^>= 0.6.0.1
+              , text       ^>= 1.2.2.2
+              , OpenGL     ^>= 3.0.2.2
+              , ilist      ^>= 0.2.0.0
+              , extra      ^>= 1.7.3
+              , lens       ^>= 4.19.1
+              , store      ^>= 0.7.4                           
+              
+  other-modules:
+                Paths_e1337
+              , FromVector
+              , Material
+              , PGeo
+              , VGeo
+              , Utils
+  default-language:
+                Haskell2010                                

@@ -99,11 +99,16 @@ or, if optirun works for you:
 $ optirun ./rungl.hs
 ```
 
-## Rebuilding assets:
+## Convert a Geo Model:
 ```bash
-$ cd ./resources
 $ ./convertGeo.sh model_file_name
 ```
+
+## Creating a new Material:
+```bash
+$ ./cabal new-run genMaterial mat/testMat01
+```
+(that generates a ./mat/testMat01 material directory with a default conent (constant shader material)
 
 ## Working with REPL:
 - compiling:

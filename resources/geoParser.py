@@ -13,13 +13,13 @@ from numpy import argsort,array,concatenate
 
 def rpcShuffler(arg=[]):
     print("initializing RPC process...")
-    with open('./rpcShuffler/.p2h', 'w') as f:
+    with open('./resources/rpcShuffler/.p2h', 'w') as f:
         f.write(str(arg))
 
     print("calling rpcshuffler")
-    subprocess.run(["rpcShuffler/rpcshuffler"])
+    subprocess.call(["cabal", "run", "rpcShuffler"])
 
-    with open('./rpcShuffler/.h2p', 'r') as f:
+    with open('./resources/rpcShuffler/.h2p', 'r') as f:
         result = f.read()
 
     print("OK")

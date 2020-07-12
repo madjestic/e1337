@@ -20,6 +20,7 @@ data Project
      , resx    :: Int
      , resy    :: Int
      , _models :: [Model]
+--     , _fonts  :: [Model]
      , _cameraP :: [Float]
      } deriving Show
 

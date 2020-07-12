@@ -173,6 +173,11 @@ pCloud =
   where
     ps' = [(x,y,0.0) | x <- [0.0, 0.1 .. 1.0], y <- [0.0, 0.1 .. 1.0]] :: [Vec3]
 
+loadFonts :: IO [Object]
+loadFonts =
+  do
+    return undefined
+
 loadObjects :: Project -> IO [Object]
 loadObjects project = 
   do
@@ -248,6 +253,7 @@ initGame project =
     print "initializing game resources..."
     _ <- initGlobalUniforms
     objs  <- (loadObjects project)
+    fonts <- loadFonts
     let camPos = fromList $ view cameraP project
     --pc <- fromVGeo $ fromPGeo pCloud
     --let objs = [pc]
@@ -261,6 +267,7 @@ initGame project =
           GamePlaying
           --(DT.trace ("initGame.objs :" ++ show objs) $ objs)
           objs
+          fonts
           --initCam -- TODO: read campos from project file
           (Camera  initCamController { Controllable._transform = camPos })
     return game
