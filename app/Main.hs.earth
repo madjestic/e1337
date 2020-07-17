@@ -41,14 +41,16 @@ import Unsafe.Coerce
 import LoadShaders
 import Camera         as Cam
 import Game
-import Project 
+import Project
+import Model
+import Texture
 import Project.Parser
 import Keyboard
 import Object         as Obj
-import Controllable  
+import Controllable
 import PGeo
 import VGeo
-import Input 
+import AppInput 
 import Rendering      as R
 import Material
 import Solvable
@@ -187,7 +189,7 @@ loadObjects project =
                       do { vgeo <- readBGeo modelPath :: IO VGeo
                          ; return vgeo
                          }
-                  ) $ toListOf (models . traverse . path) project :: IO [VGeo]
+                  ) $ toListOf (models . traverse . Model.path) project :: IO [VGeo]
     -- _ <- DT.trace ("loadObjects.objVGeos :" ++ show objVGeos) $ return ()
     objs <- mapM initObject objVGeos :: IO [Object] -- object per vgeo
     print "Finished loading models."
@@ -251,7 +253,7 @@ initGame project =
   do
     --_ <- DT.trace ("initializing game resources...") $ return ()
     print "initializing game resources..."
-    _ <- initGlobalUniforms
+    _ <- initGlobalUniforms project
     objs  <- (loadObjects project)
     fonts <- loadFonts
     let camPos = fromList $ view cameraP project
@@ -371,37 +373,29 @@ updateController ctl0 =
     where
       sf =
         proc input -> do
-          ctl           <- updateController' ctl0  -< ctl0
-          mtx           <- returnA          -< Controllable._transform ctl
-          ypr           <- returnA          -< Controllable._ypr ctl
-          (rpos1, mevs)  <- (mouseRelPos &&& repeatedly 0.00000001 () ) -< input
-          (kkeys, kevs) <- updateKeys  ctl0 -< input
+          ctl <- updateController' ctl0 -< ctl0
+          mtx <- returnA          -< Controllable._transform ctl
+          ypr <- returnA          -< Controllable._ypr ctl
+          (mouse_, mevs) <- updateMouse ctl0 -< input
+          (kkeys,  kevs) <- updateKeys  ctl0 -< input
+          -- recE <- repeatedly 0.00001 () -< input
 
           -- debug camera transform matrix
           --_ <- DT.trace ("camera transform" ++ show (view Controllable.transform ctl0)) $ returnA -< ()
-          
-          -- | A hack to fix camera mouse spinning
-          let rpos = if diff < 1.1
-                then Just (0.0, 0.0)
-                else rpos1
-                where
-                  diff  =
-                    abs $
-                    (\(x,y)(x',y') -> sqrt $ (x-x')^2 + (y-y')^2)
-                    (maybe (0.0, 0.0) id rpos1)
-                    (rpos0)
-                  rpos0 = _rpos._mouse._device $ ctl0
           
           result <-
             returnA -<
             ( Controller (0,0) mtx ypr
               ( Device
                 ( Keyboard kkeys (keyVecs (_keyboard (_device ctl))) )
-                ( Mouse Nothing Nothing (0, 0) (maybe (0.0, 0.0) id rpos) [] ) ) )
+                  mouse_
+              )
+            )
             
           returnA -< 
             ( ctl
-            , catEvents (mevs:kevs) $> result) -- :: (Controllable, Event Controllable)
+            --, catEvents (mevs ++ kevs ++ [recE]) $> result) -- :: (Controllable, Event Controllable)
+            , catEvents (mevs ++ kevs) $> result ) -- :: (Controllable, Event Controllable)
       cont result = updateController result
       
 updateController' :: Controllable -> SF Controllable Controllable
@@ -412,19 +406,18 @@ updateController' ctl0 =
     update1 ctl0 ctl1 dt ctl2 = ctl
       where
         kvs  = keyVecs._keyboard._device $ ctl0
-        -- mvs  = mVecs._mouse._device      $ ctl0
-        pos0 = _pos._mouse._device       $ ctl0
-        rpos0 = _rpos._mouse._device $ ctl0
-        -- rpos0 = (\s(x,y) ->  (s*x, s*y)) 0.99 (_rpos._mouse._device $ ctl0)
-
+        ms   = _mouse._device            $ ctl0
         ctl = (Controller
                (0,0)
                mtx
                (ypr')
                (Device
                 (Keyboard keys0 kvs)
-                (Mouse Nothing Nothing pos0 rpos0 [])))
+                ms
+               )
+              ) 
           where
+            
             mtx0  = (Controllable._transform ctl2)
             keys0 = (keys._keyboard._device $ ctl0)
 
@@ -444,7 +437,7 @@ updateController' ctl0 =
                 nYaw   = (keyVecs._keyboard._device $ ctl0)!!9  -- negative  yaw
                 pRoll  = (keyVecs._keyboard._device $ ctl0)!!10 -- positive  roll
                 nRoll  = (keyVecs._keyboard._device $ ctl0)!!11 -- negative  roll
-                (x',y') = (_rpos._mouse._device $ ctl2)
+                (x',y') = (_rpos._mouse._device $ ctl0) -- ?
             
             mtx = 
               mkTransformationMat
@@ -505,38 +498,54 @@ keyEvents code keyFunc ctl =
   proc input -> do
     keyPressed     <- keyInput code  "Pressed"  -< input
     keyReleased    <- keyInput code  "Released" -< input
-    let keys0  = keys._keyboard._device $ ctl
-        result = keyEvent (keyFunc keys0) keyPressed keyReleased
-        event  = lMerge keyPressed keyReleased
+    let
+      keys0  = keys._keyboard._device $ ctl
+      result = keyEvent (keyFunc keys0) keyPressed keyReleased
+      event  = lMerge keyPressed keyReleased
     returnA -< (result, event)
 
 keyEvent :: Bool -> Event () -> Event () -> Bool
 keyEvent state pressed released
   | isEvent pressed  = True
   | isEvent released = False
-  | otherwise = state
+  | otherwise        = state
 
 updateMouse :: Controllable -> SF AppInput (Mouse, [Event ()])
 updateMouse ctl0 = 
   proc input -> do
-    (rM_, rMe) <- mouseEvents ctl0 -< input -- relative motion event
-    let events = [rMe]
-        mouse  =
-          Mouse
-          (lmb._mouse._device $ ctl0)
-          (rmb._mouse._device $ ctl0)
-          (_pos._mouse._device $ ctl0)
-          (_rpos._mouse._device $ ctl0)
-          []
+    mouseMovedE <- mouseMovedEvent ctl0 -< input -- relative motion event
+    let
+      event  = mouseMovedE $> ():: Event ()
+      events = [event]
+      mouse  =
+        Mouse
+        (lmb._mouse._device $ ctl0)
+        (rmb._mouse._device $ ctl0)
+        (_pos._mouse._device $ ctl0)
+        ((\e -> if isEvent e then fromEvent e else (0,0)) mouseMovedE)
+        ((\e -> if isEvent e then True else False) mouseMovedE)
+        []
     returnA -< (mouse, events)
 
-mouseEvents :: Controllable -> SF AppInput (Bool, Event ())
-mouseEvents =
+mouseMovedEvent :: Controllable -> SF AppInput (Event (Double, Double))
+mouseMovedEvent ctl =
   proc input -> do
-    mouseMoved <- returnA undefined -< ()
-    mouseStopped <- returnA undefined -< ()
+    mouseMoved <- mouseMoving  -< input
+    returnA -< mouseMoved
+--    mouseStopped <- mouseStopped -< input
 
-    returnA -< undefined
+    -- let
+    --   mmov0     = _mmov._mouse._device $ ctl
+    --   mmov1     = mouseMoveEvent mmov0 mouseMoved-- mouseStopped
+--      event  = lMerge mouseMoved mouseStopped
+--    let event  = mouseMoved 
+
+--mouseMoveEvent :: Bool -> Event (Double, Double) -> Event () -> Bool
+-- mouseMoveEvent :: Bool -> Event (Double, Double) -> Bool
+-- mouseMoveEvent state moving
+--   | isEvent moving  = True
+-- --  | isEvent stopped = False
+--   | otherwise       = False
     
 handleExit :: SF AppInput Bool
 handleExit = quitEvent >>^ isEvent
@@ -551,6 +560,10 @@ loadDelay = 2.0  :: Double
 -- < Main Function > -----------------------------------------------------------
 main :: IO ()
 main = do
+
+  -- timeRef       <- initializeTimeRef
+  -- controllerRef <- initializeInputDevices  
+  
   vaoargs <- getArgs
   proj <- Project.Parser.parse (unsafeCoerce (vaoargs!!0) :: FilePath)
 

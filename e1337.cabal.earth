@@ -39,7 +39,7 @@ library
               , text       ^>= 1.2.2.2
               , Yampa      ^>= 0.13.1
   exposed-modules:
-                Input
+                AppInput
               , PGeo
               , VGeo
               , Game
@@ -47,6 +47,8 @@ library
               , Descriptor
               , Camera
               , Project
+              , Model
+              , Texture
               , Project.Parser
               , Keyboard
               , Object
@@ -91,6 +93,8 @@ executable e1337
               , Rendering
               , LoadShaders
               , Project
+              , Model
+              , Texture
               , Project.Parser
               , Object
               , Camera
@@ -100,7 +104,7 @@ executable e1337
               , Game
               , PGeo
               , VGeo
-              , Input
+              , AppInput
               , Keyboard
               , Mouse
               , Material
@@ -115,7 +119,7 @@ executable genMaterial
                 app
               , src
   ghc-options:         -threaded -O2
-  --cpp-options:         -DDEBUG
+--  cpp-options:         -DDEBUG
   build-depends:
                 e1337
               , base         ^>=4.13.0.0

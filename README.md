@@ -48,7 +48,6 @@ Implemented * and planned -- features:
 * Planets.
 
 -- Asteroids.
-P
 -- Dynamic Space Bodies with Gravitational Space Physics.
 -- Newtonian physics and Inertia.
 -- Realistic space distances.
@@ -91,7 +90,7 @@ P
 
 ## Building and running:
 ```bash
-$ cabal new-build
+$ cabal build
 $ gpu ./run.sh
 ```
 or, if optirun works for you:
@@ -101,26 +100,26 @@ $ optirun ./rungl.hs
 
 ## Convert a Geo Model:
 ```bash
-$ ./convertGeo.sh model_file_name
+$ ./convertGeo.sh earth 
 ```
 
 ## Creating a new Material:
 ```bash
-$ ./cabal new-run genMaterial mat/testMat01
+$ ./cabal run genMaterial mat/testMat01
 ```
 (that generates a ./mat/testMat01 material directory with a default conent (constant shader material)
 
 ## Working with REPL:
 - compiling:
 ```bash
-$ cabal new-repl exe:e1337
+$ cabal repl exe:e1337
 ```
 
 ## Profiling
 ```bash
 $ make prof
-$ cabal new-clean
-$ cabal new-build
+$ cabal clean
+$ cabal build
 $ gpu ./run.sh
 $ hp2ps -e8in -c ./e1337.hp && gv ./e1337.ps
 ```
@@ -148,7 +147,7 @@ $ ghcid
 
 - working with nvidia-xrun
 ```
-$ cabal new-build && nvidia-xrun run.sh
+$ cabal build && nvidia-xrun run.sh
 ```
 
 

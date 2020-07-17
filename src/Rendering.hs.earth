@@ -37,7 +37,9 @@ import Descriptor
 import Material
 import Mouse
 --- debug stuff
-import Project (Project, path, models)
+import Project (Project)
+import Model
+import Texture
 import PGeo hiding (materials)
 import VGeo
 ---
@@ -134,7 +136,7 @@ fromGame :: Game -> Float -> [Drawable]
 fromGame game time = drs
   where
     objs = (view objects game) :: [Object]
-    mpos = unsafeCoerce $ view (camera . controller . device . mouse . pos) game :: (Double, Double)
+    mpos = unsafeCoerce $ view (camera . controller . device' . mouse . pos) game -- :: (Double, Double)
     resX = fromEnum $ view (options . resx) game :: Int
     resY = fromEnum $ view (options . resy) game :: Int
     res  = ((toEnum resX), (toEnum resY)) :: (CInt, CInt)
@@ -217,14 +219,17 @@ draw opts window (Drawable
     cullFace  $= Just Back
     depthFunc $= Just Less
 
-initGlobalUniforms :: IO ()
-initGlobalUniforms =
+initGlobalUniforms :: Project -> IO ()
+initGlobalUniforms project =
+-- TODO: add bindless texture array support.
+-- (so that texture paths are sourced from the project file).
+-- TODO: or add case for paths: length (texture.paths) 1 -> ... 2 -> ... etc.
   do
     print "Loading Textures..."
     -- | Assign Textures
     activeTexture            $= TextureUnit 0
     texture Texture2D        $= Enabled
-    tx0 <- loadTex "textures/1024_earth_daymap.jpg"
+    tx0 <- loadTex "textures/4096_earth_daymap.jpg"
     textureBinding Texture2D $= Just tx0
 
     activeTexture            $= TextureUnit 1
@@ -249,7 +254,12 @@ initUniforms (Uniforms u_mat' u_prog' u_mouse' u_time' u_res' u_cam' u_xform') =
     currentProgram $= Just program
 
     -- | Set Uniforms
+    -- TODO: fix mouse reading
+    -- u_m <- getAbsoluteMouseLocation --getRelativeMouseLocation
     let u_mouse       = Vector2 (realToFrac $ fst u_mouse') (realToFrac $ snd u_mouse') :: Vector2 GLfloat
+    -- let u_mouse'      = Vector2 (realToFrac $ u_m ^. _x) (realToFrac $ u_m ^. _y) :: Vector2 GLfloat
+    -- _ <- DT.trace ("u_mouse  :" ++ show (u_mouse )) $ return ()
+    -- _ <- DT.trace ("u_mouse' :" ++ show (u_mouse')) $ return ()
     location0         <- get (uniformLocation program "u_mouse'")
     uniform location0 $= u_mouse
 
