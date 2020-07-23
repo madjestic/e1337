@@ -10,8 +10,16 @@
 
 # Earth and ISS
 # planet Earth modelling and shading
+# mvlink ./e1337.cabal      /home/madjestic/Projects/Haskell/e1337/e1337.cabal.earth 
+# mvlink ./app/Main.hs      /home/madjestic/Projects/Haskell/e1337/app/Main.hs.earth
+# mvlink ./src/Rendering.hs /home/madjestic/Projects/Haskell/e1337/src/Rendering.hs.earth 
+# cabal build
+# cabal run e1337 ./projects/earth_iss_v02
+
+# SDL2 IO Test
+# testing SDL2 IO, such as mouse input
 mvlink ./e1337.cabal      /home/madjestic/Projects/Haskell/e1337/e1337.cabal.earth 
-mvlink ./app/Main.hs      /home/madjestic/Projects/Haskell/e1337/app/Main.hs.earth
+mvlink ./app/Main.hs      /home/madjestic/Projects/Haskell/e1337/app/Main.hs.test
 mvlink ./src/Rendering.hs /home/madjestic/Projects/Haskell/e1337/src/Rendering.hs.earth 
 cabal build
 cabal run e1337 ./projects/earth_iss_v02

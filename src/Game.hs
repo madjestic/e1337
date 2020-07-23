@@ -26,6 +26,7 @@ import Control.Monad                          (mzero)
 import Data.Maybe                             (fromMaybe)
 import qualified Data.ByteString.Lazy as B
 import Control.Lens
+import Control.Lens.TH
 
 import Camera
 import Object
@@ -33,7 +34,8 @@ import Object
 data Game =
      Game
      {
-       _options  :: Options
+       _debug    :: (Double, Double)
+     , _options  :: Options
      , _gStg     :: Stage
      , _objects  :: [Object]
      , _fonts    :: [Object] 
@@ -54,16 +56,18 @@ data Stage =
    | GameMenu
    deriving Show
 
-options :: Lens' Game    Options
-name    :: Lens' Options String
-resx    :: Lens' Options CInt
-resy    :: Lens' Options CInt
-objects :: Lens' Game    [Object]
-camera  :: Lens' Game    Camera
-options = lens _options (\game newOptions -> Game    { _options = newOptions })
-name    = lens _name    (\options newName -> Options { _name    = newName })
-resx    = lens _resx    (\options newX    -> Options { _resx    = newX })
-resy    = lens _resy    (\options newY    -> Options { _resy    = newY })
-objects = lens _objects (\game newObjects -> Game    { _objects = newObjects})
-camera  = lens _camera  (\game newCamera  -> Game    { _camera  = newCamera })
+-- options :: Lens' Game    Options
+-- name    :: Lens' Options String
+-- resx    :: Lens' Options CInt
+-- resy    :: Lens' Options CInt
+-- objects :: Lens' Game    [Object]
+-- camera  :: Lens' Game    Camera
+-- options = lens _options (\game newOptions -> Game    { _options = newOptions })
+-- name    = lens _name    (\options newName -> Options { _name    = newName })
+-- resx    = lens _resx    (\options newX    -> Options { _resx    = newX })
+-- resy    = lens _resy    (\options newY    -> Options { _resy    = newY })
+-- objects = lens _objects (\game newObjects -> Game    { _objects = newObjects})
+-- camera  = lens _camera  (\game newCamera  -> Game    { _camera  = newCamera })
 
+$(makeLenses ''Game)
+$(makeLenses ''Options)

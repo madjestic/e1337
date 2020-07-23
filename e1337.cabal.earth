@@ -105,6 +105,7 @@ executable e1337
               , PGeo
               , VGeo
               , AppInput
+              --, Input
               , Keyboard
               , Mouse
               , Material

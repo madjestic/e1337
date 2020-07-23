@@ -70,6 +70,7 @@ import Debug.Trace    as DT
 -- -- < Animate > ------------------------------------------------------------
 type WinInput = Event SDL.EventPayload
 type WinOutput = (Game, Bool)
+--type WinOutput = ((Double, Double), Bool)
 
 -- mainLoop ::
 --      SDLInit a AppOutput
@@ -93,13 +94,21 @@ animate window sf =
             lastInteraction <- newMVar =<< SDL.time
             currentTime <- SDL.time                          
             dt <- (currentTime -) <$> swapMVar lastInteraction currentTime --dtime
-            timeRef <- newIORef (0 :: Int) 
+            -- timeRef <- newIORef (0 :: Int) 
             -- t <- yampaSDLTimeSense timeRef -- time
             mEvent <- SDL.pollEvent
+            -- return (dt, Event . SDL.eventPayload <$> (DT.trace ("mEvent :" ++ show mEvent) $ mEvent))
             return (dt, Event . SDL.eventPayload <$> mEvent)
+            
+        -- renderOutput _ (game, shouldExit) =
+        --   do
+        --     --putStrLn $ "debug :" ++ show (Game._debug game)
+        --     putStrLn $ "debug :" ++ show (Controllable._debug._controller._camera $ game)
+        --     return shouldExit
 
         renderOutput _ (game, shouldExit) =
           do
+            -- putStrLn $ "debug :" ++ show (Controllable._debug._controller._camera $ game)
             R.render
               R.OpenGL
               (BackendOptions { primitiveMode = Triangles})
@@ -107,24 +116,6 @@ animate window sf =
               window
               game
             return shouldExit
-
--- | Updates the time in an IO Ref and returns the time difference
-updateTime :: IORef Int -> Int -> IO Int
-updateTime timeRef newTime = do
-  previousTime <- readIORef timeRef
-  writeIORef timeRef newTime
-  return (newTime - previousTime)
-
-yampaSDLTimeSense :: IORef Int -> IO DTime
-yampaSDLTimeSense timeRef = do
-  -- Get time passed since SDL init
-  newTime <- fmap fromIntegral SDL.ticks
-
-  -- Obtain time difference
-  dt <- updateTime timeRef newTime
-  let dtSecs = fromIntegral dt / 100
-  return dtSecs            
-
 
 -- --  .d8888b.88888888888    d8888888888888888888888888888b     d888       d8888 .d8888b. 888    8888888888888b    8888888888888 
 -- -- d88P  Y88b   888       d88888    888    888       8888b   d8888      d88888d88P  Y88b888    888  888  8888b   888888        
@@ -196,11 +187,9 @@ loadObjects project =
                          ; return vgeo
                          }
                   ) $ toListOf (models . traverse . Model.path) project :: IO [VGeo]
-    -- _ <- DT.trace ("loadObjects.objVGeos :" ++ show objVGeos) $ return ()
     objs <- mapM initObject objVGeos :: IO [Object] -- object per vgeo
     print "Finished loading models."
     
-    -- return (DT.trace("loadObjects.objs :" ++ show objs)$ objs)
     return (objs)
 
 initObject :: VGeo -> IO Object
@@ -209,13 +198,9 @@ initObject vgeo =
     mats  <- mapM readMaterial $ ms vgeo :: IO [Material]
     let (VGeo is_ st_ vs_ ms_ xf_) = vgeo
         vaoArgs = (\idx' st' vao' mat' ->  (idx', st', vao', mat')) <$.> is_ <*.> st_ <*.> vs_ <*.> mats
-        -- vaoargs   = (is_, st_, vs_, ms_)
         offset = fmap ((view _w).fromList) (xf_)
-        --preTransforms = fmap fromList (DT.trace("loadObjects.xf_ :" ++ show xf_)$ (xf_))
         preTransforms = fmap fromList ((xf_))
 
-    --_ <- initGlobalUniforms
-    -- ds <- mapM initVAO (DT.trace ("initObject.vaoArgs :" ++ show vaoArgs) $ vaoArgs)
     ds <- mapM initVAO vaoArgs
 
     progs <- mapM (\mat -> loadShaders
@@ -267,6 +252,7 @@ initGame project =
     --let objs = [pc]
     let game =
           Game
+          (-42,-17)
           ( Options
             name'
             resX'
@@ -295,6 +281,18 @@ mainGame game0 =
             GamePlaying -> gamePlay game0 -< input
     returnA -< (gs, gs)
 
+mainGame' :: Game -> SF AppInput Game
+mainGame' game0 =
+  proc input ->
+    do
+      mpos <- mousePos -< input
+      let game' =
+            game0
+            {
+              Game._debug = mpos
+            }
+      returnA -< game'
+
 gameIntro :: SF (AppInput, Game) Game
 gameIntro =
   switch sf cont        
@@ -322,10 +320,7 @@ updateGame :: Game -> SF AppInput Game
 updateGame game = 
   proc input -> do
     cam  <- updateCamera  $ Game._camera  game -< input
-    -- let cam = _camera  game
     objs <- updateObjects $ _objects game -< ()
-    --let objs = _objects game
-    --let objs = _objects game
     --returnA  -< game { Game._objects = (DT.trace ("updateGame.objs :" ++ show objs)$ objs)
     returnA  -< game { Game._objects = objs
                      , Game._camera  = cam }
@@ -346,7 +341,6 @@ spin :: V3 Double -> V3 Double -> M44 Double -> SF () (M44 Double)
 spin pv0 ypr0 mtx0 =
   proc () -> do
     ypr' <- ((V3 0 0 0) ^+^) ^<< integral -< ypr0
-    --let ypr' = ypr0
     let mtx =
           mkTransformationMat
             rot
@@ -366,142 +360,93 @@ updateObjects :: [Object] -> SF () [Object]
 updateObjects = parB . fmap solve
 
 updateCamera :: Camera -> SF AppInput Camera
-updateCamera cam = 
-  proc input -> do
-    ctl <- updateController (Cam._controller $ cam) -< input
-    returnA -< Camera { Cam._controller = ctl }
+updateCamera cam0 = 
+  proc input ->
+    do
+      ctl' <- updateController (_controller cam0) -< input
+      let
+        cam' = cam0 { _controller = ctl' }
+      returnA -< cam'
 
-  -- | foldrWith mtx0 keys - for every keyInput apply a folding transform to mtx0
-  -- | in case of keypress event - updateController' the set of keys and call new fold ^
+-- | foldrWith mtx0 keys - for every keyInput apply a folding transform to mtx0
+-- | in case of keypress event - updateController' the set of keys and call new fold ^  
 updateController :: Controllable -> SF AppInput Controllable
-updateController ctl0 = switch sf cont--dSwitch sf cont
-    where
-      sf =
-        proc input -> do
-          ctl            <- updateController' ctl0 -< ctl0
-          (mouse_, mevs) <- updateMouse ctl0 -< input
-          (kkeys,  kevs) <- updateKeys  ctl0 -< input
-          mpos <- mousePos -< input
-          let
-            result =
-              ( Controller
-                (0,0)
-                (Controllable._transform ctl0)
-                (Controllable._ypr ctl0)
-                ( Device
-                  ( Keyboard kkeys (keyVecs (_keyboard (_device ctl0))) )
-                  --( mouse_ {_rpos = rpos })
-                  (DT.trace ("mouse :" ++ show mouse_) $ mouse_ {_rpos = (DT.trace ("mpos :" ++ show mpos) $ mpos) })
-                )
-              )
-          returnA -< 
-            ( ctl
-            , catEvents ((DT.trace ("mevs :" ++ show mevs) $ mevs) ++ kevs) $> result ) -- :: (Controllable, Event Controllable)
-            --, catEvents ((DT.trace ("mevs :" ++ show mevs) $ mevs) ++ ((DT.trace ("kevs :" ++ show kevs)) $ kevs)) $> result ) -- :: (Controllable, Event Controllable)
-            --, catEvents (mevs ++ kevs) $> result ) -- :: (Controllable, Event Controllable)
-      cont c = updateController c
-
-updateController'' :: Controllable -> SF AppInput Controllable
-updateController'' ctl0 = switch sf cont--dSwitch sf cont
-    where
-      sf =
-        proc input -> do
-          ctl            <- updateController' ctl0 -< ctl0
-          (mouse_, mevs) <- updateMouse ctl0 -< input
-          (kkeys,  kevs) <- updateKeys  ctl0 -< input
-          let
-            result =
-              ( Controller
-                (0,0)
-                (Controllable._transform ctl0)
-                (Controllable._ypr ctl0)
-                ( Device
-                  ( Keyboard kkeys (keyVecs (_keyboard (_device ctl0))) )
-                  --( mouse_ {_rpos = rpos })
-                  (DT.trace ("mouse'' :" ++ show mouse_) $ mouse_)
-                )
-              )
-          returnA -< 
-            ( ctl
-            , catEvents ((DT.trace ("mevs'' :" ++ show mevs) $ mevs) ++ kevs) $> result ) -- :: (Controllable, Event Controllable)
-            --, catEvents ((DT.trace ("mevs :" ++ show mevs) $ mevs) ++ ((DT.trace ("kevs :" ++ show kevs)) $ kevs)) $> result ) -- :: (Controllable, Event Controllable)
-            --, catEvents (mevs ++ kevs) $> result ) -- :: (Controllable, Event Controllable)
-      cont c = updateController c
+updateController ctl0 =
+  proc input -> do
+    (x',y') <- mousePos -< input
+    ctl1 <- updateKeyboard ctl0 -< input
+    -- (keys', _) <- updateKeys  ctl1 -< input
+    let
+      keys0 = (keys._keyboard._device $ ctl1)
+      ypr' :: V3 Double
+      ypr'  =
+        -- (1 * ) $
+        -- (((0.25 * ) (V3 dt dt dt)) * ) $
+        (((0.005 * ) (V3 y' x' 0.0)) + ) $
+        foldr (+) (V3 0 0 0) $
+        zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys0) <$>
+                      [ keyUp,  keyDown, keyLeft, keyRight, keyQ,  keyE ])
+                      [ pPitch, nPitch,  pYaw,    nYaw,     pRoll, nRoll ]
+        where
+          pPitch = (keyVecs._keyboard._device $ ctl1)!!6  -- positive  pitch
+          nPitch = (keyVecs._keyboard._device $ ctl1)!!7  -- negative  pitch
+          pYaw   = (keyVecs._keyboard._device $ ctl1)!!8  -- positive  yaw
+          nYaw   = (keyVecs._keyboard._device $ ctl1)!!9  -- negative  yaw
+          pRoll  = (keyVecs._keyboard._device $ ctl1)!!10 -- positive  roll
+          nRoll  = (keyVecs._keyboard._device $ ctl1)!!11 -- negative  roll
+          -- (x',y') = (_rpos._mouse._device $ ctl1) -- ?
       
-updateController' :: Controllable -> SF Controllable Controllable
-updateController' ctl0 =
-  iterFrom update1 ctl0
+      ctl = ctl1 { _transform = mtx }
+      mtx = 
+        mkTransformationMat
+        rot
+        (tr0 + tr)
+        where
+          mtx0 = view Controllable.transform ctl1
+          tr0  = view translation mtx0
+          rot = -- M33
+            (view _m33 mtx0)
+            !*! fromQuaternion (axisAngle (view _x (view _m33 mtx0)) (view _x ypr')) -- yaw
+            !*! fromQuaternion (axisAngle (view _y (view _m33 mtx0)) (view _y ypr')) -- pitch
+            !*! fromQuaternion (axisAngle (view _z (view _m33 mtx0)) (view _z ypr')) -- roll
+
+          tr  = -- V3
+            foldr (+) (view translation mtx0) $
+            fmap (5 *) $ -- <- make it keyboard controllabe: speed up/down
+            fmap (transpose (rot) !*) $
+            zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys0) <$>
+                          [keyW, keyS, keyA, keyD, keyZ, keyC])
+                          [fVel, bVel, lVel, rVel, uVel, dVel]
+
+            where fVel   = (keyVecs._keyboard._device $ ctl1)!!0  -- forwards  velocity
+                  bVel   = (keyVecs._keyboard._device $ ctl1)!!1  -- backwards velocity
+                  lVel   = (keyVecs._keyboard._device $ ctl1)!!2  -- left      velocity
+                  rVel   = (keyVecs._keyboard._device $ ctl1)!!3  -- right     velocity
+                  uVel   = (keyVecs._keyboard._device $ ctl1)!!4  -- right     velocity
+                  dVel   = (keyVecs._keyboard._device $ ctl1)!!5  -- right     velocity
+
+    returnA -< ctl
+
+updateKeyboard :: Controllable -> SF AppInput Controllable
+updateKeyboard ctl0 =
+  switch sf cont
   where
-    update1 :: Controllable -> Controllable -> DTime -> Controllable -> Controllable
-    update1 ctl0 ctl1 dt ctl2 = ctl
-      where
-        kvs  = keyVecs._keyboard._device $ ctl0
-        ms   = _mouse._device            $ ctl0
-        ctl = (Controller
-               (0,0)
-               mtx
-               (ypr')
-               (Device
-                (Keyboard keys0 kvs)
-                --ms
-                (Mouse
-                 (lmb._mouse._device   $ ctl0)
-                 (rmb._mouse._device   $ ctl0)
-                 (_pos._mouse._device  $ ctl0)
-                 (_rpos._mouse._device $ ctl0)
-                 --(_mmov._mouse._device $ ctl0)
-                 True
-                 []
-                )
-               )
-              ) 
-          where
-            mtx0  = (Controllable._transform ctl2)
-            keys0 = (keys._keyboard._device $ ctl0)
+    sf =
+      proc input -> do
+        (kkeys,  kevs) <- updateKeys  ctl0 -< input
+        let
+          result = ctl0
+                   { _device =
+                       ( _device ctl0 )
+                       { _keyboard =
+                           (_keyboard._device $ ctl0)
+                           { keys = kkeys} } }
+          
+        returnA -<
+          ( ctl0
+          , catEvents kevs $> result )
 
-            ypr' :: V3 Double
-            ypr'  =
-              (99999 * ) $
-              (((0.25 * ) (V3 dt dt dt)) * ) $
-              (((0.025 * ) (V3 y' x' 0.0)) + ) $
-              foldr (+) (V3 0 0 0) $
-              zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys0) <$>
-                            [ keyUp,  keyDown, keyLeft, keyRight, keyQ,  keyE ])
-                            [ pPitch, nPitch,  pYaw,    nYaw,     pRoll, nRoll ]
-              where
-                pPitch = (keyVecs._keyboard._device $ ctl0)!!6  -- positive  pitch
-                nPitch = (keyVecs._keyboard._device $ ctl0)!!7  -- negative  pitch
-                pYaw   = (keyVecs._keyboard._device $ ctl0)!!8  -- positive  yaw
-                nYaw   = (keyVecs._keyboard._device $ ctl0)!!9  -- negative  yaw
-                pRoll  = (keyVecs._keyboard._device $ ctl0)!!10 -- positive  roll
-                nRoll  = (keyVecs._keyboard._device $ ctl0)!!11 -- negative  roll
-                (x',y') = (_rpos._mouse._device $ ctl0) -- ?
-            
-            mtx = 
-              mkTransformationMat
-              rot
-              tr
-              where
-                rot =
-                  (view _m33 mtx0)
-                  !*! fromQuaternion (axisAngle (view _x (view _m33 mtx0)) (view _x ypr')) -- yaw
-                  !*! fromQuaternion (axisAngle (view _y (view _m33 mtx0)) (view _y ypr')) -- pitch
-                  !*! fromQuaternion (axisAngle (view _z (view _m33 mtx0)) (view _z ypr')) -- roll
-
-                tr  =
-                  foldr (+) (view translation mtx0) $
-                  fmap (5 *) $ -- <- make it keyboard controllabe: speed up/down
-                  fmap (transpose (rot) !*) $
-                  zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys0) <$>
-                                [keyW, keyS, keyA, keyD, keyZ, keyC])
-                                [fVel, bVel, lVel, rVel, uVel, dVel]
-
-                  where fVel   = (keyVecs._keyboard._device $ ctl0)!!0  -- forwards  velocity
-                        bVel   = (keyVecs._keyboard._device $ ctl0)!!1  -- backwards velocity
-                        lVel   = (keyVecs._keyboard._device $ ctl0)!!2  -- left      velocity
-                        rVel   = (keyVecs._keyboard._device $ ctl0)!!3  -- right     velocity
-                        uVel   = (keyVecs._keyboard._device $ ctl0)!!4  -- right     velocity
-                        dVel   = (keyVecs._keyboard._device $ ctl0)!!5  -- right     velocity
+    cont c = updateKeyboard c
 
 updateKeys :: Controllable -> SF AppInput (Keys, [Event ()])
 updateKeys ctl0 = 
@@ -547,81 +492,6 @@ keyState state pressed released
   | isEvent pressed  = True
   | isEvent released = False
   | otherwise        = state
-
-updateMouse :: Controllable -> SF AppInput (Mouse, [Event ()])
-updateMouse ctl0 = 
-  proc input -> do
--- TODO: Should be something along the lines with:
--- _ <- mouseEvents -< input
-    mouseMovedE   <- mouseMovedEvent   ctl0 -< input -- relative motion event
-    mouseStoppedE <- mouseStoppedEvent ctl0 -< input
-    rpos <- mouseRelPos -< input
---    pos <- 
-    let
-      --event  = mouseMovedE $> ():: Event ()
-      events = [(mouseMovedE $> ())
-               ,(mouseStoppedE $> ())]
-      mouse  =
-        Mouse
-        (lmb._mouse._device $ ctl0)
-        (rmb._mouse._device $ ctl0)
-        (_pos._mouse._device $ ctl0)
-        ((\e -> if isEvent e then fromEvent e else (0,0)) mouseMovedE)
-        ((\e -> if isEvent e then False else True) mouseStoppedE)
-        []
-    returnA -< (mouse, events)
-
--- updateMouse' :: Controllable -> SF AppInput (Mouse, Event ())
--- updateMouse' ctl0 = switch sf cont
---   where
---     sf = proc input -> do
---       mouseMovedE   <- mouseMovedEvent   ctl0 -< input -- relative motion event
---       let
---         event  = mouseMovedE $> ():: Event ()
---         mouse  =
---           Mouse
---           (lmb._mouse._device $ ctl0)
---           (rmb._mouse._device $ ctl0)
---           (_pos._mouse._device $ ctl0)
---           ((\e -> if isEvent e then fromEvent e else (0,0)) mouseMovedE)
---           ((\e -> if isEvent e then False else True) mouseStoppedE)
---           []
---       returnA -< (mouse, event)
---     cont x = updateMouse' x
-
-mouseMovedEvent :: Controllable -> SF AppInput (Event (Double, Double))
-mouseMovedEvent ctl =
-  proc input -> do
-    mouseMoved <- mouseMoving  -< input
-    returnA -< mouseMoved
-    
-mouseStoppedEvent :: Controllable -> SF AppInput (Event ())
-mouseStoppedEvent ctl =
-  proc input -> do
-    mouseStop <- mouseStopped -< input
-    returnA -< mouseStop
-
--- is mouse moving or stopped?
-mouseState :: Bool -> Event () -> Event () -> Bool
-mouseState state moving stopped
-  | isEvent moving  = True
-  | isEvent stopped = False
-  | otherwise       = state
-    
---    mouseStopped <- mouseStopped -< input
-
-    -- let
-    --   mmov0     = _mmov._mouse._device $ ctl
-    --   mmov1     = mouseMoveEvent mmov0 mouseMoved-- mouseStopped
---      event  = lMerge mouseMoved mouseStopped
---    let event  = mouseMoved 
-
---mouseMoveEvent :: Bool -> Event (Double, Double) -> Event () -> Bool
--- mouseMoveEvent :: Bool -> Event (Double, Double) -> Bool
--- mouseMoveEvent state moving
---   | isEvent moving  = True
--- --  | isEvent stopped = False
---   | otherwise       = False
     
 handleExit :: SF AppInput Bool
 handleExit = quitEvent >>^ isEvent
