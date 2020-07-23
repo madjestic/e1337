@@ -373,20 +373,21 @@ updateCamera cam0 =
 updateController :: Controllable -> SF AppInput Controllable
 updateController ctl0 =
   proc input -> do
-    (x',y') <- mousePos -< input
-    ctl1 <- updateKeyboard ctl0 -< input
-    -- (keys', _) <- updateKeys  ctl1 -< input
+    (mrx,mry) <- mouseRelPos -< input
+    ctl1      <- updateKeyboard ctl0 -< input
     let
-      keys0 = (keys._keyboard._device $ ctl1)
-      ypr' :: V3 Double
-      ypr'  =
+      keys1 = (keys._keyboard._device $ ctl1)
+      ypr1 :: V3 Double
+      ypr1  =
         -- (1 * ) $
         -- (((0.25 * ) (V3 dt dt dt)) * ) $
-        (((0.005 * ) (V3 y' x' 0.0)) + ) $
-        foldr (+) (V3 0 0 0) $
-        zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys0) <$>
+        (((1500 * ) (V3 mry mrx 0.0)) + ) $
+        (15000 *) $
+        foldr1 (+) $
+        zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys1) <$>
                       [ keyUp,  keyDown, keyLeft, keyRight, keyQ,  keyE ])
                       [ pPitch, nPitch,  pYaw,    nYaw,     pRoll, nRoll ]
+    
         where
           pPitch = (keyVecs._keyboard._device $ ctl1)!!6  -- positive  pitch
           nPitch = (keyVecs._keyboard._device $ ctl1)!!7  -- negative  pitch
@@ -394,9 +395,9 @@ updateController ctl0 =
           nYaw   = (keyVecs._keyboard._device $ ctl1)!!9  -- negative  yaw
           pRoll  = (keyVecs._keyboard._device $ ctl1)!!10 -- positive  roll
           nRoll  = (keyVecs._keyboard._device $ ctl1)!!11 -- negative  roll
-          -- (x',y') = (_rpos._mouse._device $ ctl1) -- ?
-      
-      ctl = ctl1 { _transform = mtx }
+
+    ypr' <- ((Controllable._ypr ctl0) ^+^) ^<< integral -< ypr1
+    let
       mtx = 
         mkTransformationMat
         rot
@@ -414,7 +415,7 @@ updateController ctl0 =
             foldr (+) (view translation mtx0) $
             fmap (5 *) $ -- <- make it keyboard controllabe: speed up/down
             fmap (transpose (rot) !*) $
-            zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys0) <$>
+            zipWith (*^) ((\mrx -> if mrx then 1 else 0) . ($ keys1) <$>
                           [keyW, keyS, keyA, keyD, keyZ, keyC])
                           [fVel, bVel, lVel, rVel, uVel, dVel]
 
@@ -424,6 +425,7 @@ updateController ctl0 =
                   rVel   = (keyVecs._keyboard._device $ ctl1)!!3  -- right     velocity
                   uVel   = (keyVecs._keyboard._device $ ctl1)!!4  -- right     velocity
                   dVel   = (keyVecs._keyboard._device $ ctl1)!!5  -- right     velocity
+      ctl = ctl0 { _transform = mtx }
 
     returnA -< ctl
 
