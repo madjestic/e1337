@@ -397,35 +397,41 @@ updateController ctl0 =
           nRoll  = (keyVecs._keyboard._device $ ctl1)!!11 -- negative  roll
 
     ypr' <- ((Controllable._ypr ctl0) ^+^) ^<< integral -< ypr1
+    
+    let
+      mtx0 = view Controllable.transform ctl1
+      rot = -- M33
+        (view _m33 mtx0)
+            !*! fromQuaternion (axisAngle (view _x (view _m33 mtx0)) (view _x ypr')) -- yaw
+            !*! fromQuaternion (axisAngle (view _y (view _m33 mtx0)) (view _y ypr')) -- pitch
+            !*! fromQuaternion (axisAngle (view _z (view _m33 mtx0)) (view _z ypr')) -- roll
+      
+      tr1  = -- V3
+        --foldr (+) (view translation mtx0) $
+        foldr (+) (view translation (view Controllable.transform ctl0)) $
+        fmap (5000000 *) $ -- <- make it keyboard controllabe: speed up/down
+        fmap (transpose (rot) !*) $
+        zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys1) <$>
+                      [keyW, keyS, keyA, keyD, keyZ, keyC])
+                      [fVel, bVel, lVel, rVel, uVel, dVel]
+
+        where fVel   = (keyVecs._keyboard._device $ ctl1)!!0  -- forwards  velocity
+              bVel   = (keyVecs._keyboard._device $ ctl1)!!1  -- backwards velocity
+              lVel   = (keyVecs._keyboard._device $ ctl1)!!2  -- left      velocity
+              rVel   = (keyVecs._keyboard._device $ ctl1)!!3  -- right     velocity
+              uVel   = (keyVecs._keyboard._device $ ctl1)!!4  -- right     velocity
+              dVel   = (keyVecs._keyboard._device $ ctl1)!!5  -- right     velocity
+    
+    tr'  <- ((view translation (Controllable._transform ctl0)) ^+^) ^<< integral -< tr1
     let
       mtx = 
         mkTransformationMat
         rot
-        (tr0 + tr)
-        where
-          mtx0 = view Controllable.transform ctl1
-          tr0  = view translation mtx0
-          rot = -- M33
-            (view _m33 mtx0)
-            !*! fromQuaternion (axisAngle (view _x (view _m33 mtx0)) (view _x ypr')) -- yaw
-            !*! fromQuaternion (axisAngle (view _y (view _m33 mtx0)) (view _y ypr')) -- pitch
-            !*! fromQuaternion (axisAngle (view _z (view _m33 mtx0)) (view _z ypr')) -- roll
+        tr'
+        where -- TODO: Move into a separate function?, same for ypr?          
 
-          tr  = -- V3
-            foldr (+) (view translation mtx0) $
-            fmap (5 *) $ -- <- make it keyboard controllabe: speed up/down
-            fmap (transpose (rot) !*) $
-            zipWith (*^) ((\mrx -> if mrx then 1 else 0) . ($ keys1) <$>
-                          [keyW, keyS, keyA, keyD, keyZ, keyC])
-                          [fVel, bVel, lVel, rVel, uVel, dVel]
-
-            where fVel   = (keyVecs._keyboard._device $ ctl1)!!0  -- forwards  velocity
-                  bVel   = (keyVecs._keyboard._device $ ctl1)!!1  -- backwards velocity
-                  lVel   = (keyVecs._keyboard._device $ ctl1)!!2  -- left      velocity
-                  rVel   = (keyVecs._keyboard._device $ ctl1)!!3  -- right     velocity
-                  uVel   = (keyVecs._keyboard._device $ ctl1)!!4  -- right     velocity
-                  dVel   = (keyVecs._keyboard._device $ ctl1)!!5  -- right     velocity
-      ctl = ctl0 { _transform = mtx }
+      ctl = ctl0 { Controllable._transform = mtx
+                 , Controllable._ypr = ypr' }
 
     returnA -< ctl
 

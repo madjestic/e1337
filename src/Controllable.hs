@@ -47,22 +47,11 @@ data Device
      , _mouse    :: Mouse    
      } deriving Show
 
--- transform :: Lens' Controllable (M44 Double)
--- transform = lens _transform (\controllable newTransform -> Controller { _transform = newTransform })
-
 transform' :: Lens' Controllable (M44 Double)
 transform' = lens _transform (\controllable newTransform -> Solver { _transform = newTransform })
 
--- ypr       :: Lens' Controllable (V3 Double)
--- ypr       = lens _ypr       (\controllable newYpr       -> Controller { _ypr       = newYpr })
-
 device'    :: Lens' Controllable Device
 device'    = lens _device    (\controllable newDevice    -> Controller { _device    = newDevice })
-
--- mouse    :: Lens' Device Mouse
--- keyboard :: Lens' Device Keyboard
--- mouse    = lens _mouse    (\device newMouse    -> Device { _mouse    = newMouse })
--- keyboard = lens _keyboard (\device newKeyboard -> Device { _keyboard = newKeyboard })
 
 $(makeLenses ''Device)
 $(makeLenses ''Controllable)
