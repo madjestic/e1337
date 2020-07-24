@@ -374,7 +374,7 @@ updateController :: Controllable -> SF AppInput Controllable
 updateController ctl0 =
   proc input -> do
     (mrx,mry) <- mouseRelPos -< input
-    ctl1      <- updateKeyboard ctl0 -< input
+    ctl1      <- updateKeyboard (DT.trace ("ctl0 :" ++ show ctl0) $ ctl0) -< input
     let
       keys1 = (keys._keyboard._device $ ctl1)
       ypr1 :: V3 Double
@@ -389,51 +389,106 @@ updateController ctl0 =
                       [ pPitch, nPitch,  pYaw,    nYaw,     pRoll, nRoll ]
     
         where
-          pPitch = (keyVecs._keyboard._device $ ctl1)!!6  -- positive  pitch
-          nPitch = (keyVecs._keyboard._device $ ctl1)!!7  -- negative  pitch
-          pYaw   = (keyVecs._keyboard._device $ ctl1)!!8  -- positive  yaw
-          nYaw   = (keyVecs._keyboard._device $ ctl1)!!9  -- negative  yaw
-          pRoll  = (keyVecs._keyboard._device $ ctl1)!!10 -- positive  roll
-          nRoll  = (keyVecs._keyboard._device $ ctl1)!!11 -- negative  roll
+          pPitch = (keyVecs._keyboard._device $ ctl0)!!6  -- positive  pitch
+          nPitch = (keyVecs._keyboard._device $ ctl0)!!7  -- negative  pitch
+          pYaw   = (keyVecs._keyboard._device $ ctl0)!!8  -- positive  yaw
+          nYaw   = (keyVecs._keyboard._device $ ctl0)!!9  -- negative  yaw
+          pRoll  = (keyVecs._keyboard._device $ ctl0)!!10 -- positive  roll
+          nRoll  = (keyVecs._keyboard._device $ ctl0)!!11 -- negative  roll
 
-    ypr' <- ((Controllable._ypr ctl0) ^+^) ^<< integral -< ypr1
+    ypr' <- ((V3 0 0 0) ^+^) ^<< integral -< (DT.trace ("ypr1 :" ++ show ypr1) $ ypr1)
     
     let
-      mtx0 = view Controllable.transform ctl1
+      mtx0 = view Controllable.transform ctl0
+      mtx1 = view Controllable.transform ctl1
       rot = -- M33
         (view _m33 mtx0)
+            -- !*! fromQuaternion (axisAngle (view _x (view _m33 mtx0)) (view _x (DT.trace ("ypr' :" ++ show ypr') $ ypr'))) -- yaw
+            -- !*! fromQuaternion (axisAngle (V3 1 0 0) (view _x ypr'))-- (view _x (DT.trace ("ypr' :" ++ show ypr') $ ypr'))) -- yaw-- (view _x ypr')) -- yaw
+
+            -- These 2 seem to be identical, which probably means that it's not right...
+            -- !*! fromQuaternion (axisAngle (V3 1 0 0) (view _x ypr')) -- yaw
+            -- !*! fromQuaternion (axisAngle (V3 0 1 0) (view _y ypr')) -- pitch
+            -- !*! fromQuaternion (axisAngle (V3 0 0 1) (view _z ypr')) -- roll
+
             !*! fromQuaternion (axisAngle (view _x (view _m33 mtx0)) (view _x ypr')) -- yaw
             !*! fromQuaternion (axisAngle (view _y (view _m33 mtx0)) (view _y ypr')) -- pitch
             !*! fromQuaternion (axisAngle (view _z (view _m33 mtx0)) (view _z ypr')) -- roll
+
       
       tr1  = -- V3
         --foldr (+) (view translation mtx0) $
-        foldr (+) (view translation (view Controllable.transform ctl0)) $
+        --foldr (+) (view translation (view Controllable.transform ctl1)) $
+        foldr1 (+) $
         fmap (5000000 *) $ -- <- make it keyboard controllabe: speed up/down
         fmap (transpose (rot) !*) $
         zipWith (*^) ((\x -> if x then 1 else 0) . ($ keys1) <$>
                       [keyW, keyS, keyA, keyD, keyZ, keyC])
                       [fVel, bVel, lVel, rVel, uVel, dVel]
 
-        where fVel   = (keyVecs._keyboard._device $ ctl1)!!0  -- forwards  velocity
-              bVel   = (keyVecs._keyboard._device $ ctl1)!!1  -- backwards velocity
-              lVel   = (keyVecs._keyboard._device $ ctl1)!!2  -- left      velocity
-              rVel   = (keyVecs._keyboard._device $ ctl1)!!3  -- right     velocity
-              uVel   = (keyVecs._keyboard._device $ ctl1)!!4  -- right     velocity
-              dVel   = (keyVecs._keyboard._device $ ctl1)!!5  -- right     velocity
+        where fVel   = (keyVecs._keyboard._device $ ctl0)!!0  -- forwards  velocity
+              bVel   = (keyVecs._keyboard._device $ ctl0)!!1  -- backwards velocity
+              lVel   = (keyVecs._keyboard._device $ ctl0)!!2  -- left      velocity
+              rVel   = (keyVecs._keyboard._device $ ctl0)!!3  -- right     velocity
+              uVel   = (keyVecs._keyboard._device $ ctl0)!!4  -- right     velocity
+              dVel   = (keyVecs._keyboard._device $ ctl0)!!5  -- right     velocity
     
     tr'  <- ((view translation (Controllable._transform ctl0)) ^+^) ^<< integral -< tr1
     let
       mtx = 
         mkTransformationMat
-        rot
+        (DT.trace ("rot :" ++ show rot) $ rot)
+        --rot
         tr'
-        where -- TODO: Move into a separate function?, same for ypr?          
+        where -- TODO: Move into a separate function?, same for ypr?             
 
-      ctl = ctl0 { Controllable._transform = mtx
-                 , Controllable._ypr = ypr' }
+      ctl = ctl1 { Controllable._transform = (DT.trace ("mtx :" ++ show mtx) $ mtx)
+                 , Controllable._ypr = V3 0 0 0 }
 
+    --returnA -< (DT.trace ("ctl :" ++ show ctl) $ ctl)
     returnA -< ctl
+
+updateMouse :: Controllable -> SF AppInput (Mouse, [Event ()])
+updateMouse ctl0 = 
+  proc input -> do
+-- TODO: Should be something along the lines with:
+-- _ <- mouseEvents -< input
+    mouseMovedE   <- mouseMovedEvent   ctl0 -< input -- relative motion event
+    mouseStoppedE <- mouseStoppedEvent ctl0 -< input
+    rpos <- mouseRelPos -< input
+--    pos <- 
+    let
+      --event  = mouseMovedE $> ():: Event ()
+      events = [(mouseMovedE $> ())
+               ,(mouseStoppedE $> ())]
+      mouse  =
+        Mouse
+        (lmb._mouse._device $ ctl0)
+        (rmb._mouse._device $ ctl0)
+        (_pos._mouse._device $ ctl0)
+        ((\e -> if isEvent e then fromEvent e else (0,0)) mouseMovedE)
+        ((\e -> if isEvent e then False else True) mouseStoppedE)
+        []
+    returnA -< (mouse, events)
+
+mouseMovedEvent :: Controllable -> SF AppInput (Event (Double, Double))
+mouseMovedEvent ctl =
+  proc input -> do
+    mouseMoved <- mouseMoving  -< input
+    returnA -< mouseMoved
+    
+mouseStoppedEvent :: Controllable -> SF AppInput (Event ())
+mouseStoppedEvent ctl =
+  proc input -> do
+    mouseStop <- mouseStopped -< input
+    returnA -< mouseStop
+
+-- is mouse moving or stopped?
+mouseState :: Bool -> Event () -> Event () -> Bool
+mouseState state moving stopped
+  | isEvent moving  = True
+  | isEvent stopped = False
+  | otherwise       = state    
 
 updateKeyboard :: Controllable -> SF AppInput Controllable
 updateKeyboard ctl0 =
