@@ -1,0 +1,15 @@
+{
+    "project":
+    {
+	"name"  : "Spinning Objects",
+	"resx"  : 800,
+	"resy"  : 600,
+	"models":
+	[
+	    { "path": "models/box.vgeo" },
+            { "path": "models/box1.vgeo" },
+	    { "path": "models/pighead.vgeo" },
+	    { "path": "models/earth.vgeo" }
+	]
+    }
+}

@@ -1,0 +1,24 @@
+{
+    "project":
+    {
+	"name"  : "Eath, ISS",
+	"resx"  : 800,
+	"resy"  : 600,
+	"models":
+	[
+	    { "path": "models/earth.bgeo" },
+	    { "path": "models/moon.bgeo" },
+	    { "path": "models/iss_L1.bgeo" },
+	    { "path": "models/fnt_0.bgeo" }
+	],
+	"textures":
+	[
+	    { "path": "textures/4096_earth_daymap.jpg"},
+	    { "path": "textures/256_moon.jpg"}
+	],
+	"camera": [1, 0, 0, 0,
+		   0, 1, 0, 0,
+		   0, 0, 1,-60,
+		   0, 0, 0, 1]	
+    }
+}

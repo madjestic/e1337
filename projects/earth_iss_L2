@@ -1,0 +1,24 @@
+{
+    "project":
+    {
+	"name"  : "Eath, ISS",
+	"resx"  : 800,
+	"resy"  : 600,
+	"models":
+	[
+	    { "path": "models/moon.bgeo" },
+	    { "path": "models/iss_S1_L2.bgeo" },
+	    { "path": "models/iss_S2_L2.bgeo" },
+	    { "path": "models/iss_S3_L2.bgeo" },
+	    { "path": "models/iss_S4_L2.bgeo" },
+	    { "path": "models/iss_S5_L2.bgeo" },
+	    { "path": "models/iss_S6_L2.bgeo" },
+	    { "path": "models/iss_ZVEZDA_L2.bgeo" },
+	    { "path": "models/iss_ZARYA_L2.bgeo" },
+	    { "path": "models/iss_UNITY_L2.bgeo" },
+	    { "path": "models/iss_MRSB_L2.bgeo" }, 
+	    { "path": "models/iss_DESTINY_L2.bgeo" },
+	    { "path": "models/iss_HARMONY_L2.bgeo" }
+	]
+    }
+}

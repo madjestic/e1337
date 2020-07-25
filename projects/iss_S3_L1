@@ -1,0 +1,17 @@
+{
+    "project":
+    {
+	"name"  : "iss_S3_L1",
+	"resx"  : 800,
+	"resy"  : 600,
+	"models":
+	[
+	    { "path": "models/earth.bgeo" },
+	    { "path": "models/debug.bgeo" }
+	],
+	"camera": [1, 0, 0, 0,
+		   0, 1, 0, 0,
+		   0, 0, 1,-60,
+		   0, 0, 0, 1]
+    }
+}

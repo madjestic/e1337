@@ -1,0 +1,12 @@
+{
+    "project":
+    {
+	"name"  : "Box",
+	"resx"  : 800,
+	"resy"  : 600,
+	"models":
+	[
+            { "path": "models/box_2mats.vgeo" }
+	]
+    }
+}
