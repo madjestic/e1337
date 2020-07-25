@@ -1,9 +1,11 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE Arrows #-}
 
 module Solvable
   ( Solver (..)
   , Solvable (..)
+  , spin
   ) where
 
 import Linear.Matrix
@@ -15,6 +17,7 @@ import FRP.Yampa
 import FRP.Yampa.Switches
 
 import Controllable (Controllable (Solver),  _transform, _ypr)
+import Utils
 
 data Solver =
      Translate
@@ -36,11 +39,29 @@ data Solver =
   --   }
   deriving Show
 
-instance VectorSpace (V3 Double) Double where
-  zeroVector                   = (V3 0 0 0)
-  (*^) s (V3 x y z)            = (V3 (s*x) (s*y) (s*z))
-  (^+^)  (V3 x y z) (V3 k l m) = (V3 (x+k) (y+l) (z+m))
-  dot    (V3 x y z) (V3 k l m) = (x*k) + (y*l) + (z*m)
+-- instance VectorSpace (V3 Double) Double where
+--   zeroVector                   = (V3 0 0 0)
+--   (*^) s (V3 x y z)            = (V3 (s*x) (s*y) (s*z))
+--   (^+^)  (V3 x y z) (V3 k l m) = (V3 (x+k) (y+l) (z+m))
+--   dot    (V3 x y z) (V3 k l m) = (x*k) + (y*l) + (z*m)
 
 class Solvable a where
   solver :: Solver -> a -> SF () a
+
+spin :: V3 Double -> V3 Double -> M44 Double -> SF () (M44 Double)
+spin pv0 ypr0 mtx0 =
+  proc () -> do
+    ypr' <- ((V3 0 0 0) ^+^) ^<< integral -< ypr0
+    let mtx =
+          mkTransformationMat
+            rot
+            tr
+            where
+              rot =
+                (view _m33 mtx0)
+                !*! fromQuaternion (axisAngle (view _x (view _m33 mtx0)) (view _x ypr')) -- yaw
+                !*! fromQuaternion (axisAngle (view _y (view _m33 mtx0)) (view _y ypr')) -- pitch
+                !*! fromQuaternion (axisAngle (view _z (view _m33 mtx0)) (view _z ypr')) -- roll
+              tr  = view (_w._xyz) mtx0
+
+    returnA -< mtx

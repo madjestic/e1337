@@ -1,23 +1,31 @@
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE Arrows #-}
+
 module Camera
   ( Camera (..)
   , initCam
   , controller
   , initCamController
+  , updateCamera
   ) where
 
 import Control.Lens
 import Linear.Matrix             (M44, M33, identity, transpose)
 import Linear                    (V3(..), V4 (..))
 import Graphics.Rendering.OpenGL (GLmatrix, GLfloat)
+import FRP.Yampa (SF, returnA)
 
 import Controllable
 import Keyboard
+import AppInput
 
 data Camera =
      Camera
      {
        _controller :: Controllable
      } deriving Show
+
+$(makeLenses ''Camera)
 
 initCam :: Camera
 initCam
@@ -55,5 +63,14 @@ initCamController =
     pRoll  = V3 ( 0  )(  0 )(-1.0)   -- positive  roll
     nRoll  = V3 ( 0  )(  0 )( 1.0)   -- negative  roll
 
-controller :: Lens' Camera Controllable
-controller = lens _controller (\camera newController -> Camera { _controller = newController })
+-- controller :: Lens' Camera Controllable
+-- controller = lens _controller (\camera newController -> Camera { _controller = newController })
+
+updateCamera :: Camera -> SF AppInput Camera
+updateCamera cam0 = 
+  proc input ->
+    do
+      ctl' <- updateController (view controller cam0) -< input
+      let
+        cam' = cam0 { Camera._controller = ctl' }
+      returnA -< cam'

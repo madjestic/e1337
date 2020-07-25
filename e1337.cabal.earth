@@ -38,6 +38,8 @@ library
               , store      ^>= 0.7.4
               , text       ^>= 1.2.2.2
               , Yampa      ^>= 0.13.1
+              , simple-affine-space ^>= 0.1.1
+
   exposed-modules:
                 AppInput
               , PGeo
@@ -87,6 +89,7 @@ executable e1337
               , store      ^>= 0.7.4
               , text       ^>= 1.2.2.2
               , Yampa      ^>= 0.13.1
+              , simple-affine-space ^>= 0.1.1
 
   other-modules:
                 Paths_e1337
@@ -158,7 +161,9 @@ executable geoIndexer
               , containers ^>= 0.6.0.1
               , ilist      ^>= 0.2.0.0
               , store      ^>= 0.7.4
-              , text       ^>= 1.2.2.2                                           
+              , text       ^>= 1.2.2.2
+              , simple-affine-space ^>= 0.1.1
+              , linear     ^>= 1.20.8
               
   other-modules:
                 Paths_e1337
@@ -190,7 +195,9 @@ executable rpcShuffler
               , ilist      ^>= 0.2.0.0
               , extra      ^>= 1.7.3
               , lens       ^>= 4.19.1
-              , store      ^>= 0.7.4                           
+              , store      ^>= 0.7.4
+              , simple-affine-space ^>= 0.1.1
+              , linear     ^>= 1.20.8                        
               
   other-modules:
                 Paths_e1337

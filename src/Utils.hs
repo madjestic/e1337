@@ -1,10 +1,14 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE InstanceSigs #-}
 
 module Utils
   ( toVAO
   , toIdxVAO
+  , Utils.fromList
+  , (<$.>)
+  , (<*.>)
   ) where
 
 import Graphics.Rendering.OpenGL as GL ( Vertex4(..)
@@ -17,8 +21,18 @@ import Data.Set                  as DS (fromList, toList)
 import Data.List.Index                 (indexed)
 import Data.List                       (elemIndex, sortBy, sort)
 import Control.Lens.Combinators        (iset, indexing, each)
+import Linear.V3
+import Linear.V4
+import Linear.Matrix -- (M44, M33, identity, translation, fromQuaternion, (!*!), mkTransformationMat)
+import Data.VectorSpace
 
 import Debug.Trace as DT
+
+instance VectorSpace (V3 Double) Double where
+  zeroVector                   = (V3 0 0 0)
+  (*^) s (V3 x y z)            = (V3 (s*x) (s*y) (s*z))
+  (^+^)  (V3 x y z) (V3 k l m) = (V3 (x+k) (y+l) (z+m))
+  dot    (V3 x y z) (V3 k l m) = (x*k) + (y*l) + (z*m)
 
 toVAO
   :: [[Int]]
@@ -73,3 +87,18 @@ matchLists il nil =
         nili = elemIndex cy cxs
         cxs  = fmap (\(i,s) -> s) il :: [[GLfloat]]
     
+fromList :: [Float] -> M44 Double
+fromList xs' = V4 x y z w
+  where
+    x  = V4 (xs!!0 ) (xs!!1 ) (xs!!2 ) (xs!!3 ) 
+    y  = V4 (xs!!4 ) (xs!!5 ) (xs!!6 ) (xs!!7 ) 
+    z  = V4 (xs!!8 ) (xs!!9 ) (xs!!10) (xs!!11) 
+    w  = V4 (xs!!12) (xs!!13) (xs!!14) (xs!!15)
+    xs = fmap realToFrac xs' :: [Double]
+
+(<$.>) :: (a -> b) -> [a] -> [b]
+(<$.>) = fmap
+
+(<*.>) :: [a -> b] -> [a] -> [b]
+(<*.>) = zipWith ($)
+

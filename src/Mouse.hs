@@ -1,4 +1,4 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskell, Arrows #-}
 
 module Mouse
   ( Mouse (..)
@@ -10,6 +10,9 @@ import Control.Lens
 import Control.Lens.TH
 
 import Linear.V3
+import FRP.Yampa (SF, Event)
+
+import AppInput
 
 data Mouse
   =  Mouse
@@ -23,7 +26,5 @@ data Mouse
   , mVecs ::       [V3 Double]
   } deriving Show
 
--- pos :: Lens' Mouse (Double, Double)
--- pos = lens _pos (\mouse newPos -> Mouse { _pos = newPos })
-
 $(makeLenses ''Mouse)
+

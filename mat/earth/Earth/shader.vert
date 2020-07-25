@@ -48,7 +48,8 @@ void main()
 	vec4 position = vec4(vPosition,1)*1.0f;
 
 	position    = transform * position;
-	gl_Position = persp * viewM44 * (position + (camera)[3]);
+	//gl_Position = persp * viewM44 * (position + (camera)[3]);
+	gl_Position = persp * camera * position;
 
 	// To logarithmic Depth Buffer.
 	float Near = 0.5; //  Near Clippng  Plane

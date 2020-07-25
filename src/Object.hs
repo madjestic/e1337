@@ -1,4 +1,4 @@
--- {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings, Arrows #-}
@@ -8,13 +8,16 @@
 module Object
   ( Object (..)
   , defaultObj
---  , scalar
   , materials
   , programs
   , descriptors
-  , transform
+  , transforms
+  , solve
   , solver
   , solvers
+  , loadObjects
+  , initObject
+  , updateObjects
   ) where
 
 import Linear.V4
@@ -22,15 +25,21 @@ import Linear.Matrix -- (M44, M33, identity, translation, fromQuaternion, (!*!),
 import Linear (V3(..))
 import Linear.Quaternion
 import Control.Lens hiding (transform)
+import Control.Lens.TH
 import FRP.Yampa    hiding (identity)
 import FRP.Yampa.Switches
-import Graphics.Rendering.OpenGL (Program (..))
+import Graphics.Rendering.OpenGL (Program (..), ShaderType (..))
 
 import LoadShaders
 import Keyboard
 import Material
 import Descriptor
 import Solvable
+import PGeo
+import VGeo
+import Project
+import Model
+import Utils
 
 import Debug.Trace    as DT
   
@@ -54,23 +63,8 @@ data Object
      , _solvers     :: [Solver]
      } deriving Show
 
-descriptors :: Lens' Object [Descriptor]
-descriptors = lens _descriptors (\object newDescriptors -> Object { _descriptors = newDescriptors })
+$(makeLenses ''Object)
 
-materials :: Lens' Object [Material]
-materials = lens _materials (\object newMaterial -> Object { _materials = newMaterial })
-
-programs :: Lens' Object [Program]
-programs = lens _programs (\object newProgram -> Object { _programs = newProgram })
-
-transform :: Lens' Object [M44 Double]
-transform = lens _transforms (\object newTransforms -> Object { _transforms = newTransforms })
-
-solvers :: Lens' Object [Solver]
-solvers = lens _solvers (\object newSolvers -> Object { _solvers = newSolvers })
-
--- solver :: Lens' Object (Controllable)
--- solver = lens _solver (\object newSolver -> Object { _solver = newSolver })
 
 -- TODO : take translation (pivot offset) into account
 instance Solvable Object where
@@ -113,3 +107,85 @@ defaultObj =
     (1.0)
     (0.0)
     []
+
+loadObjects :: (([Int], Int, [Float], Material) -> IO Descriptor) -> Project -> IO [Object]
+loadObjects initVAO project = 
+  do
+    -- _ <- DT.trace ("project :" ++ show project) $ return ()
+    print "Loading Models..."
+    objVGeos <- mapM (\modelPath ->
+                      do { vgeo <- readBGeo modelPath :: IO VGeo
+                         ; return vgeo
+                         }
+                  ) $ toListOf (models . traverse . Model.path) project :: IO [VGeo]
+    objs <- mapM (initObject initVAO) objVGeos :: IO [Object] -- object per vgeo
+    print "Finished loading models."
+    
+    return (objs)
+
+initObject :: (([Int], Int, [Float], Material) -> IO Descriptor) -> VGeo -> IO Object
+initObject initVAO vgeo =
+  do
+    mats  <- mapM readMaterial $ ms vgeo :: IO [Material]
+    let (VGeo is_ st_ vs_ ms_ xf_) = vgeo
+        vaoArgs = (\idx' st' vao' mat' ->  (idx', st', vao', mat')) <$.> is_ <*.> st_ <*.> vs_ <*.> mats
+        offset = fmap ((view _w).fromList) (xf_)
+        preTransforms = fmap fromList ((xf_))
+
+    ds <- mapM initVAO vaoArgs
+
+    progs <- mapM (\mat -> loadShaders
+                           [ ShaderInfo VertexShader   (FileSource (_vertShader (mat) ))
+                           , ShaderInfo FragmentShader (FileSource (_fragShader (mat) )) ]) mats
+
+    let obj =
+          defaultObj
+          { _descriptors = ds
+          , _materials   = mats
+          , _programs    = progs
+          , _transforms  = preTransforms
+          -- , _pivot       = view _xyz offset
+          -- , _solvers     =
+          --   [(Rotate (view _xyz offset) (V3 0 0 1000))] -- TODO: a solver per ()transform) object
+          , _solvers = [] -- fmap (\offset' -> (Rotate (view _xyz offset') (V3 0 0 1000))) offset
+          } :: Object
+
+    return obj
+
+fromVGeo :: (([Int], Int, [Float], Material) -> IO Descriptor) -> VGeo -> IO Object
+fromVGeo initVAO (VGeo idxs st vaos matPaths xform) = 
+  do
+    mats <- mapM readMaterial matPaths -- (ms vgeo)
+    let
+      vaoargs         = (\idx' st' vao' mat' ->  (idx', st', vao', mat')) <$.> idxs <*.> st <*.> vaos <*.> mats
+      offset = view _w (fromList (xform!!0) :: M44 Double) -- xform!!0 - at conversion stage, there can be only a single element in a list of transforms, therefore I don't want to overcomplicate it at the moment and keep it adhoc.
+
+    ds   <- mapM initVAO vaoargs
+    
+    let object =
+          defaultObj
+          { _descriptors = ds
+          , _materials   = mats
+          --, _transforms   = preTransform
+          --, _pivot       = offset
+          , _solvers     =
+            [(Rotate (view _xyz offset) (V3 0 0 1000))]
+          }
+
+    return object
+    
+-- TODO : Object -> Solver -> SF () Object
+solve :: Object -> SF () Object
+solve obj =
+  proc () -> do
+-- TODO: read pivot from the object preTransforms
+    mtxs <- (parB . fmap (\mtx -> spin (V3 0 0 0) (V3 0 (0) (0*1000)) mtx)) (_transforms obj) -< ()
+    --obj' <- mapM (\pv0' -> solver (Rotate (pv0') (V3 0 0 1000)) obj) pv0 -< ()
+    returnA -< obj { _transforms = mtxs }
+    --returnA -< obj-- { _transforms = mtxs }
+      -- where
+      --   pv0 = toListOf (Obj.transform . traverse . _w . _xyz) obj
+
+-- TODO: [Object] -> [Solver] -> SF () [Object]
+updateObjects :: [Object] -> SF () [Object]
+updateObjects = parB . fmap solve
