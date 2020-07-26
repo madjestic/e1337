@@ -10,9 +10,7 @@ module Camera
   ) where
 
 import Control.Lens
-import Linear.Matrix             (M44, M33, identity, transpose)
 import Linear                    (V3(..), V4 (..))
-import Graphics.Rendering.OpenGL (GLmatrix, GLfloat)
 import FRP.Yampa (SF, returnA)
 
 import Controllable

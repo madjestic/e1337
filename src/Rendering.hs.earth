@@ -24,9 +24,7 @@ import Foreign.Ptr                            (plusPtr, nullPtr)
 import Foreign.Storable                       (sizeOf)
 import Graphics.Rendering.OpenGL as GL hiding (color, normal, Size)
 import SDL                             hiding (Point, Event, Timer, (^+^), (*^), (^-^), dot, project)
--- import SDL.Image (loadTexture)
-import Graphics.GLUtil                        (readTexture, texture2DWrap, loadTexture)
--- import Graphics.GLUtil.JuicyTextures (readTexInfo)
+import Graphics.GLUtil                        (readTexture, texture2DWrap)
 
 import LoadShaders
 import Game
@@ -36,13 +34,7 @@ import Controllable
 import Descriptor
 import Material
 import Mouse
---- debug stuff
 import Project (Project)
-import Model
-import Texture
-import PGeo hiding (materials)
-import VGeo
----
 
 import Data.Foldable     as DF (toList)
 import Linear.Projection as LP (perspective)
@@ -50,7 +42,7 @@ import Linear.Projection as LP (perspective)
 import Unsafe.Coerce
 
 import Control.Lens       hiding (transform, indexed)
-import Debug.Trace as DT
+-- import Debug.Trace as DT
 
 #ifdef DEBUG
 debug = True
@@ -193,14 +185,14 @@ render Rendering.OpenGL opts window game =
     
 render Vulkan _ _ _ = undefined
 
-drawString :: String -> IO [Drawable]
-drawString s =
-  do
-    ds <- mapM drawChar s
-    return ds
+-- drawString :: String -> IO [Drawable]
+-- drawString s =
+--   do
+--     ds <- mapM drawChar s
+--     return ds
 
-drawChar :: Char -> IO Drawable
-drawChar = undefined
+-- drawChar :: Char -> IO Drawable
+-- drawChar = undefined
 
 draw :: BackendOptions -> SDL.Window -> Drawable -> IO ()
 draw opts window (Drawable
@@ -287,7 +279,7 @@ initUniforms (Uniforms u_mat' u_prog' u_mouse' u_time' u_res' u_cam' u_xform') =
     location4         <- get (uniformLocation program "camera")
     uniform location4 $= camera
 
-    let testM44 = (V4 (V4 1 0 0 0) (V4 0 2 0 0) (V4 0 0 1 0) (V4 0 0 0 1)) :: M44 Double
+    -- let testM44 = (V4 (V4 1 0 0 0) (V4 0 2 0 0) (V4 0 0 1 0) (V4 0 0 0 1)) :: M44 Double
     let mtx =
           --fmap realToFrac . concat $ fmap DF.toList . DF.toList $ (DT.trace ("u_xform' :" ++ show u_xform') $ u_xform')
           fmap realToFrac . concat $ fmap DF.toList . DF.toList $ u_xform'

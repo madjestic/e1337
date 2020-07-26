@@ -23,15 +23,11 @@ module Object
 import Linear.V4
 import Linear.Matrix -- (M44, M33, identity, translation, fromQuaternion, (!*!), mkTransformationMat)
 import Linear (V3(..))
-import Linear.Quaternion
 import Control.Lens hiding (transform)
-import Control.Lens.TH
 import FRP.Yampa    hiding (identity)
-import FRP.Yampa.Switches
 import Graphics.Rendering.OpenGL (Program (..), ShaderType (..))
 
 import LoadShaders
-import Keyboard
 import Material
 import Descriptor
 import Solvable

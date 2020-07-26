@@ -11,22 +11,17 @@ module Utils
   , (<*.>)
   ) where
 
-import Graphics.Rendering.OpenGL as GL ( Vertex4(..)
-                                       , Vertex3(..)
-                                       , TexCoord3(..)
-                                       , GLuint
-                                       , GLfloat )
+import Graphics.Rendering.OpenGL as GL (GLfloat)
 
 import Data.Set                  as DS (fromList, toList)
 import Data.List.Index                 (indexed)
-import Data.List                       (elemIndex, sortBy, sort)
-import Control.Lens.Combinators        (iset, indexing, each)
+import Data.List                       (elemIndex)
 import Linear.V3
 import Linear.V4
 import Linear.Matrix -- (M44, M33, identity, translation, fromQuaternion, (!*!), mkTransformationMat)
 import Data.VectorSpace
 
-import Debug.Trace as DT
+--import Debug.Trace as DT
 
 instance VectorSpace (V3 Double) Double where
   zeroVector                   = (V3 0 0 0)

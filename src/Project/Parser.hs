@@ -11,7 +11,6 @@ import Data.ByteString.Lazy as B
 import Data.Maybe                (fromMaybe)
 
 import Project
-import Model
 import Texture
 
 --import Debug.Trace as DT

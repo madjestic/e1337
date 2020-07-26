@@ -20,11 +20,9 @@ module Controllable
 
 import Linear.Matrix
 import Linear.V3
-import Linear.V4
 import Linear.Quaternion
 
 import Control.Lens hiding (transform)
-import Control.Lens.TH
 import FRP.Yampa --(SF, Event, returnA, isEvent, lMerge, catEvents, )
 import SDL.Input.Keyboard.Codes as SDL
 import Data.Functor              (($>))
@@ -32,8 +30,7 @@ import Data.Functor              (($>))
 import Keyboard
 import Mouse
 import AppInput
-import Utils
---import Solvable
+import Utils ()
 
 data Controllable
   =  Controller

@@ -15,7 +15,6 @@ module Material
 import Control.Monad         (mzero)
 import Data.Aeson
 import Data.Aeson.Encode.Pretty
-import Data.ByteString as BS
 import Data.Maybe            (fromMaybe)
 import qualified Data.ByteString.Lazy as B
 import Control.Lens hiding ((.=))

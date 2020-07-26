@@ -7,12 +7,8 @@ module Mouse
   ) where
 
 import Control.Lens
-import Control.Lens.TH
 
 import Linear.V3
-import FRP.Yampa (SF, Event)
-
-import AppInput
 
 data Mouse
   =  Mouse

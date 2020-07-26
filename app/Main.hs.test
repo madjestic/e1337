@@ -5,17 +5,17 @@
 module Main where 
 
 import Control.Concurrent
---import Control.Arrow.List.Class  --(arrL)
-import Control.Lens       hiding (transform, indexed, ids)
-import Data.Bifoldable           (biList)
+-- import Control.Arrow.List.Class  --(arrL)
+-- import Control.Lens       hiding (transform, indexed, ids)
+-- import Data.Bifoldable           (biList)
 import Data.Text                 (pack)
-import Data.IORef
-import Data.Maybe
+-- import Data.IORef
+-- import Data.Maybe
 import Foreign.C
 import FRP.Yampa          hiding (identity)
-import FRP.Yampa.Switches
-import FRP.Yampa.EventS
-import Data.Functor              (($>))
+-- import FRP.Yampa.Switches
+-- import FRP.Yampa.EventS
+-- import Data.Functor              (($>))
 
 import SDL                hiding ( Point
                                  , M44
@@ -27,36 +27,35 @@ import SDL                hiding ( Point
                                  , (*^)
                                  , _xyz)
 
-import Graphics.Rendering.OpenGL ( PrimitiveMode(..)
-                                 , ShaderType(..)
-                                 , Program(..))
+import Graphics.Rendering.OpenGL ( PrimitiveMode(..))
+
 
 
 import System.Environment       (getArgs)
-import Linear.Matrix
-import Linear.V4
+-- import Linear.Matrix
+-- import Linear.V4
 import Unsafe.Coerce
 -- import Data.Vector              (slice)
        
-import LoadShaders
-import Camera         as Cam
+-- import LoadShaders
+-- import Camera         as Cam
 import Game
 import Project
-import Model
-import Texture
+-- import Model
+-- import Texture
 import Project.Parser
-import Keyboard
-import Object         as Obj
-import Controllable
-import PGeo
-import VGeo
+-- import Keyboard
+-- import Object         as Obj
+-- import Controllable
+-- import PGeo
+-- import VGeo
 import AppInput
 import Rendering      as R
-import Material
-import Solvable
-import Utils
+-- import Material
+-- import Solvable
+-- import Utils
 
-import Debug.Trace    as DT
+-- import Debug.Trace    as DT
 
 -- -- < Animate > ------------------------------------------------------------
 type WinInput = Event SDL.EventPayload

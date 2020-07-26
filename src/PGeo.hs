@@ -34,7 +34,7 @@ import FromVector
 import VGeo
 import Utils
 
-import Debug.Trace   as DT
+-- import Debug.Trace   as DT
 
 instance FromVector Vec3 where
   toVertex4 :: Vec3 -> Vertex4 Double

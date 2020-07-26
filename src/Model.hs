@@ -6,7 +6,6 @@ module Model
   ) where
 
 import Control.Lens
-import Control.Lens.TH
 
 data Model
   =  Model

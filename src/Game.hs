@@ -30,12 +30,8 @@ module Game
 
 import Foreign.C                              (CInt)
 import Unsafe.Coerce
-import Control.Monad                          (mzero)
-import Data.Maybe                             (fromMaybe)
 import Data.Functor              (($>))
-import qualified Data.ByteString.Lazy as B
 import Control.Lens
-import Control.Lens.TH
 import FRP.Yampa --(SF, returnA, isEvent, (>>^), switch)
 import SDL.Input.Keyboard.Codes as SDL
 

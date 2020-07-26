@@ -14,7 +14,6 @@ import Texture
 import Model
 
 import Control.Lens
-import Control.Lens.TH
 
 data Project
   =  Project
